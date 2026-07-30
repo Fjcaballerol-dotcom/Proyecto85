@@ -58,7 +58,7 @@
         <div class="progress"><span id="programBar"></span></div>
       </div>
 
-      <button class="primary big" data-go="entreno">Comenzar entrenamiento</button>
+      <button id="startWorkoutMode" class="primary big">Comenzar entrenamiento</button>
     </section>
 
     <section id="entreno" class="view">
@@ -226,6 +226,66 @@
     <button data-go="salud"><span>♥</span>Salud</button>
     <button data-go="ajustes"><span>⚙</span>Ajustes</button>
   </nav>
+
+  <div id="workoutMode" class="workout-mode">
+    <div class="workout-mode-head">
+      <button id="closeWorkoutMode" class="icon-btn">←</button>
+      <div>
+        <p class="eyebrow" id="modeProgramLabel"></p>
+        <h2 id="modeProgressTitle"></h2>
+      </div>
+      <button id="replaceExerciseBtn" class="secondary compact">Cambiar</button>
+    </div>
+    <div class="mode-progress"><span id="modeProgressBar"></span></div>
+    <div class="card mode-card">
+      <p class="eyebrow">EJERCICIO ACTUAL</p>
+      <h2 id="modeExerciseName"></h2>
+      <p id="modeExerciseNote" class="muted"></p>
+      <div class="grid stats-grid">
+        <div class="card stat"><span>Peso recomendado</span><b id="modeRecommendedWeight">—</b></div>
+        <div class="card stat"><span>Última carga</span><b id="modeLastWeight">—</b></div>
+      </div>
+      <div id="modeSets"></div>
+      <div class="timer-card">
+        <span>Descanso</span>
+        <b id="restTimer">01:30</b>
+        <div class="row">
+          <button id="startRest" class="secondary">Iniciar</button>
+          <button id="resetRest" class="secondary">Reiniciar</button>
+        </div>
+      </div>
+      <button id="completeCurrentSet" class="primary big">Completar siguiente serie</button>
+      <div class="row mode-nav">
+        <button id="prevExercise" class="secondary">Anterior</button>
+        <button id="nextExercise" class="secondary">Siguiente</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="replaceModal" class="replace-modal">
+    <div class="replace-box">
+      <div class="row between">
+        <h3>Cambiar ejercicio</h3>
+        <button id="closeReplace" class="icon-btn">×</button>
+      </div>
+      <p class="muted">El historial anterior se conserva. El cambio se aplica desde hoy.</p>
+      <label>Alternativa
+        <select id="replacementSelect"></select>
+      </label>
+      <label>Motivo
+        <select id="replacementReason">
+          <option>Material ocupado</option>
+          <option>Molestia o dolor</option>
+          <option>Variación planificada</option>
+          <option>Preferencia personal</option>
+        </select>
+      </label>
+      <label>Nombre personalizado
+        <input id="customReplacement" placeholder="Opcional">
+      </label>
+      <button id="confirmReplacement" class="primary">Guardar cambio</button>
+    </div>
+  </div>
 
   <div id="toast" class="toast"></div>
   <script src="app.js"></script>

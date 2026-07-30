@@ -1,7 +1,7 @@
 {
-  "name": "Proyecto 85 · Entrenador personal",
+  "name": "Proyecto 85 V1.1 · Entrenador personal",
   "short_name": "Proyecto 85",
-  "description": "Entrenamiento, core, cardio, evolución corporal y datos Garmin.",
+  "description": "Modo entrenamiento guiado, sustitución de ejercicios, core, cardio, progreso y Garmin.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

@@ -165,7 +165,7 @@ function readWorkoutData(){
    totalSets++; if(done){completedSets++;volume+=weight*reps}
    return {weight,reps,done};
   });
-  return {name:workout.ex[i][0],sets};
+  return {name:card.querySelector("h3").textContent.replace(/^\\d+\\.\\s*/,""),sets};
  });
  const core=[...document.querySelectorAll(".core-card")].map((card,i)=>({
   name:workout.core[i][0],
@@ -316,6 +316,132 @@ $("#refreshBtn").addEventListener("click",async()=>{
 
 function formatDate(v){if(!v)return"-";const d=new Date(v+"T12:00:00");return isNaN(d)?v:d.toLocaleDateString("es-ES",{day:"2-digit",month:"short",year:"numeric"})}
 function escapeHtml(s){return s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+
+
+const EXERCISE_ALTERNATIVES={
+ "Prensa":["Sentadilla Hack","Prensa horizontal","Extensión de cuádriceps"],
+ "Curl femoral":["Curl femoral sentado","Curl femoral tumbado","Peso muerto rumano con mancuernas"],
+ "Jalón al pecho":["Jalón agarre neutro","Dominadas asistidas","Pullover en polea"],
+ "Jalón neutro":["Jalón al pecho","Dominadas asistidas","Pullover en polea"],
+ "Remo con apoyo":["Remo en máquina","Remo en polea baja","Remo sentado guiado"],
+ "Remo en máquina":["Remo con apoyo","Remo en polea baja","Remo sentado guiado"],
+ "Remo en polea baja":["Remo con apoyo","Remo en máquina","Remo sentado guiado"],
+ "Press de pecho":["Press inclinado","Press convergente","Peck Deck"],
+ "Press inclinado":["Press de pecho","Press convergente","Peck Deck"],
+ "Press militar":["Press de hombro en máquina","Elevaciones laterales","Landmine press"],
+ "Elevaciones laterales":["Elevaciones en máquina","Elevaciones en polea","Press de hombro"],
+ "Face Pull":["Pájaros en máquina","Remo alto en polea","Reverse fly"],
+ "Curl bíceps":["Curl martillo","Curl en polea","Curl en máquina"],
+ "Curl martillo":["Curl bíceps","Curl en polea","Curl en máquina"],
+ "Tríceps polea":["Tríceps cuerda","Extensión unilateral","Máquina de tríceps"],
+ "Tríceps cuerda":["Tríceps polea","Extensión unilateral","Máquina de tríceps"],
+ "Peck Deck":["Press de pecho","Press inclinado","Aperturas en polea"],
+ "Extensión de cuádriceps":["Prensa","Sentadilla Hack","Prensa horizontal"],
+ "Abducción de cadera":["Abducción en polea","Caminata lateral con banda","Máquina de glúteo medio"],
+ "Gemelos":["Gemelo sentado","Gemelo en prensa","Elevación de talones"],
+ "Pullover en polea":["Jalón al pecho","Jalón neutro","Dominadas asistidas"]
+};
+
+let workoutModeIndex=0, restSeconds=90, restInterval=null;
+
+function workoutCards(){return [...document.querySelectorAll(".exercise")]}
+
+function openWorkoutMode(){
+ go("entreno");
+ workoutModeIndex=0;
+ $("#workoutMode").classList.add("active");
+ renderWorkoutMode();
+}
+function closeWorkoutMode(){
+ $("#workoutMode").classList.remove("active");
+ stopRestTimer();
+}
+function getLastWeightForExercise(name){
+ const sessions=get("p85_sessions",[]);
+ for(const s of sessions){
+  const ex=(s.exercises||[]).find(x=>x.name===name);
+  if(ex?.sets?.length){
+   const done=ex.sets.filter(x=>x.done);
+   return (done[0]||ex.sets[0])?.weight ?? null;
+  }
+ }
+ return null;
+}
+function renderWorkoutMode(){
+ const cards=workoutCards(); if(!cards.length)return;
+ workoutModeIndex=Math.max(0,Math.min(workoutModeIndex,cards.length-1));
+ const card=cards[workoutModeIndex];
+ const title=card.querySelector("h3").textContent.replace(/^\d+\.\s*/,"");
+ const rows=[...card.querySelectorAll(".set-row")];
+ $("#modeProgramLabel").textContent=programLabel();
+ $("#modeProgressTitle").textContent=`Ejercicio ${workoutModeIndex+1} de ${cards.length}`;
+ $("#modeProgressBar").style.width=`${((workoutModeIndex+1)/cards.length)*100}%`;
+ $("#modeExerciseName").textContent=title;
+ $("#modeExerciseNote").textContent=card.querySelector(".muted")?.textContent||card.querySelector(".target").textContent;
+ $("#modeRecommendedWeight").textContent=rows[0]?`${rows[0].querySelector(".set-weight").value} kg`:"—";
+ const last=getLastWeightForExercise(title);
+ $("#modeLastWeight").textContent=last==null?"—":`${last} kg`;
+ $("#modeSets").innerHTML=rows.map((row,i)=>`
+  <div class="mode-set">
+   <b>${i+1}</b>
+   <input class="mode-weight" type="number" step=".1" value="${row.querySelector(".set-weight").value}">
+   <input class="mode-reps" type="number" value="${row.querySelector(".set-reps").value}">
+   <input class="mode-done" type="checkbox" ${row.querySelector(".set-done").checked?"checked":""}>
+  </div>`).join("");
+ $$(".mode-weight").forEach((el,i)=>el.addEventListener("input",()=>rows[i].querySelector(".set-weight").value=el.value));
+ $$(".mode-reps").forEach((el,i)=>el.addEventListener("input",()=>rows[i].querySelector(".set-reps").value=el.value));
+ $$(".mode-done").forEach((el,i)=>el.addEventListener("change",()=>rows[i].querySelector(".set-done").checked=el.checked));
+}
+function completeNextSet(){
+ const next=$$(".mode-done").find(x=>!x.checked);
+ if(!next){toast("Todas las series están completadas");return}
+ next.checked=true;next.dispatchEvent(new Event("change"));startRestTimer();
+}
+function updateRestDisplay(){
+ $("#restTimer").textContent=`${String(Math.floor(restSeconds/60)).padStart(2,"0")}:${String(restSeconds%60).padStart(2,"0")}`;
+}
+function startRestTimer(){
+ stopRestTimer();
+ restInterval=setInterval(()=>{
+  restSeconds--;updateRestDisplay();
+  if(restSeconds<=0){stopRestTimer();if(navigator.vibrate)navigator.vibrate([200,100,200]);toast("Descanso terminado")}
+ },1000);
+}
+function stopRestTimer(){if(restInterval){clearInterval(restInterval);restInterval=null}}
+function resetRestTimer(){stopRestTimer();restSeconds=90;updateRestDisplay()}
+function openReplacement(){
+ const card=workoutCards()[workoutModeIndex];
+ const current=card.querySelector("h3").textContent.replace(/^\d+\.\s*/,"");
+ const options=EXERCISE_ALTERNATIVES[current]||["Ejercicio equivalente en máquina","Ejercicio equivalente en polea","Ejercicio equivalente con mancuernas"];
+ $("#replacementSelect").innerHTML=options.map(x=>`<option>${x}</option>`).join("");
+ $("#customReplacement").value="";
+ $("#replaceModal").classList.add("active");
+}
+function applyReplacement(){
+ const card=workoutCards()[workoutModeIndex];
+ const oldName=card.querySelector("h3").textContent.replace(/^\d+\.\s*/,"");
+ const newName=$("#customReplacement").value.trim()||$("#replacementSelect").value;
+ const reason=$("#replacementReason").value;
+ card.querySelector("h3").textContent=`${workoutModeIndex+1}. ${newName}`;
+ const substitutions=get("p85_substitutions",[]);
+ substitutions.unshift({date:todayISO(),programLabel:programLabel(),oldName,newName,reason});
+ set("p85_substitutions",substitutions);
+ $("#replaceModal").classList.remove("active");
+ renderWorkoutMode();
+ toast("Ejercicio cambiado. Historial conservado.");
+}
+
+$("#startWorkoutMode").addEventListener("click",openWorkoutMode);
+$("#closeWorkoutMode").addEventListener("click",closeWorkoutMode);
+$("#completeCurrentSet").addEventListener("click",completeNextSet);
+$("#prevExercise").addEventListener("click",()=>{workoutModeIndex--;renderWorkoutMode()});
+$("#nextExercise").addEventListener("click",()=>{workoutModeIndex++;renderWorkoutMode()});
+$("#startRest").addEventListener("click",startRestTimer);
+$("#resetRest").addEventListener("click",resetRestTimer);
+$("#replaceExerciseBtn").addEventListener("click",openReplacement);
+$("#closeReplace").addEventListener("click",()=>$("#replaceModal").classList.remove("active"));
+$("#confirmReplacement").addEventListener("click",applyReplacement);
+updateRestDisplay();
 
 seed();renderWorkout();calculateReadiness();updateDashboard();
 if("serviceWorker" in navigator)navigator.serviceWorker.register("./sw.js");
