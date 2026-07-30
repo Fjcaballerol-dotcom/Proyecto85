@@ -90,7 +90,7 @@ const INITIAL_SESSIONS=[
  {programLabel:"Semana 2 · Día 3",date:"2026-07-29",duration:0,rpe:8.9,cardio:0,pain:2,painAfter:2,coreCompleted:false,volume:0,notes:"Prensa 52 kg. Curl femoral costó. Molestia leve exterior de rodilla derecha."}
 ];
 const INITIAL_MEASURES=[{date:"2026-07-29",weight:106,bodyFat:39.5,muscleMass:63.8,waist:108,chest:119,hip:110}];
-const DEFAULT_SETTINGS={name:"Javier",goalWeight:90,currentWeek:2,currentDay:4};
+const DEFAULT_SETTINGS={name:"Javier",goalWeight:90,currentWeek:2,currentDay:4,restSeconds:90};
 
 const $=s=>document.querySelector(s);
 const $$=s=>[...document.querySelectorAll(s)];
@@ -103,6 +103,9 @@ function seed(){
  if(!localStorage.getItem("p85_measures"))set("p85_measures",INITIAL_MEASURES);
  if(!localStorage.getItem("p85_settings"))set("p85_settings",DEFAULT_SETTINGS);
  if(!localStorage.getItem("p85_health"))set("p85_health",[]);
+ if(!localStorage.getItem("p85_nutrition"))set("p85_nutrition",[]);
+ if(!localStorage.getItem("p85_photos"))set("p85_photos",[]);
+ if(!localStorage.getItem("p85_menu"))set("p85_menu",DEFAULT_MENU);
 }
 
 function toast(msg){
@@ -119,8 +122,11 @@ function go(id){
  window.scrollTo({top:0,behavior:"smooth"});
  if(id==="inicio")updateDashboard();
  if(id==="historial")renderHistory();
- if(id==="progreso"){renderMeasures();drawChart()}
+ if(id==="progreso"){renderMeasures();drawChart();renderPhotos()}
  if(id==="salud")renderHealth();
+ if(id==="nutricion")renderNutrition();
+ if(id==="calendario")renderCalendar();
+ if(id==="biblioteca")renderLibrary();
 }
 $$("[data-go]").forEach(b=>b.addEventListener("click",()=>go(b.dataset.go)));
 
@@ -256,12 +262,46 @@ function renderHistory(){
 }
 
 $("#saveHealth").addEventListener("click",()=>{
- const obj={date:todayISO(),steps:+$("#steps").value||0,sleepHours:+$("#sleepHours").value||0,restingHr:+$("#restingHr").value||0,activeCalories:+$("#activeCalories").value||0};
- const arr=get("p85_health",[]);arr.unshift(obj);set("p85_health",arr);renderHealth();toast("Datos Garmin guardados");
+ const obj={
+  date:todayISO(),
+  steps:+$("#steps").value||0,
+  sleepHours:+$("#sleepHours").value||0,
+  restingHr:+$("#restingHr").value||0,
+  activeCalories:+$("#activeCalories").value||0,
+  waterLiters:+$("#waterLiters").value||0,
+  dailyEnergy:+$("#dailyEnergy").value||0,
+  dailyStress:+$("#dailyStress").value||0,
+  dailyPain:+$("#dailyPain").value||0
+ };
+ const arr=get("p85_health",[]);
+ const existing=arr.findIndex(x=>x.date===obj.date);
+ if(existing>=0)arr[existing]=obj;else arr.unshift(obj);
+ arr.sort((a,b)=>b.date.localeCompare(a.date));
+ set("p85_health",arr);
+ renderHealth();updateDashboard();
+ toast(existing>=0?"Datos de hoy actualizados":"Datos de hoy guardados");
 });
+function fillTodayHealth(){
+ const today=get("p85_health",[]).find(x=>x.date===todayISO());
+ if(!today)return;
+ $("#steps").value=today.steps||"";
+ $("#sleepHours").value=today.sleepHours||"";
+ $("#restingHr").value=today.restingHr||"";
+ $("#activeCalories").value=today.activeCalories||"";
+ $("#waterLiters").value=today.waterLiters||"";
+ $("#dailyEnergy").value=today.dailyEnergy||"";
+ $("#dailyStress").value=today.dailyStress||"";
+ $("#dailyPain").value=today.dailyPain||"";
+}
 function renderHealth(){
  const arr=get("p85_health",[]);
- $("#healthHistory").innerHTML=arr.map(x=>`<div class="history"><div class="history-head"><h3>${formatDate(x.date)}</h3><span class="badge">${(+x.steps).toLocaleString("es-ES")} pasos</span></div><p>Sueño ${x.sleepHours||"-"} h · FC reposo ${x.restingHr||"-"} · ${x.activeCalories||0} kcal activas</p></div>`).join("");
+ fillTodayHealth();
+ $("#healthHistory").innerHTML=arr.map(x=>`
+  <div class="history">
+   <div class="history-head"><h3>${formatDate(x.date)}</h3><span class="badge">${(+x.steps).toLocaleString("es-ES")} pasos</span></div>
+   <p>Sueño ${x.sleepHours||"-"} h · FC reposo ${x.restingHr||"-"} · ${x.activeCalories||0} kcal activas</p>
+   <p class="muted">Agua ${x.waterLiters||0} L · Energía ${x.dailyEnergy||"-"}/10 · Estrés ${x.dailyStress||"-"}/10 · Molestia ${x.dailyPain||0}/10</p>
+  </div>`).join("");
 }
 
 function updateDashboard(){
@@ -275,8 +315,20 @@ function updateDashboard(){
  $("#programProgressText").textContent=`Semana ${s.currentWeek} de ${TOTAL_WEEKS}`;
  $("#programPercent").textContent=pct+"%";$("#programBar").style.width=pct+"%";
  $("#streak").textContent=calculateStreak(sessions)+" días";
+ const todayHealth=get("p85_health",[]).find(x=>x.date===todayISO());
+ if(todayHealth){
+  $("#healthTodayStatus").textContent="Datos registrados";
+  $("#dashSteps").textContent=(+todayHealth.steps||0).toLocaleString("es-ES");
+  $("#dashSleep").textContent=(todayHealth.sleepHours||0)+" h";
+  $("#dashHr").textContent=todayHealth.restingHr||"—";
+  $("#dashWater").textContent=(todayHealth.waterLiters||0)+" L";
+ }else{
+  $("#healthTodayStatus").textContent="Pendiente de registrar";
+  $("#dashSteps").textContent="—";$("#dashSleep").textContent="—";$("#dashHr").textContent="—";$("#dashWater").textContent="—";
+ }
+ renderTodayMealsMini();
  $("#readinessScore").textContent=calculateReadiness();
- $("#profileName").value=s.name;$("#goalWeight").value=s.goalWeight;$("#currentWeek").value=s.currentWeek;$("#currentDay").value=s.currentDay;
+ $("#profileName").value=s.name;$("#goalWeight").value=s.goalWeight;$("#currentWeek").value=s.currentWeek;$("#currentDay").value=s.currentDay;$("#restSetting").value=s.restSeconds||90;
 }
 
 function calculateStreak(arr){
@@ -292,20 +344,20 @@ function calculateStreak(arr){
 }
 
 $("#saveSettings").addEventListener("click",()=>{
- const s={name:$("#profileName").value.trim()||"Javier",goalWeight:+$("#goalWeight").value||90,currentWeek:Math.min(24,Math.max(1,+$("#currentWeek").value||1)),currentDay:Math.min(5,Math.max(1,+$("#currentDay").value||1))};
+ const s={name:$("#profileName").value.trim()||"Javier",goalWeight:+$("#goalWeight").value||90,currentWeek:Math.min(24,Math.max(1,+$("#currentWeek").value||1)),currentDay:Math.min(5,Math.max(1,+$("#currentDay").value||1)),restSeconds:Math.min(300,Math.max(30,+$("#restSetting").value||90))};
  set("p85_settings",s);renderWorkout();updateDashboard();toast("Ajustes guardados");
 });
 $("#changeDayBtn").addEventListener("click",()=>go("ajustes"));
 
 $("#exportData").addEventListener("click",()=>{
- const data={version:"1.0",exportedAt:new Date().toISOString(),sessions:get("p85_sessions",[]),measures:get("p85_measures",[]),health:get("p85_health",[]),settings:settings()};
+ const data={version:"2.0",exportedAt:new Date().toISOString(),sessions:get("p85_sessions",[]),measures:get("p85_measures",[]),health:get("p85_health",[]),nutrition:get("p85_nutrition",[]),photos:get("p85_photos",[]),menu:get("p85_menu",DEFAULT_MENU),settings:settings()};
  const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"}),a=document.createElement("a");
  a.href=URL.createObjectURL(blob);a.download="Proyecto85-copia-"+todayISO()+".json";a.click();URL.revokeObjectURL(a.href);
 });
 $("#importData").addEventListener("change",e=>{
  const file=e.target.files[0];if(!file)return;
  const reader=new FileReader();reader.onload=()=>{
-  try{const d=JSON.parse(reader.result);if(d.sessions)set("p85_sessions",d.sessions);if(d.measures)set("p85_measures",d.measures);if(d.health)set("p85_health",d.health);if(d.settings)set("p85_settings",d.settings);renderWorkout();updateDashboard();toast("Copia restaurada")}
+  try{const d=JSON.parse(reader.result);if(d.sessions)set("p85_sessions",d.sessions);if(d.measures)set("p85_measures",d.measures);if(d.health)set("p85_health",d.health);if(d.nutrition)set("p85_nutrition",d.nutrition);if(d.photos)set("p85_photos",d.photos);if(d.menu)set("p85_menu",d.menu);if(d.settings)set("p85_settings",d.settings);renderWorkout();updateDashboard();toast("Copia restaurada")}
   catch{toast("El archivo no es válido")}
  };reader.readAsText(file);
 });
@@ -342,7 +394,7 @@ const EXERCISE_ALTERNATIVES={
  "Pullover en polea":["Jalón al pecho","Jalón neutro","Dominadas asistidas"]
 };
 
-let workoutModeIndex=0, restSeconds=90, restInterval=null;
+let workoutModeIndex=0, restSeconds=settings().restSeconds||90, restInterval=null;
 
 function workoutCards(){return [...document.querySelectorAll(".exercise")]}
 
@@ -408,7 +460,7 @@ function startRestTimer(){
  },1000);
 }
 function stopRestTimer(){if(restInterval){clearInterval(restInterval);restInterval=null}}
-function resetRestTimer(){stopRestTimer();restSeconds=90;updateRestDisplay()}
+function resetRestTimer(){stopRestTimer();restSeconds=settings().restSeconds||90;updateRestDisplay()}
 function openReplacement(){
  const card=workoutCards()[workoutModeIndex];
  const current=card.querySelector("h3").textContent.replace(/^\d+\.\s*/,"");
@@ -443,5 +495,35 @@ $("#closeReplace").addEventListener("click",()=>$("#replaceModal").classList.rem
 $("#confirmReplacement").addEventListener("click",applyReplacement);
 updateRestDisplay();
 
-seed();renderWorkout();calculateReadiness();updateDashboard();
+
+const DEFAULT_MENU={breakfast:"Tostada integral con pavo y café",lunch:"Proteína magra + verdura + hidrato planificado",snack:"Fruta o yogur",dinner:"Cena ligera con proteína y verdura"};
+const EXERCISE_LIBRARY=[
+{name:"Prensa",muscle:"Piernas",technique:"Espalda apoyada, rodillas alineadas y recorrido controlado.",errors:"No despegar la cadera ni bloquear rodillas."},
+{name:"Curl femoral",muscle:"Piernas",technique:"Controla la subida y la bajada.",errors:"No uses impulso."},
+{name:"Jalón al pecho",muscle:"Espalda",technique:"Pecho alto y codos hacia abajo.",errors:"No balancearse."},
+{name:"Remo con apoyo",muscle:"Espalda",technique:"Pecho estable y escápulas atrás.",errors:"No encoger hombros."},
+{name:"Press de pecho",muscle:"Pecho",technique:"Escápulas estables y recorrido cómodo.",errors:"No adelantar hombros."},
+{name:"Press militar",muscle:"Hombros",technique:"Abdomen activo y recorrido sin dolor.",errors:"No arquear la zona lumbar."},
+{name:"Face Pull",muscle:"Hombros",technique:"Tira hacia la cara separando manos.",errors:"No encoger hombros."},
+{name:"Curl bíceps",muscle:"Brazos",technique:"Codos quietos.",errors:"No balancear el tronco."},
+{name:"Tríceps polea",muscle:"Brazos",technique:"Codos pegados.",errors:"No mover hombros."},
+{name:"Plancha",muscle:"Core",technique:"Cuerpo alineado y respiración normal.",errors:"No hundir la zona lumbar."},
+{name:"Dead Bug",muscle:"Core",technique:"Espalda baja apoyada.",errors:"No perder contacto lumbar."},
+{name:"Bird Dog",muscle:"Core",technique:"Cadera estable.",errors:"No rotar el tronco."}
+];
+let calendarDate=new Date();
+function getTodayNutrition(){return get("p85_nutrition",[]).find(x=>x.date===todayISO())}
+function renderTodayMealsMini(){const m=get("p85_menu",DEFAULT_MENU),n=getTodayNutrition(),a=[["Desayuno",m.breakfast,n?.meals?.breakfast],["Comida",m.lunch,n?.meals?.lunch],["Merienda",m.snack,n?.meals?.snack],["Cena",m.dinner,n?.meals?.dinner]];$("#todayMealsMini").innerHTML=a.map(x=>`<div><span>${x[0]}</span><b>${x[2]?"✓ ":""}${escapeHtml(x[1])}</b></div>`).join("");$("#nutritionStatus").textContent=n?`${Object.values(n.meals||{}).filter(Boolean).length}/4 cumplidas`:"Pendiente"}
+function renderNutrition(){const m=get("p85_menu",DEFAULT_MENU),t=getTodayNutrition(),rows=[["breakfast","Desayuno"],["lunch","Comida"],["snack","Merienda"],["dinner","Cena"]];$("#menuDayTitle").textContent=new Date().toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long"});$("#mealList").innerHTML=rows.map(([k,l])=>`<div class="meal-row"><input class="meal-check" data-key="${k}" type="checkbox" ${t?.meals?.[k]?"checked":""}><div><b>${l}</b><p class="muted">${escapeHtml(m[k])}</p></div></div>`).join("");$("#waterGoal").value=t?.waterGoal||2.5;$("#hungerScore").value=t?.hungerScore||"";$("#digestionNotes").value=t?.digestionNotes||"";$("#nutritionHistory").innerHTML=get("p85_nutrition",[]).map(x=>`<div class="history"><div class="history-head"><h3>${formatDate(x.date)}</h3><span class="badge">${Object.values(x.meals||{}).filter(Boolean).length}/4</span></div><p>Hambre ${x.hungerScore||"-"}/10 · Agua ${x.waterGoal||"-"} L</p></div>`).join("")}
+$("#saveNutrition").addEventListener("click",()=>{const meals={};$$('.meal-check').forEach(x=>meals[x.dataset.key]=x.checked);const o={date:todayISO(),meals,waterGoal:+$("#waterGoal").value||0,hungerScore:+$("#hungerScore").value||0,digestionNotes:$("#digestionNotes").value.trim()},a=get("p85_nutrition",[]),i=a.findIndex(x=>x.date===o.date);i>=0?a[i]=o:a.unshift(o);set("p85_nutrition",a);renderNutrition();renderTodayMealsMini();toast("Nutrición guardada")});
+$("#editMenuBtn").addEventListener("click",()=>{const m=get("p85_menu",DEFAULT_MENU),b=prompt("Desayuno",m.breakfast);if(b===null)return;const l=prompt("Comida",m.lunch);if(l===null)return;const s=prompt("Merienda",m.snack);if(s===null)return;const d=prompt("Cena",m.dinner);if(d===null)return;set("p85_menu",{breakfast:b,lunch:l,snack:s,dinner:d});renderNutrition();renderTodayMealsMini()});
+function renderLibrary(){const q=($("#exerciseSearch").value||"").toLowerCase(),m=$("#muscleFilter").value;$("#exerciseLibrary").innerHTML=EXERCISE_LIBRARY.filter(x=>(!m||x.muscle===m)&&(!q||x.name.toLowerCase().includes(q))).map(x=>`<div class="library-card"><span class="tag">${x.muscle}</span><h3>${x.name}</h3><p><b>Técnica:</b> ${x.technique}</p><p class="muted"><b>Evita:</b> ${x.errors}</p></div>`).join("")}
+$("#exerciseSearch").addEventListener("input",renderLibrary);$("#muscleFilter").addEventListener("change",renderLibrary);
+function renderCalendar(){const y=calendarDate.getFullYear(),m=calendarDate.getMonth(),start=(new Date(y,m,1).getDay()+6)%7,days=new Date(y,m+1,0).getDate(),trained=new Set(get("p85_sessions",[]).map(x=>x.date));$("#calendarTitle").textContent=calendarDate.toLocaleDateString("es-ES",{month:"long",year:"numeric"});let h=["L","M","X","J","V","S","D"].map(x=>`<div class="calendar-cell head">${x}</div>`).join("");for(let i=0;i<start;i++)h+='<div class="calendar-cell"></div>';for(let d=1;d<=days;d++){const iso=`${y}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;h+=`<div class="calendar-cell ${trained.has(iso)?"trained":""}"><b>${d}</b>${trained.has(iso)?'<span class="dot"></span>':""}</div>`}$("#calendarGrid").innerHTML=h}
+$("#prevMonth").addEventListener("click",()=>{calendarDate=new Date(calendarDate.getFullYear(),calendarDate.getMonth()-1,1);renderCalendar()});$("#nextMonth").addEventListener("click",()=>{calendarDate=new Date(calendarDate.getFullYear(),calendarDate.getMonth()+1,1);renderCalendar()});
+function readFileData(f){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(f)})}
+$("#savePhotos").addEventListener("click",async()=>{const f=$("#photoFront").files[0],s=$("#photoSide").files[0];if(!f&&!s){toast("Selecciona una foto");return}const o={date:todayISO(),front:f?await readFileData(f):null,side:s?await readFileData(s):null},a=get("p85_photos",[]);a.unshift(o);try{set("p85_photos",a);renderPhotos();toast("Fotos guardadas")}catch{toast("Sin espacio suficiente")}});
+function renderPhotos(){$("#photoHistory").innerHTML=get("p85_photos",[]).flatMap(x=>[x.front?`<img src="${x.front}">`:"",x.side?`<img src="${x.side}">`:""]).join("")}
+
+seed();renderWorkout();calculateReadiness();updateDashboard();renderTodayMealsMini();
 if("serviceWorker" in navigator)navigator.serviceWorker.register("./sw.js");

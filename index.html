@@ -47,6 +47,23 @@
         <div class="card stat"><span>Racha</span><b id="streak">0 días</b></div>
       </div>
 
+
+      <div class="card health-summary">
+        <div class="row between">
+          <div>
+            <span class="muted">Salud de hoy</span>
+            <h3 id="healthTodayStatus">Sin datos</h3>
+          </div>
+          <button class="secondary compact" data-go="salud">Registrar</button>
+        </div>
+        <div class="health-mini-grid">
+          <div><span>Pasos</span><b id="dashSteps">—</b></div>
+          <div><span>Sueño</span><b id="dashSleep">—</b></div>
+          <div><span>FC reposo</span><b id="dashHr">—</b></div>
+          <div><span>Agua</span><b id="dashWater">—</b></div>
+        </div>
+      </div>
+
       <div class="card progress-card">
         <div class="row between">
           <div>
@@ -58,6 +75,7 @@
         <div class="progress"><span id="programBar"></span></div>
       </div>
 
+      <div class="card nutrition-summary"><div class="row between"><div><span class="muted">Nutrición de hoy</span><h3 id="nutritionStatus">Pendiente</h3></div><button class="secondary compact" data-go="nutricion">Ver menú</button></div><div id="todayMealsMini" class="meal-mini"></div></div>
       <button id="startWorkoutMode" class="primary big">Comenzar entrenamiento</button>
     </section>
 
@@ -163,6 +181,7 @@
         <h3>Evolución del peso</h3>
         <canvas id="weightChart" width="700" height="300"></canvas>
       </div>
+      <div class="card"><h3>Fotos de progreso</h3><p class="muted">Se guardan solo en este dispositivo.</p><div class="form-grid"><label>Frontal<input id="photoFront" type="file" accept="image/*"></label><label>Perfil<input id="photoSide" type="file" accept="image/*"></label></div><button id="savePhotos" class="secondary">Guardar fotos</button><div id="photoHistory" class="photo-grid"></div></div>
       <div id="measureHistory"></div>
     </section>
 
@@ -178,34 +197,46 @@
     </section>
 
     <section id="salud" class="view">
-      <h2>Salud y Garmin</h2>
+      <h2>Salud y recuperación</h2>
       <div class="card garmin-card">
         <div class="row between">
           <div>
-            <p class="eyebrow">GARMIN FORERUNNER 245 MUSIC</p>
-            <h3>Registro diario</h3>
+            <p class="eyebrow">REGISTRO MANUAL DIARIO</p>
+            <h3>Actividad y recuperación</h3>
           </div>
           <span class="device-dot"></span>
         </div>
-        <p class="muted">En esta versión los datos se introducen manualmente. La estructura queda preparada para una futura sincronización.</p>
+        <p class="muted">Introduce los datos que ves en Garmin Connect. Si guardas otra vez el mismo día, la aplicación actualizará el registro en lugar de duplicarlo.</p>
         <div class="form-grid">
           <label>Pasos<input id="steps" type="number" min="0"></label>
           <label>Sueño (h)<input id="sleepHours" type="number" min="0" step=".1"></label>
           <label>FC reposo<input id="restingHr" type="number" min="0"></label>
           <label>Calorías activas<input id="activeCalories" type="number" min="0"></label>
+          <label>Agua (litros)<input id="waterLiters" type="number" min="0" step=".1"></label>
+          <label>Energía (1–10)<input id="dailyEnergy" type="number" min="1" max="10"></label>
+          <label>Estrés (1–10)<input id="dailyStress" type="number" min="1" max="10"></label>
+          <label>Dolor/molestia (0–10)<input id="dailyPain" type="number" min="0" max="10"></label>
         </div>
-        <button id="saveHealth" class="primary">Guardar datos Garmin</button>
+        <button id="saveHealth" class="primary">Guardar datos de hoy</button>
       </div>
       <div id="healthHistory"></div>
     </section>
 
+
+    <section id="calendario" class="view"><h2>Calendario</h2><div class="card calendar-controls"><button id="prevMonth" class="secondary">←</button><h3 id="calendarTitle"></h3><button id="nextMonth" class="secondary">→</button></div><div id="calendarGrid" class="calendar-grid"></div></section>
+    <section id="nutricion" class="view"><h2>Nutrición</h2><div class="card"><div class="row between"><div><span class="muted">Menú del día</span><h3 id="menuDayTitle">Hoy</h3></div><button id="editMenuBtn" class="secondary compact">Editar</button></div><div id="mealList"></div><label>Agua objetivo (L)<input id="waterGoal" type="number" step=".1" value="2.5"></label><label>Hambre (1–10)<input id="hungerScore" type="number" min="1" max="10"></label><label>Digestión / hinchazón<textarea id="digestionNotes" rows="3"></textarea></label><button id="saveNutrition" class="primary">Guardar cumplimiento</button></div><div id="nutritionHistory"></div></section>
+    <section id="biblioteca" class="view"><h2>Biblioteca de ejercicios</h2><div class="card"><input id="exerciseSearch" placeholder="Buscar ejercicio"><select id="muscleFilter"><option value="">Todos</option><option>Piernas</option><option>Espalda</option><option>Pecho</option><option>Hombros</option><option>Brazos</option><option>Core</option></select></div><div id="exerciseLibrary"></div></section>
     <section id="ajustes" class="view">
       <h2>Ajustes</h2>
+      <div class="card version-card">
+        <span class="muted">Versión instalada</span>
+        <b>Proyecto85 V2.0</b>
+      </div>
       <div class="card">
         <label>Nombre<input id="profileName" value="Javier"></label>
         <label>Objetivo de peso<input id="goalWeight" type="number" value="90"></label>
         <label>Semana actual<input id="currentWeek" type="number" min="1" max="24" value="2"></label>
-        <label>Día actual<input id="currentDay" type="number" min="1" max="5" value="4"></label>
+        <label>Día actual<input id="currentDay" type="number" min="1" max="5" value="4"></label><label>Descanso entre series (segundos)<input id="restSetting" type="number" min="30" max="300" value="90"></label>
         <button id="saveSettings" class="primary">Guardar ajustes</button>
       </div>
       <div class="card">
@@ -218,12 +249,15 @@
     </section>
   </main>
 
-  <nav>
+  <nav class="nav-scroll">
     <button data-go="inicio" class="active"><span>⌂</span>Inicio</button>
     <button data-go="entreno"><span>🏋</span>Entreno</button>
     <button data-go="progreso"><span>↗</span>Progreso</button>
-    <button data-go="historial"><span>≡</span>Historial</button>
+    <button data-go="calendario"><span>▦</span>Calendario</button>
+    <button data-go="historial"><span>≡</span>Estad.</button>
     <button data-go="salud"><span>♥</span>Salud</button>
+    <button data-go="nutricion"><span>🍽</span>Nutrición</button>
+    <button data-go="biblioteca"><span>▤</span>Ejercicios</button>
     <button data-go="ajustes"><span>⚙</span>Ajustes</button>
   </nav>
 
