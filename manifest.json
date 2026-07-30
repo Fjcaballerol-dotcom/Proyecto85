@@ -1,20 +1,25 @@
 {
-  "name": "Proyecto 85",
-  "short_name": "P85",
-  "start_url": "./",
+  "name": "Proyecto 85 · Entrenador personal",
+  "short_name": "Proyecto 85",
+  "description": "Entrenamiento, core, cardio, evolución corporal y datos Garmin.",
+  "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
-  "background_color": "#0d1115",
-  "theme_color": "#0d1115",
+  "background_color": "#07100d",
+  "theme_color": "#08110e",
+  "orientation": "portrait",
   "icons": [
     {
       "src": "icon-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
       "src": "icon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }

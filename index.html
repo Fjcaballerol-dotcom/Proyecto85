@@ -1,1 +1,233 @@
-<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0d1115"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Proyecto 85"><title>Proyecto 85</title><link rel="manifest" href="manifest.json"><link rel="apple-touch-icon" href="icon-192.png"><link rel="stylesheet" href="styles.css"></head><body><header><div><small>ENTRENADOR PERSONAL</small><h1>Proyecto 85</h1></div><button id="refreshBtn">↻</button></header><main><section id="inicio" class="view active"><div class="card hero"><div><p class="muted">Semana 2 · Día 4</p><h2>Full Body</h2><p>Control de rodilla · 65–70 min</p></div><div class="score"><b>85</b><span>Preparación</span></div></div><div class="card warning"><b>Seguimiento de rodilla</b><p>Última incidencia: molestia leve exterior de la rodilla derecha.</p></div><div class="grid"><div class="card stat"><span>Última sensación</span><b id="lastRpe">8,9/10</b></div><div class="card stat"><span>Prensa actual</span><b>52 kg</b></div><div class="card stat"><span>Peso corporal</span><b id="homeWeight">106,0 kg</b></div><div class="card stat"><span>Sesiones</span><b id="sessionCount">0</b></div></div><button class="primary" data-go="entreno">Comenzar entrenamiento</button></section><section id="entreno" class="view"><h2>Entrenamiento de hoy</h2><div class="card"><label>Molestia antes de empezar: <b id="painTxt">0</b>/10</label><input id="pain" type="range" min="0" max="10" value="0"><p id="painAdvice" class="muted">Sin molestias: entrena con control técnico.</p></div><div id="exerciseList"></div><div class="card"><h3>Resumen</h3><label>Duración (min)<input id="duration" type="number"></label><label>Sensación<input id="rpe" type="number" min="1" max="10" step=".1"></label><label>Cardio (min)<input id="cardio" type="number"></label><label>Notas<textarea id="notes" rows="3"></textarea></label><button id="saveSession" class="primary">Guardar sesión</button></div></section><section id="progreso" class="view"><h2>Progreso corporal</h2><div class="card"><label>Peso (kg)<input id="weight" type="number" step=".1" value="106"></label><label>Cintura (cm)<input id="waist" type="number" step=".1" value="108"></label><label>Pecho (cm)<input id="chest" type="number" step=".1" value="119"></label><label>Cadera (cm)<input id="hip" type="number" step=".1" value="110"></label><button id="saveMeasures" class="primary">Guardar medidas</button></div><div class="card"><h3>Evolución del peso</h3><canvas id="weightChart" width="640" height="280"></canvas></div><div id="measureHistory"></div></section><section id="historial" class="view"><h2>Historial</h2><div id="history"></div><button id="exportData" class="secondary">Exportar copia</button></section><section id="ajustes" class="view"><h2>Ajustes</h2><div class="card"><label>Nombre<input id="profileName" value="Javier"></label><label>Objetivo de peso<input id="goalWeight" type="number" value="85"></label><button id="saveSettings" class="primary">Guardar ajustes</button></div></section></main><nav><button data-go="inicio" class="active">Inicio</button><button data-go="entreno">Entreno</button><button data-go="progreso">Progreso</button><button data-go="historial">Historial</button><button data-go="ajustes">Ajustes</button></nav><script src="app.js"></script></body></html>
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#08110e">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Proyecto 85">
+  <title>Proyecto 85</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <small>ENTRENADOR PERSONAL</small>
+      <h1>Proyecto 85</h1>
+    </div>
+    <button id="refreshBtn" class="icon-btn" aria-label="Actualizar">↻</button>
+  </header>
+
+  <main>
+    <section id="inicio" class="view active">
+      <div class="card hero">
+        <div>
+          <p class="eyebrow" id="todayLabel">Semana 2 · Día 4</p>
+          <h2 id="todayTitle">Full Body</h2>
+          <p id="todayMeta">Fuerza + core + cardio</p>
+        </div>
+        <div class="score">
+          <b id="readinessScore">85</b>
+          <span>Preparación</span>
+        </div>
+      </div>
+
+      <div id="warningCard" class="card warning">
+        <b>Control de rodilla</b>
+        <p>Registra cualquier molestia antes y después del entrenamiento.</p>
+      </div>
+
+      <div class="grid stats-grid">
+        <div class="card stat"><span>Peso actual</span><b id="homeWeight">106,0 kg</b></div>
+        <div class="card stat"><span>Objetivo</span><b id="homeGoal">90 kg</b></div>
+        <div class="card stat"><span>Sesiones</span><b id="sessionCount">7</b></div>
+        <div class="card stat"><span>Racha</span><b id="streak">0 días</b></div>
+      </div>
+
+      <div class="card progress-card">
+        <div class="row between">
+          <div>
+            <span class="muted">Progreso del programa</span>
+            <h3 id="programProgressText">Semana 2 de 24</h3>
+          </div>
+          <b id="programPercent">6%</b>
+        </div>
+        <div class="progress"><span id="programBar"></span></div>
+      </div>
+
+      <button class="primary big" data-go="entreno">Comenzar entrenamiento</button>
+    </section>
+
+    <section id="entreno" class="view">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow" id="workoutDayLabel">Semana 2 · Día 4</p>
+          <h2>Entrenamiento de hoy</h2>
+        </div>
+        <button id="changeDayBtn" class="secondary compact">Cambiar día</button>
+      </div>
+
+      <div class="card checkin">
+        <h3>Control previo</h3>
+        <label>Energía <b id="energyTxt">7</b>/10
+          <input id="energy" type="range" min="1" max="10" value="7">
+        </label>
+        <label>Sueño <b id="sleepTxt">7</b>/10
+          <input id="sleep" type="range" min="1" max="10" value="7">
+        </label>
+        <label>Molestia <b id="painTxt">0</b>/10
+          <input id="pain" type="range" min="0" max="10" value="0">
+        </label>
+        <p id="readinessAdvice" class="advice good">Preparación correcta: entrena con técnica y control.</p>
+      </div>
+
+      <div class="block-title">
+        <span>1</span>
+        <div><h3>Fuerza</h3><p>Marca cada serie al terminarla</p></div>
+      </div>
+      <div id="exerciseList"></div>
+
+      <div class="block-title">
+        <span>2</span>
+        <div><h3>Core</h3><p>Integrado en todos los entrenamientos</p></div>
+      </div>
+      <div id="coreList"></div>
+
+      <div class="block-title">
+        <span>3</span>
+        <div><h3>Cardio</h3><p>Sin saltos</p></div>
+      </div>
+      <div class="card">
+        <div class="form-grid">
+          <label>Actividad
+            <select id="cardioType">
+              <option>Cinta</option>
+              <option>Bicicleta</option>
+              <option>Elíptica</option>
+              <option>Exterior</option>
+              <option>Remo</option>
+            </select>
+          </label>
+          <label>Minutos
+            <input id="cardio" type="number" min="0" value="20">
+          </label>
+          <label>Distancia (km)
+            <input id="cardioDistance" type="number" min="0" step=".1">
+          </label>
+          <label>Pulso medio
+            <input id="avgHr" type="number" min="0" placeholder="Garmin">
+          </label>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Resumen de la sesión</h3>
+        <div class="form-grid">
+          <label>Duración total
+            <input id="duration" type="number" min="0" placeholder="minutos">
+          </label>
+          <label>Sensación
+            <input id="rpe" type="number" min="1" max="10" step=".1" placeholder="1–10">
+          </label>
+          <label>Molestia final
+            <input id="painAfter" type="number" min="0" max="10" value="0">
+          </label>
+          <label>Core dificultad
+            <input id="coreDifficulty" type="number" min="1" max="10" value="6">
+          </label>
+        </div>
+        <label>Notas
+          <textarea id="notes" rows="4" placeholder="Pesos, sensaciones, ajustes..."></textarea>
+        </label>
+        <button id="saveSession" class="primary big">Completar entrenamiento</button>
+      </div>
+    </section>
+
+    <section id="progreso" class="view">
+      <h2>Evolución corporal</h2>
+      <div class="card">
+        <div class="form-grid">
+          <label>Peso (kg)<input id="weight" type="number" step=".1" value="106"></label>
+          <label>Grasa (%)<input id="bodyFat" type="number" step=".1" value="39.5"></label>
+          <label>Masa muscular (kg)<input id="muscleMass" type="number" step=".1" value="63.8"></label>
+          <label>Cintura (cm)<input id="waist" type="number" step=".1" value="108"></label>
+          <label>Pecho (cm)<input id="chest" type="number" step=".1" value="119"></label>
+          <label>Cadera (cm)<input id="hip" type="number" step=".1" value="110"></label>
+        </div>
+        <button id="saveMeasures" class="primary">Guardar medidas</button>
+      </div>
+      <div class="card">
+        <h3>Evolución del peso</h3>
+        <canvas id="weightChart" width="700" height="300"></canvas>
+      </div>
+      <div id="measureHistory"></div>
+    </section>
+
+    <section id="historial" class="view">
+      <h2>Historial</h2>
+      <div class="summary-grid">
+        <div class="card stat"><span>Tiempo total</span><b id="totalTime">0 h</b></div>
+        <div class="card stat"><span>Cardio</span><b id="totalCardio">0 min</b></div>
+        <div class="card stat"><span>Core</span><b id="coreSessions">0</b></div>
+        <div class="card stat"><span>Carga movida</span><b id="totalVolume">0 kg</b></div>
+      </div>
+      <div id="history"></div>
+    </section>
+
+    <section id="salud" class="view">
+      <h2>Salud y Garmin</h2>
+      <div class="card garmin-card">
+        <div class="row between">
+          <div>
+            <p class="eyebrow">GARMIN FORERUNNER 245 MUSIC</p>
+            <h3>Registro diario</h3>
+          </div>
+          <span class="device-dot"></span>
+        </div>
+        <p class="muted">En esta versión los datos se introducen manualmente. La estructura queda preparada para una futura sincronización.</p>
+        <div class="form-grid">
+          <label>Pasos<input id="steps" type="number" min="0"></label>
+          <label>Sueño (h)<input id="sleepHours" type="number" min="0" step=".1"></label>
+          <label>FC reposo<input id="restingHr" type="number" min="0"></label>
+          <label>Calorías activas<input id="activeCalories" type="number" min="0"></label>
+        </div>
+        <button id="saveHealth" class="primary">Guardar datos Garmin</button>
+      </div>
+      <div id="healthHistory"></div>
+    </section>
+
+    <section id="ajustes" class="view">
+      <h2>Ajustes</h2>
+      <div class="card">
+        <label>Nombre<input id="profileName" value="Javier"></label>
+        <label>Objetivo de peso<input id="goalWeight" type="number" value="90"></label>
+        <label>Semana actual<input id="currentWeek" type="number" min="1" max="24" value="2"></label>
+        <label>Día actual<input id="currentDay" type="number" min="1" max="5" value="4"></label>
+        <button id="saveSettings" class="primary">Guardar ajustes</button>
+      </div>
+      <div class="card">
+        <h3>Copia de seguridad</h3>
+        <button id="exportData" class="secondary">Exportar copia</button>
+        <label class="file-label">Importar copia
+          <input id="importData" type="file" accept="application/json">
+        </label>
+      </div>
+    </section>
+  </main>
+
+  <nav>
+    <button data-go="inicio" class="active"><span>⌂</span>Inicio</button>
+    <button data-go="entreno"><span>🏋</span>Entreno</button>
+    <button data-go="progreso"><span>↗</span>Progreso</button>
+    <button data-go="historial"><span>≡</span>Historial</button>
+    <button data-go="salud"><span>♥</span>Salud</button>
+    <button data-go="ajustes"><span>⚙</span>Ajustes</button>
+  </nav>
+
+  <div id="toast" class="toast"></div>
+  <script src="app.js"></script>
+</body>
+</html>
