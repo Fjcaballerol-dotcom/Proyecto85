@@ -1,529 +1,117 @@
-const DAYS_PER_WEEK=5;
-const TOTAL_WEEKS=24;
-
-const WORKOUTS=[
- {name:"Día 1 · Base de fuerza",ex:[
-  ["Prensa",3,10,50,"Sube solo si no existe molestia"],
-  ["Curl femoral",3,10,42,"Controla la bajada"],
-  ["Jalón al pecho",3,10,50,"Pecho alto"],
-  ["Remo con apoyo",3,10,35,"Sin balanceo"],
-  ["Press de pecho",3,10,36,"Recorrido cómodo"],
-  ["Elevaciones laterales",3,15,8,"Sin impulso"],
-  ["Curl bíceps",3,12,13.6,""],
-  ["Tríceps polea",3,12,15.9,""]
- ],core:[
-  ["Plancha",3,"35 s","Mantén abdomen activo"],
-  ["Bird Dog",3,"10/lado","Movimiento lento"],
-  ["Pallof Press",3,"12/lado","Evita rotar"]
- ]},
- {name:"Día 2 · Espalda y piernas",ex:[
-  ["Jalón al pecho",3,10,45,""],
-  ["Remo con apoyo",3,10,32,""],
-  ["Pullover en polea",3,12,15.9,""],
-  ["Prensa",3,10,45,""],
-  ["Extensión de cuádriceps",3,12,32,""],
-  ["Abducción de cadera",3,15,39,""],
-  ["Press inclinado",3,10,20,"Peso total orientativo"],
-  ["Face Pull",3,15,15.9,""]
- ],core:[
-  ["Dead Bug",3,"10/lado","Espalda pegada"],
-  ["Crunch controlado",3,"12","Cambia por Dead Bug si molesta"],
-  ["Plancha lateral",3,"25 s/lado","Rodillas apoyadas si hace falta"]
- ]},
- {name:"Día 3 · Control técnico",ex:[
-  ["Press inclinado",3,10,20,""],
-  ["Extensión de cuádriceps",3,12,39,"Control de rodilla"],
-  ["Face Pull",3,15,13.9,""],
-  ["Curl femoral",3,10,39,""],
-  ["Jalón neutro",3,10,45,""],
-  ["Remo en polea baja",3,10,32,""],
-  ["Press militar",3,12,13,""],
-  ["Gemelos",3,15,20,""]
- ],core:[
-  ["Bird Dog",3,"10/lado",""],
-  ["Extensión lumbar suave",3,"12","Sin hiperextender"],
-  ["Pallof Press",3,"12/lado",""]
- ]},
- {name:"Día 4 · Full Body",ex:[
-  ["Prensa",3,10,50,"52 kg solo con rodilla 0–1/10"],
-  ["Curl femoral",3,10,42,"No fuerces la última repetición"],
-  ["Jalón al pecho",3,10,50,""],
-  ["Remo con apoyo",3,10,35,""],
-  ["Press de pecho",3,10,36,""],
-  ["Peck Deck",3,12,50,""],
-  ["Press militar",3,12,13,""],
-  ["Elevaciones laterales",3,15,8,""],
-  ["Face Pull",3,15,15.9,""],
-  ["Curl bíceps",3,12,13.6,""],
-  ["Tríceps polea",3,12,15.9,""]
- ],core:[
-  ["Plancha",3,"35 s",""],
-  ["Dead Bug",3,"10/lado",""],
-  ["Plancha lateral",3,"25 s/lado",""]
- ]},
- {name:"Día 5 · Cierre semanal",ex:[
-  ["Prensa",3,12,45,"Trabajo fluido"],
-  ["Curl femoral",3,12,39,""],
-  ["Jalón al pecho",3,12,45,""],
-  ["Remo en máquina",3,12,32,""],
-  ["Press inclinado",3,12,20,""],
-  ["Peck Deck",3,15,45,""],
-  ["Elevaciones laterales",3,15,7,""],
-  ["Face Pull",3,15,15.9,""],
-  ["Curl martillo",3,12,10,""],
-  ["Tríceps cuerda",3,12,15.9,""]
- ],core:[
-  ["Woodchopper en polea",3,"12/lado","Controla la rotación"],
-  ["Marcha unilateral",3,"30 s/lado","Carga moderada"],
-  ["Bird Dog",3,"10/lado",""]
- ]}
-];
-
-const INITIAL_SESSIONS=[
- {programLabel:"Semana 1 · Día 1",date:"2026-07-17",duration:70,rpe:7,cardio:0,pain:0,painAfter:0,coreCompleted:false,volume:0,notes:"Prensa 45; curl femoral 39; jalón 45; remo 32; press pecho 32."},
- {programLabel:"Semana 1 · Día 2",date:"2026-07-18",duration:70,rpe:7,cardio:0,pain:0,painAfter:0,coreCompleted:true,volume:0,notes:"Core: crunch, plancha y Bird Dog."},
- {programLabel:"Semana 1 · Día 3",date:"2026-07-24",duration:71,rpe:8,cardio:0,pain:0,painAfter:0,coreCompleted:true,volume:0,notes:"Press inclinado 10 kg/lado; extensión 39; face pull 13,9."},
- {programLabel:"Semana 1 · Día 4",date:"2026-07-25",duration:72,rpe:8.5,cardio:0,pain:0,painAfter:0,coreCompleted:true,volume:0,notes:"Buena respuesta."},
- {programLabel:"Semana 1 · Día 5",date:"2026-07-26",duration:70,rpe:8.8,cardio:0,pain:0,painAfter:0,coreCompleted:true,volume:0,notes:"Los nuevos pesos se sintieron bien."},
- {programLabel:"Semana 2 · Día 1",date:"2026-07-27",duration:65,rpe:8.9,cardio:20,pain:0,painAfter:0,coreCompleted:true,volume:0,notes:"Pesos programados completados."},
- {programLabel:"Semana 2 · Día 2",date:"2026-07-28",duration:70,rpe:9,cardio:20,pain:0,painAfter:0,coreCompleted:true,volume:0,notes:"Abducción aumentada a 39 kg. Cansancio por calor."},
- {programLabel:"Semana 2 · Día 3",date:"2026-07-29",duration:0,rpe:8.9,cardio:0,pain:2,painAfter:2,coreCompleted:false,volume:0,notes:"Prensa 52 kg. Curl femoral costó. Molestia leve exterior de rodilla derecha."}
-];
-const INITIAL_MEASURES=[{date:"2026-07-29",weight:106,bodyFat:39.5,muscleMass:63.8,waist:108,chest:119,hip:110}];
-const DEFAULT_SETTINGS={name:"Javier",goalWeight:90,currentWeek:2,currentDay:4,restSeconds:90};
-
-const $=s=>document.querySelector(s);
-const $$=s=>[...document.querySelectorAll(s)];
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const todayISO=()=>new Date().toISOString().slice(0,10);
 const get=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}};
 const set=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
-const todayISO=()=>new Date().toISOString().slice(0,10);
+const uid=()=>crypto.randomUUID?crypto.randomUUID():Date.now()+Math.random().toString(16).slice(2);
 
-function seed(){
- if(!localStorage.getItem("p85_sessions"))set("p85_sessions",INITIAL_SESSIONS);
- if(!localStorage.getItem("p85_measures"))set("p85_measures",INITIAL_MEASURES);
- if(!localStorage.getItem("p85_settings"))set("p85_settings",DEFAULT_SETTINGS);
- if(!localStorage.getItem("p85_health"))set("p85_health",[]);
- if(!localStorage.getItem("p85_nutrition"))set("p85_nutrition",[]);
- if(!localStorage.getItem("p85_photos"))set("p85_photos",[]);
- if(!localStorage.getItem("p85_menu"))set("p85_menu",DEFAULT_MENU);
+const DEFAULTS={
+ settings:{name:'Javier',goalWeight:90,currentWeight:106,currentWeek:3,currentDay:1,totalWeeks:24,restSeconds:90},
+ sessions:[], health:[], measures:[{date:'2026-07-29',weight:106,waist:108,bodyFat:39.5,muscle:63.8}],
+ pantry:[], shopping:[], analytics:[], reminders:[], nutritionLog:[], workoutQueue:[]
+};
+Object.entries(DEFAULTS).forEach(([k,v])=>{if(localStorage.getItem('p85_'+k)===null)set('p85_'+k,v)});
+const store=(k)=>get('p85_'+k,DEFAULTS[k]);
+const save=(k,v)=>set('p85_'+k,v);
+
+const BLOCK3=[
+ {name:'Día 1 · Fuerza base',focus:'Pierna + tirón + empuje',ex:[['Prensa',3,10,50],['Curl femoral',3,10,42],['Jalón neutro',3,10,45],['Remo con apoyo',3,10,35],['Press convergente',3,10,34],['Elevaciones laterales',3,14,7],['Tríceps cuerda',3,12,15.9]],core:[['Crunch en máquina',3,12],['Pallof press en polea',3,12]],cardio:{type:'Cinta inclinada',minutes:25,plan:'5 min suave + 15 min inclinación moderada + 5 min suave'}},
+ {name:'Día 2 · Espalda y pierna',focus:'Espalda + cuádriceps',ex:[['Jalón al pecho agarre medio',3,10,45],['Remo polea baja',3,10,32],['Pullover en polea',3,12,15.9],['Extensión cuádriceps',3,12,32],['Abducción cadera',3,15,39],['Press inclinado máquina',3,10,20],['Face Pull',3,15,15.9]],core:[['Rotación de tronco en máquina',3,12],['Extensión lumbar en máquina',3,12]],cardio:{type:'Bicicleta',minutes:28,plan:'Ritmo continuo: 6/10 de esfuerzo'}},
+ {name:'Día 3 · Técnica y control',focus:'Carga moderada',ex:[['Prensa',3,12,45],['Curl femoral',3,12,39],['Jalón neutro',3,12,45],['Remo máquina',3,12,32],['Press hombro máquina',3,12,13],['Peck Deck',3,14,45],['Curl martillo',3,12,10]],core:[['Crunch polea con cuerda',3,12],['Wood chop en polea',3,12]],cardio:{type:'Elíptica',minutes:30,plan:'3 min cómodo / 2 min vivo × 6'}},
+ {name:'Día 4 · Full Body',focus:'Fuerza completa',ex:[['Prensa',3,10,50],['Curl femoral',3,10,42],['Jalón al pecho',3,10,50],['Remo con apoyo',3,10,35],['Press pecho máquina',3,10,36],['Press militar máquina',3,12,13],['Face Pull',3,15,15.9],['Curl bíceps',3,12,12]],core:[['Crunch en máquina',3,12],['Pallof press',3,12]],cardio:{type:'Cinta',minutes:30,plan:'2 min rápido / 2 min cómodo × 7 + vuelta a la calma'}},
+ {name:'Día 5 · Cierre semanal',focus:'Volumen controlado',ex:[['Prensa',3,12,45],['Extensión cuádriceps',3,12,32],['Jalón neutro',3,12,45],['Remo máquina',3,12,32],['Press inclinado',3,12,20],['Peck Deck',3,15,45],['Tríceps polea',3,12,15.9],['Curl martillo',3,12,10]],core:[['Rotación de tronco máquina',3,12],['Extensión lumbar máquina',3,12]],cardio:{type:'Cardio libre',minutes:35,plan:'Caminata rápida, bicicleta o elíptica a intensidad progresiva'}}
+];
+
+const MENU={
+ Lunes:{training:'Fuerza',meals:[['Desayuno','Café con leche desnatada, 40 g pan integral, 70 g pavo y fruta'],['Media mañana','Yogur natural y tostada integral pequeña'],['Comida','Pollo al horno, pasta integral, pimientos asados y ensalada'],['Merienda','Queso fresco y fruta'],['Cena','Salmón con calabacín mediterráneo y ensalada']]},
+ Martes:{training:'Fuerza',meals:[['Desayuno','Café con leche desnatada, pan integral, pavo y fruta'],['Media mañana','Queso fresco y tostada integral'],['Comida','Lomo de cerdo magro, arroz integral y verduras'],['Merienda','Yogur natural'],['Cena','Atún, tomate, aguacate y ensalada variada']]},
+ Miércoles:{training:'Fuerza + cardio',meals:[['Desayuno','Café con leche, pan integral, pavo y plátano'],['Media mañana','Yogur natural y tostada'],['Comida','Espinacas con garbanzos y pollo a la plancha'],['Merienda','Queso fresco'],['Cena','Bacalao con pimientos asados y ensalada']]},
+ Jueves:{training:'Fuerza',meals:[['Desayuno','Café con leche, pan integral, pavo y fruta'],['Media mañana','Jamón cocido y tostada integral'],['Comida','Churrasco de pollo con especias argentinas, patata cocida y ensalada'],['Merienda','Yogur natural'],['Cena','Lomo de cerdo magro con verduras salteadas']]},
+ Viernes:{training:'Fuerza',meals:[['Desayuno','Café con leche, pan integral, pavo y fruta'],['Media mañana','Queso fresco y tostada'],['Comida','Ternera magra, pasta integral y verduras'],['Merienda','Yogur o pavo'],['Cena','Salmón con espárragos y tomate']]},
+ Sábado:{training:'Cardio suave',meals:[['Desayuno','Café con leche, pan integral, pavo y fruta'],['Media mañana','Yogur natural'],['Comida','Arroz con pollo y verduras'],['Merienda','Fruta y queso fresco'],['Cena','Ensalada completa con atún, tomate y aguacate']]},
+ Domingo:{training:'Recuperación',meals:[['Desayuno','Café con leche, pan integral, pavo y fruta'],['Media mañana','Yogur natural'],['Comida','Legumbres con verduras y proteína magra'],['Merienda','Queso fresco'],['Cena','Pollo con pimientos asados y ensalada']]}
+};
+const SHOP_BASE=[
+ ['Pechuga o churrasco de pollo','2 kg','Proteínas'],['Lomo de cerdo magro','700 g','Proteínas'],['Ternera magra','400 g','Proteínas'],['Salmón','600 g','Pescado'],['Bacalao','350 g','Pescado'],['Atún al natural','6 latas','Pescado'],['Pavo lonchas','600 g','Proteínas'],['Yogur natural desnatado','14 unidades','Lácteos'],['Queso fresco sin sal','700 g','Lácteos'],['Pan integral','1 paquete','Hidratos'],['Pasta integral','500 g','Hidratos'],['Arroz integral','500 g','Hidratos'],['Garbanzos cocidos','2 tarros','Legumbres'],['Patata','1 kg','Hidratos'],['Calabacín','4 unidades','Verduras'],['Pimientos asados','4-6 unidades','Verduras'],['Espinacas','600 g','Verduras'],['Ensalada variada','4 bolsas','Verduras'],['Tomate','1.5 kg','Verduras'],['Espárragos','2 manojos','Verduras'],['Aguacate','4 unidades','Grasas saludables'],['Fruta variada','14-18 piezas','Fruta'],['Aceite de oliva virgen extra','1 botella','Despensa'],['Frutos secos naturales','250 g','Grasas saludables']
+];
+
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200)}
+function go(id){$$('.view').forEach(v=>v.classList.toggle('active',v.id===id));$$('.bottom-nav button').forEach(b=>b.classList.toggle('active',b.dataset.go===id));render(id);scrollTo({top:0,behavior:'smooth'})}
+$$('[data-go]').forEach(b=>b.onclick=()=>go(b.dataset.go));$('#refreshBtn').onclick=()=>render($('.view.active').id);
+function render(id){({inicio:renderHome,entrenamiento:renderWorkout,nutricion:renderNutrition,evolucion:renderProgress,mas:renderMore})[id]?.()}
+
+function readiness(){const h=store('health').find(x=>x.date===todayISO());if(!h)return 76;return Math.max(20,Math.min(100,Math.round((h.energy||7)*5+(h.sleep||7)*5-(h.pain||0)*4)))}
+function renderHome(){
+ const s=store('settings'), sessions=store('sessions'), today=dayName(), menu=MENU[today], pending=store('workoutQueue').filter(x=>x.status==='pending');
+ const doneMeals=store('nutritionLog').filter(x=>x.date===todayISO()&&x.done).length;
+ $('#inicio').innerHTML=`
+ <div class="card hero"><div class="hero-grid"><div><div class="kicker">Semana ${s.currentWeek} · Día ${s.currentDay}</div><h2>${BLOCK3[s.currentDay-1].name}</h2><p class="muted">Fuerza + core en máquina + cardio progresivo</p></div><div class="score">${readiness()}<small>Preparación</small></div></div></div>
+ ${pending.length?`<div class="banner"><strong>Tienes ${pending.length} sesión/es pendiente/s de recuperar.</strong><div class="btn-row" style="margin-top:10px"><button class="btn small" onclick="go('entrenamiento')">Ver recuperación</button></div></div>`:''}
+ <div class="grid-2"><div class="stat"><span class="muted">Peso actual</span><strong>${s.currentWeight} kg</strong></div><div class="stat"><span class="muted">Objetivo</span><strong>${s.goalWeight} kg</strong></div><div class="stat"><span class="muted">Sesiones</span><strong>${sessions.length}</strong></div><div class="stat"><span class="muted">Semana</span><strong>${s.currentWeek}/${s.totalWeeks}</strong></div></div>
+ <div class="card"><div class="section-title"><h2>Mi día</h2><span class="pill">${today}</span></div>
+ <div class="task"><div><strong>Entrenamiento</strong><div class="muted">${BLOCK3[s.currentDay-1].focus}</div></div><button class="btn small primary" onclick="go('entrenamiento')">Abrir</button></div>
+ <div class="task"><div><strong>Nutrición</strong><div class="muted">${doneMeals}/5 comidas registradas · ${menu.training}</div></div><button class="btn small" onclick="go('nutricion')">Ver menú</button></div>
+ <div class="task"><div><strong>Salud</strong><div class="muted">${store('health').some(x=>x.date===todayISO())?'Registro realizado':'Pendiente de registrar'}</div></div><button class="btn small" onclick="openHealthForm()">Registrar</button></div></div>
+ <div class="card"><div class="section-title"><h3>Progreso del programa</h3><strong>${Math.round(((s.currentWeek-1)*5+s.currentDay)/(s.totalWeeks*5)*100)}%</strong></div><div class="progress"><span style="width:${Math.round(((s.currentWeek-1)*5+s.currentDay)/(s.totalWeeks*5)*100)}%"></span></div></div>`;
 }
-
-function toast(msg){
- const t=$("#toast");t.textContent=msg;t.classList.add("show");
- setTimeout(()=>t.classList.remove("show"),2200);
-}
-
-function settings(){return get("p85_settings",DEFAULT_SETTINGS)}
-function programLabel(){const s=settings();return `Semana ${s.currentWeek} · Día ${s.currentDay}`}
-
-function go(id){
- $$(".view").forEach(v=>v.classList.toggle("active",v.id===id));
- $$("nav button").forEach(b=>b.classList.toggle("active",b.dataset.go===id));
- window.scrollTo({top:0,behavior:"smooth"});
- if(id==="inicio")updateDashboard();
- if(id==="historial")renderHistory();
- if(id==="progreso"){renderMeasures();drawChart();renderPhotos()}
- if(id==="salud")renderHealth();
- if(id==="nutricion")renderNutrition();
- if(id==="calendario")renderCalendar();
- if(id==="biblioteca")renderLibrary();
-}
-$$("[data-go]").forEach(b=>b.addEventListener("click",()=>go(b.dataset.go)));
 
 function renderWorkout(){
- const s=settings(), workout=WORKOUTS[s.currentDay-1];
- $("#workoutDayLabel").textContent=programLabel();
- $("#exerciseList").innerHTML=workout.ex.map((e,i)=>`
-  <div class="exercise" data-exercise="${i}">
-   <h3>${i+1}. ${e[0]}</h3>
-   <div class="target">${e[1]} × ${e[2]} · ${e[3]} kg</div>
-   ${e[4]?`<p class="muted">${e[4]}</p>`:""}
-   ${Array.from({length:e[1]},(_,j)=>`
-    <div class="set-row">
-      <b>${j+1}</b>
-      <input class="set-weight" aria-label="Peso" type="number" step=".1" value="${e[3]}">
-      <input class="set-reps" aria-label="Repeticiones" type="number" value="${e[2]}">
-      <input class="set-done" aria-label="Serie completada" type="checkbox">
-    </div>`).join("")}
-  </div>`).join("");
-
- $("#coreList").innerHTML=workout.core.map((c,i)=>`
-  <div class="core-card" data-core="${i}">
-   <h3>${i+1}. ${c[0]}</h3>
-   <div class="target">${c[1]} series · ${c[2]}</div>
-   ${c[3]?`<p class="muted">${c[3]}</p>`:""}
-   <div class="core-meta">
-    <label>Series realizadas<input class="core-sets" type="number" min="0" max="${c[1]}" value="${c[1]}"></label>
-    <label>Dificultad<input class="core-rpe" type="number" min="1" max="10" value="6"></label>
-   </div>
-   <label class="core-done"><input class="core-check" type="checkbox"> Ejercicio completado</label>
-  </div>`).join("");
+ const s=store('settings'), w=BLOCK3[s.currentDay-1], queue=store('workoutQueue');
+ $('#entrenamiento').innerHTML=`<div class="section-title"><div><span class="eyebrow">BLOQUE 2 · SEMANA ${s.currentWeek}</span><h2>${w.name}</h2><p class="muted">${w.focus}</p></div></div>
+ <div class="card"><h3>Flexibilidad del día</h3><p class="muted">Puedes entrenar por la mañana o por la tarde. Si hoy no puedes, reprograma la sesión sin perderla.</p><div class="btn-row"><button class="btn primary" onclick="startWorkout()">Comenzar sesión</button><button class="btn" onclick="postponeWorkout('tarde')">Pasar a la tarde</button><button class="btn secondary" onclick="postponeWorkout('mañana')">Recuperar mañana</button></div></div>
+ ${queue.filter(x=>x.status==='pending').map(q=>`<div class="banner"><strong>Pendiente: ${q.label}</strong><p>${q.reason||'Sesión reprogramada'}</p><button class="btn small" onclick="recoverQueue('${q.id}')">Recuperar ahora</button></div>`).join('')}
+ <div id="workoutForm">${workoutMarkup(w)}</div>`;
 }
+function workoutMarkup(w){return `<div class="card"><div class="section-title"><h3>Fuerza</h3><span class="pill">Prioridad alta</span></div>${w.ex.map((e,i)=>`<div class="exercise" data-i="${i}"><h3>${i+1}. ${e[0]}</h3><div class="muted">${e[1]} × ${e[2]} · referencia ${e[3]} kg</div>${Array.from({length:e[1]},(_,j)=>`<div class="set-row"><b>${j+1}</b><input class="kg" type="number" step=".1" value="${e[3]}"><input class="reps" type="number" value="${e[2]}"><input class="done" type="checkbox"></div>`).join('')}<button class="btn small secondary" onclick="skipExercise(${i})">Saltar y recuperar</button></div>`).join('')}</div>
+ <div class="card"><div class="section-title"><h3>Core en máquina/polea</h3><span class="pill blue">Progresivo</span></div>${w.core.map((c,i)=>`<label class="check exercise"><input class="coreDone" type="checkbox"> <span><strong>${c[0]}</strong><br><span class="muted">${c[1]} × ${c[2]}</span></span></label>`).join('')}</div>
+ <div class="card"><div class="section-title"><h3>Cardio</h3><span class="pill amber">${w.cardio.minutes} min</span></div><strong>${w.cardio.type}</strong><p class="muted">${w.cardio.plan}</p><label class="check"><input id="cardioDone" type="checkbox"> Cardio completado</label></div>
+ <div class="card"><div class="form-grid"><label>Duración (min)<input id="duration" type="number" value="70"></label><label>Sensación 1-10<input id="rpe" type="number" min="1" max="10" step=".1" value="8"></label><label>Dolor antes 0-10<input id="painBefore" type="number" min="0" max="10" value="0"></label><label>Dolor después 0-10<input id="painAfter" type="number" min="0" max="10" value="0"></label><label class="wide">Notas<textarea id="workoutNotes" placeholder="Sensaciones, molestias, cambios..."></textarea></label></div><div class="btn-row" style="margin-top:14px"><button class="btn primary" onclick="finishWorkout()">Guardar entrenamiento</button><button class="btn" onclick="shortSession()">Modo 40 minutos</button></div></div>`}
+function startWorkout(){toast('Sesión preparada')}
+function postponeWorkout(when){const s=store('settings'),q=store('workoutQueue');q.push({id:uid(),label:`Semana ${s.currentWeek} · Día ${s.currentDay}`,day:s.currentDay,status:'pending',reason:when==='tarde'?'Pendiente para esta tarde':'Pendiente para mañana',created:todayISO()});save('workoutQueue',q);toast('Sesión reprogramada');renderWorkout()}
+function recoverQueue(id){const q=store('workoutQueue'),item=q.find(x=>x.id===id);if(item){const s=store('settings');s.currentDay=item.day;save('settings',s);item.status='in_progress';save('workoutQueue',q);renderWorkout();toast('Sesión recuperada') }}
+function skipExercise(i){const s=store('settings'),w=BLOCK3[s.currentDay-1],q=store('workoutQueue');q.push({id:uid(),label:`Recuperar: ${w.ex[i][0]}`,day:s.currentDay,status:'pending',reason:'Ejercicio no realizado',exercise:w.ex[i][0],created:todayISO()});save('workoutQueue',q);toast('Ejercicio guardado para recuperar')}
+function shortSession(){document.querySelectorAll('.exercise').forEach((el,i)=>{if(i>4)el.classList.add('hidden')});toast('Modo 40 minutos: se mantienen los ejercicios prioritarios')}
+function finishWorkout(){const s=store('settings'),w=BLOCK3[s.currentDay-1],cards=[...document.querySelectorAll('#workoutForm .exercise[data-i]')];let completed=0,total=0,volume=0;cards.forEach(c=>c.querySelectorAll('.set-row').forEach(r=>{total++;if(r.querySelector('.done').checked){completed++;volume+=(+r.querySelector('.kg').value||0)*(+r.querySelector('.reps').value||0)}}));const sessions=store('sessions');sessions.push({id:uid(),date:todayISO(),week:s.currentWeek,day:s.currentDay,label:w.name,duration:+$('#duration').value||0,rpe:+$('#rpe').value||0,painBefore:+$('#painBefore').value||0,painAfter:+$('#painAfter').value||0,completed,total,volume,cardio:$('#cardioDone').checked,notes:$('#workoutNotes').value});save('sessions',sessions);if(s.currentDay<5)s.currentDay++;else{s.currentDay=1;s.currentWeek++}save('settings',s);toast('Entrenamiento guardado');renderWorkout()}
 
-function readWorkoutData(){
- const s=settings(), workout=WORKOUTS[s.currentDay-1];
- let volume=0, completedSets=0, totalSets=0;
- const exercises=[...document.querySelectorAll(".exercise")].map((card,i)=>{
-  const sets=[...card.querySelectorAll(".set-row")].map(row=>{
-   const weight=+row.querySelector(".set-weight").value||0;
-   const reps=+row.querySelector(".set-reps").value||0;
-   const done=row.querySelector(".set-done").checked;
-   totalSets++; if(done){completedSets++;volume+=weight*reps}
-   return {weight,reps,done};
-  });
-  return {name:card.querySelector("h3").textContent.replace(/^\\d+\\.\\s*/,""),sets};
- });
- const core=[...document.querySelectorAll(".core-card")].map((card,i)=>({
-  name:workout.core[i][0],
-  sets:+card.querySelector(".core-sets").value||0,
-  difficulty:+card.querySelector(".core-rpe").value||0,
-  done:card.querySelector(".core-check").checked
- }));
- return {exercises,core,volume,completedSets,totalSets,coreCompleted:core.every(x=>x.done)};
+function renderNutrition(){
+ const log=store('nutritionLog'), today=dayName(), shop=ensureShopping(), pantry=store('pantry');
+ $('#nutricion').innerHTML=`<div class="section-title"><div><span class="eyebrow">PLAN SEMANAL</span><h2>Nutrición</h2></div></div>
+ <div class="tabs"><button class="tab active" onclick="nutritionTab('menu',this)">Menú</button><button class="tab" onclick="nutritionTab('compra',this)">Compra</button><button class="tab" onclick="nutritionTab('despensa',this)">Despensa</button><button class="tab" onclick="nutritionTab('batch',this)">Batch cooking</button></div>
+ <div id="nutriContent">${menuPanel(today,log)}</div>`;
 }
+function nutritionTab(tab,btn){$$('.tab').forEach(x=>x.classList.remove('active'));btn.classList.add('active');const today=dayName();$('#nutriContent').innerHTML=tab==='menu'?menuPanel(today,store('nutritionLog')):tab==='compra'?shoppingPanel():tab==='despensa'?pantryPanel():batchPanel()}
+function menuPanel(today,log){const days=Object.keys(MENU);return `<div class="card"><label>Día de la semana<select id="menuDay" onchange="changeMenuDay(this.value)">${days.map(d=>`<option ${d===today?'selected':''}>${d}</option>`).join('')}</select></label></div><div id="dayMenu">${dayMenu(today,log)}</div><div class="card"><h3>Cobertura nutricional semanal</h3><div class="mini-grid"><div class="mini">Proteína<strong>Diaria</strong></div><div class="mini">Omega-3<strong>2 veces</strong></div><div class="mini">Legumbres<strong>2 veces</strong></div><div class="mini">Fruta/verdura<strong>Diaria</strong></div></div><p class="note">La planificación prioriza variedad de proteínas, fibra, calcio, hierro, grasas saludables y carbohidratos ajustados al entrenamiento. No sustituye la pauta de tu endocrino.</p></div>`}
+function changeMenuDay(d){$('#dayMenu').innerHTML=dayMenu(d,store('nutritionLog'))}
+function dayMenu(day,log){return `<div class="card"><div class="section-title"><h3>${day}</h3><span class="pill">${MENU[day].training}</span></div>${MENU[day].meals.map((m,i)=>{const key=`${todayISO()}-${day}-${i}`;const done=log.some(x=>x.key===key&&x.done);return `<div class="meal"><label class="check"><input type="checkbox" ${done?'checked':''} onchange="toggleMeal('${key}','${day}',${i},this.checked)"><span><strong>${m[0]}</strong><br><span class="muted">${m[1]}</span></span></label></div>`}).join('')}<div class="form-grid"><label>Hambre 1-10<input id="hunger" type="number" min="1" max="10"></label><label>Energía 1-10<input id="foodEnergy" type="number" min="1" max="10"></label><label class="wide">Digestión / hinchazón<textarea id="digestion"></textarea></label></div><button class="btn primary" style="margin-top:12px" onclick="saveNutritionFeeling('${day}')">Guardar sensaciones</button></div>`}
+function toggleMeal(key,day,index,done){let l=store('nutritionLog');const old=l.find(x=>x.key===key);if(old)old.done=done;else l.push({key,date:todayISO(),day,index,done});save('nutritionLog',l);toast(done?'Comida registrada':'Registro desmarcado')}
+function saveNutritionFeeling(day){let l=store('nutritionLog');l.push({id:uid(),date:todayISO(),day,type:'feeling',hunger:+$('#hunger').value||0,energy:+$('#foodEnergy').value||0,digestion:$('#digestion').value});save('nutritionLog',l);toast('Sensaciones guardadas')}
+function ensureShopping(){let s=store('shopping');if(!s.length){s=SHOP_BASE.map(x=>({id:uid(),name:x[0],qty:x[1],category:x[2],have:false,bought:false}));save('shopping',s)}return s}
+function shoppingPanel(){const s=ensureShopping();const cats=[...new Set(s.map(x=>x.category))];return `<div class="card"><h3>Lista inteligente</h3><p class="muted">Marca “Ya tengo” para excluirlo de la compra. Marca “Comprado” cuando lo metas en casa.</p><div class="btn-row"><button class="btn small" onclick="resetShopping()">Reiniciar semana</button><button class="btn small primary" onclick="moveBoughtToPantry()">Pasar comprados a despensa</button></div></div>${cats.map(c=>`<div class="card"><h3>${c}</h3>${s.filter(x=>x.category===c).map(x=>`<div class="shopping-item ${x.have||x.bought?'done':''}"><div><strong>${x.name}</strong><div class="shopping-meta">${x.qty}</div></div><div><label class="check"><input type="checkbox" ${x.have?'checked':''} onchange="setShopping('${x.id}','have',this.checked)"> Ya tengo</label><label class="check"><input type="checkbox" ${x.bought?'checked':''} onchange="setShopping('${x.id}','bought',this.checked)"> Comprado</label></div></div>`).join('')}</div>`).join('')}`}
+function setShopping(id,field,val){const s=store('shopping'),x=s.find(i=>i.id===id);x[field]=val;save('shopping',s);$('#nutriContent').innerHTML=shoppingPanel()}
+function resetShopping(){save('shopping',SHOP_BASE.map(x=>({id:uid(),name:x[0],qty:x[1],category:x[2],have:false,bought:false})));$('#nutriContent').innerHTML=shoppingPanel();toast('Lista reiniciada')}
+function moveBoughtToPantry(){const s=store('shopping'),p=store('pantry');s.filter(x=>x.bought).forEach(x=>{const e=p.find(y=>y.name===x.name);if(e)e.qty=x.qty;else p.push({id:uid(),name:x.name,qty:x.qty})});save('pantry',p);toast('Despensa actualizada')}
+function pantryPanel(){const p=store('pantry');return `<div class="card"><h3>Mi despensa</h3><div class="form-grid"><label class="wide">Producto<input id="pantryName"></label><label>Cantidad<input id="pantryQty"></label><button class="btn primary" onclick="addPantry()">Añadir</button></div></div><div class="card">${p.length?p.map(x=>`<div class="task"><div><strong>${x.name}</strong><div class="muted">${x.qty||'Disponible'}</div></div><button class="btn small danger" onclick="removePantry('${x.id}')">Eliminar</button></div>`).join(''):'<div class="empty">Aún no hay productos guardados.</div>'}</div>`}
+function addPantry(){const n=$('#pantryName').value.trim();if(!n)return;const p=store('pantry');p.push({id:uid(),name:n,qty:$('#pantryQty').value});save('pantry',p);$('#nutriContent').innerHTML=pantryPanel()}
+function removePantry(id){save('pantry',store('pantry').filter(x=>x.id!==id));$('#nutriContent').innerHTML=pantryPanel()}
+function batchPanel(){return `<div class="card"><h3>Preparación del domingo · 2 horas</h3>${['Hornear pollo y churrasco para varias raciones','Cocer arroz y pasta; enfriar y guardar porciones','Asar pimientos y preparar calabacín','Lavar y secar ensaladas y tomates','Preparar garbanzos con espinacas','Separar pescado por raciones y congelar lo que no se use en 48 horas','Dejar fruta, yogures y queso fresco visibles para meriendas'].map((x,i)=>`<label class="check task"><input type="checkbox"> <span><strong>${i+1}. ${x}</strong></span></label>`).join('')}<p class="note">Conserva y congela de forma segura según el alimento. El pescado fresco y las preparaciones cocinadas no deben permanecer varios días sin refrigeración adecuada.</p></div>`}
 
-function advanceProgram(){
- const s=settings();
- if(s.currentDay<DAYS_PER_WEEK)s.currentDay++;
- else if(s.currentWeek<TOTAL_WEEKS){s.currentWeek++;s.currentDay=1}
- set("p85_settings",s);
-}
+function renderProgress(){const m=store('measures'),sessions=store('sessions');const last=m.at(-1)||{};$('#evolucion').innerHTML=`<div class="section-title"><div><span class="eyebrow">DATOS Y TENDENCIAS</span><h2>Evolución</h2></div></div><div class="grid-2"><div class="stat"><span class="muted">Peso</span><strong>${last.weight||'—'} kg</strong></div><div class="stat"><span class="muted">Cintura</span><strong>${last.waist||'—'} cm</strong></div><div class="stat"><span class="muted">Entrenos</span><strong>${sessions.length}</strong></div><div class="stat"><span class="muted">Volumen último</span><strong>${sessions.at(-1)?.volume||0}</strong></div></div><div class="card"><h3>Nueva medición</h3><div class="form-grid"><label>Fecha<input id="measureDate" type="date" value="${todayISO()}"></label><label>Peso kg<input id="measureWeight" type="number" step=".1"></label><label>Cintura cm<input id="measureWaist" type="number" step=".1"></label><label>Grasa %<input id="measureFat" type="number" step=".1"></label><label>Masa muscular kg<input id="measureMuscle" type="number" step=".1"></label></div><button class="btn primary" style="margin-top:12px" onclick="saveMeasure()">Guardar medición</button></div><div class="card"><h3>Histórico</h3><div class="table-wrap"><table class="simple-table"><thead><tr><th>Fecha</th><th>Peso</th><th>Cintura</th><th>Grasa</th><th>Músculo</th></tr></thead><tbody>${[...m].reverse().map(x=>`<tr><td>${x.date}</td><td>${x.weight||'—'}</td><td>${x.waist||'—'}</td><td>${x.bodyFat||'—'}</td><td>${x.muscle||'—'}</td></tr>`).join('')}</tbody></table></div></div>`}
+function saveMeasure(){const m=store('measures');m.push({date:$('#measureDate').value,weight:+$('#measureWeight').value||null,waist:+$('#measureWaist').value||null,bodyFat:+$('#measureFat').value||null,muscle:+$('#measureMuscle').value||null});save('measures',m);const s=store('settings');if($('#measureWeight').value)s.currentWeight=+$('#measureWeight').value;save('settings',s);renderProgress();toast('Medición guardada')}
 
-function calculateReadiness(){
- const energy=+$("#energy").value,sleep=+$("#sleep").value,pain=+$("#pain").value;
- const score=Math.max(20,Math.round((energy*4)+(sleep*4)+((10-pain)*2)));
- $("#energyTxt").textContent=energy;$("#sleepTxt").textContent=sleep;$("#painTxt").textContent=pain;
- const a=$("#readinessAdvice");
- if(pain>=4||score<50){a.className="advice danger";a.textContent="Reduce claramente la sesión. Evita el ejercicio que provoque dolor y no aumentes cargas."}
- else if(pain>=2||score<70){a.className="advice warn";a.textContent="Entrena con carga moderada y técnica estricta. No busques progresión hoy."}
- else{a.className="advice good";a.textContent="Preparación correcta: entrena con técnica y control."}
- return score;
-}
-["energy","sleep","pain"].forEach(id=>$("#"+id).addEventListener("input",calculateReadiness));
+function renderMore(){const a=store('analytics'),r=store('reminders');$('#mas').innerHTML=`<div class="section-title"><div><span class="eyebrow">SALUD Y AJUSTES</span><h2>Más</h2></div></div><div class="card"><div class="task"><div><strong>Registro diario de salud</strong><div class="muted">Sueño, energía, pasos, agua y dolor</div></div><button class="btn small" onclick="openHealthForm()">Abrir</button></div><div class="task"><div><strong>Analíticas</strong><div class="muted">${a.length} registros locales</div></div><button class="btn small" onclick="showAnalytics()">Gestionar</button></div><div class="task"><div><strong>Notificaciones</strong><div class="muted">${r.length} recordatorios configurados</div></div><button class="btn small" onclick="showReminders()">Configurar</button></div><div class="task"><div><strong>Copia de seguridad</strong><div class="muted">Exportar o importar datos del dispositivo</div></div><button class="btn small" onclick="showBackup()">Abrir</button></div></div><div id="moreContent"></div>`}
+function openHealthForm(){go('mas');$('#moreContent').innerHTML=`<div class="card"><h3>Salud de hoy</h3><div class="form-grid"><label>Pasos<input id="steps" type="number"></label><label>Sueño (h)<input id="sleep" type="number" step=".1"></label><label>FC reposo<input id="hr" type="number"></label><label>Agua (L)<input id="water" type="number" step=".1"></label><label>Energía 1-10<input id="energy" type="number" min="1" max="10"></label><label>Dolor 0-10<input id="healthPain" type="number" min="0" max="10"></label><label class="wide">Observaciones<textarea id="healthNotes"></textarea></label></div><button class="btn primary" style="margin-top:12px" onclick="saveHealth()">Guardar</button></div>`}
+function saveHealth(){let h=store('health');h=h.filter(x=>x.date!==todayISO());h.push({date:todayISO(),steps:+$('#steps').value||0,sleep:+$('#sleep').value||0,hr:+$('#hr').value||0,water:+$('#water').value||0,energy:+$('#energy').value||0,pain:+$('#healthPain').value||0,notes:$('#healthNotes').value});save('health',h);toast('Salud registrada');renderMore()}
+function showAnalytics(){const a=store('analytics');$('#moreContent').innerHTML=`<div class="card"><h3>Nueva analítica</h3><p class="note">Los datos se guardan únicamente en este dispositivo. No subas informes médicos al repositorio público.</p><div class="form-grid"><label>Fecha<input id="aDate" type="date" value="${todayISO()}"></label><label>Parámetro<input id="aParam" placeholder="Ej. Glucosa"></label><label>Valor<input id="aValue" type="number" step=".01"></label><label>Unidad<input id="aUnit" placeholder="mg/dL"></label><label>Rango del laboratorio<input id="aRange" placeholder="70-100"></label><label class="wide">Observaciones<textarea id="aNotes"></textarea></label></div><button class="btn primary" style="margin-top:12px" onclick="saveAnalytic()">Guardar parámetro</button></div><div class="card"><h3>Histórico</h3><div class="table-wrap"><table class="simple-table"><thead><tr><th>Fecha</th><th>Parámetro</th><th>Valor</th><th>Rango</th></tr></thead><tbody>${[...a].reverse().map(x=>`<tr><td>${x.date}</td><td>${x.param}</td><td>${x.value} ${x.unit}</td><td>${x.range||'—'}</td></tr>`).join('')}</tbody></table></div></div>`}
+function saveAnalytic(){const p=$('#aParam').value.trim();if(!p)return toast('Escribe el parámetro');const a=store('analytics');a.push({id:uid(),date:$('#aDate').value,param:p,value:$('#aValue').value,unit:$('#aUnit').value,range:$('#aRange').value,notes:$('#aNotes').value});save('analytics',a);showAnalytics();toast('Analítica guardada')}
+function showReminders(){const r=store('reminders');$('#moreContent').innerHTML=`<div class="card"><h3>Recordatorios</h3><div class="form-grid"><label class="wide">Nombre<input id="rName" placeholder="Entrenamiento, agua, compra..."></label><label>Hora<input id="rTime" type="time" value="06:30"></label><label>Días<select id="rDays"><option>Todos los días</option><option>Lunes a viernes</option><option>Viernes</option><option>Domingo</option></select></label></div><div class="btn-row" style="margin-top:12px"><button class="btn primary" onclick="addReminder()">Añadir</button><button class="btn" onclick="requestNotifications()">Permitir avisos</button></div><p class="note">En iPhone, los avisos web dependen de que la app esté instalada en la pantalla de inicio y del soporte del sistema. Los recordatorios también aparecen dentro de Proyecto85.</p></div><div class="card">${r.length?r.map(x=>`<div class="task"><div><strong>${x.name}</strong><div class="muted">${x.time} · ${x.days}</div></div><button class="btn small danger" onclick="removeReminder('${x.id}')">Eliminar</button></div>`).join(''):'<div class="empty">Sin recordatorios.</div>'}</div>`}
+function addReminder(){const n=$('#rName').value.trim();if(!n)return;const r=store('reminders');r.push({id:uid(),name:n,time:$('#rTime').value,days:$('#rDays').value});save('reminders',r);showReminders();toast('Recordatorio añadido')}
+function removeReminder(id){save('reminders',store('reminders').filter(x=>x.id!==id));showReminders()}
+async function requestNotifications(){if(!('Notification'in window))return toast('Este navegador no admite notificaciones');const p=await Notification.requestPermission();if(p==='granted'){new Notification('Proyecto85',{body:'Avisos activados correctamente'});toast('Notificaciones activadas')}else toast('Permiso no concedido')}
+function showBackup(){$('#moreContent').innerHTML=`<div class="card"><h3>Copia de seguridad</h3><div class="btn-row"><button class="btn primary" onclick="exportData()">Exportar datos</button><label class="btn">Importar<input type="file" accept="application/json" class="hidden" onchange="importData(this.files[0])"></label></div><p class="note">El archivo puede contener información personal y médica. Guárdalo de forma privada.</p></div>`}
+function exportData(){const data={version:'3.0.0',exported:new Date().toISOString()};Object.keys(DEFAULTS).forEach(k=>data[k]=store(k));const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`Proyecto85-backup-${todayISO()}.json`;a.click();URL.revokeObjectURL(a.href)}
+function importData(file){if(!file)return;const fr=new FileReader();fr.onload=()=>{try{const d=JSON.parse(fr.result);Object.keys(DEFAULTS).forEach(k=>{if(d[k]!==undefined)save(k,d[k])});toast('Copia importada');renderMore()}catch{toast('Archivo no válido')}};fr.readAsText(file)}
 
-$("#saveSession").addEventListener("click",()=>{
- const data=readWorkoutData();
- const duration=+$("#duration").value||0,rpe=+$("#rpe").value||0;
- if(!duration||!rpe){toast("Añade duración y sensación");return}
- const sess={
-  date:todayISO(),programLabel:programLabel(),workoutName:WORKOUTS[settings().currentDay-1].name,
-  duration,rpe,pain:+$("#pain").value,painAfter:+$("#painAfter").value,
-  energy:+$("#energy").value,sleep:+$("#sleep").value,
-  cardio:+$("#cardio").value||0,cardioType:$("#cardioType").value,
-  cardioDistance:+$("#cardioDistance").value||0,avgHr:+$("#avgHr").value||0,
-  coreDifficulty:+$("#coreDifficulty").value||0,notes:$("#notes").value.trim(),...data
- };
- const arr=get("p85_sessions",[]);arr.unshift(sess);set("p85_sessions",arr);
- advanceProgram();renderWorkout();updateDashboard();renderHistory();
- ["duration","rpe","cardioDistance","avgHr","notes"].forEach(id=>$("#"+id).value="");
- $("#cardio").value=20;$("#pain").value=0;$("#painAfter").value=0;calculateReadiness();
- toast("Entrenamiento guardado. Avanzamos al siguiente día.");
- setTimeout(()=>go("inicio"),700);
-});
-
-$("#saveMeasures").addEventListener("click",()=>{
- const obj={date:todayISO(),weight:+$("#weight").value,bodyFat:+$("#bodyFat").value,muscleMass:+$("#muscleMass").value,waist:+$("#waist").value,chest:+$("#chest").value,hip:+$("#hip").value};
- const arr=get("p85_measures",[]);arr.unshift(obj);set("p85_measures",arr);
- renderMeasures();drawChart();updateDashboard();toast("Medidas guardadas");
-});
-
-function renderMeasures(){
- const arr=get("p85_measures",[]);
- $("#measureHistory").innerHTML=arr.map(x=>`<div class="history"><div class="history-head"><h3>${formatDate(x.date)}</h3><span class="badge">${x.weight} kg</span></div><p>Grasa ${x.bodyFat??"-"}% · Músculo ${x.muscleMass??"-"} kg</p><p class="muted">Cintura ${x.waist} · Pecho ${x.chest} · Cadera ${x.hip} cm</p></div>`).join("");
-}
-
-function drawChart(){
- const c=$("#weightChart"),ctx=c.getContext("2d"),arr=[...get("p85_measures",[])].reverse();
- const vals=arr.map(x=>+x.weight).filter(Boolean);
- ctx.clearRect(0,0,c.width,c.height);ctx.fillStyle="#09130f";ctx.fillRect(0,0,c.width,c.height);
- if(!vals.length)return;
- const pad=45,min=Math.min(...vals)-1,max=Math.max(...vals)+1;
- ctx.strokeStyle="#26372f";ctx.lineWidth=1;
- for(let i=0;i<4;i++){const y=pad+i*(c.height-pad*2)/3;ctx.beginPath();ctx.moveTo(pad,y);ctx.lineTo(c.width-pad,y);ctx.stroke()}
- ctx.strokeStyle="#43d17d";ctx.lineWidth=5;ctx.beginPath();
- vals.forEach((v,i)=>{const x=pad+i*(c.width-pad*2)/Math.max(1,vals.length-1),y=c.height-pad-(v-min)/(max-min)*(c.height-pad*2);i?ctx.lineTo(x,y):ctx.moveTo(x,y)});
- ctx.stroke();ctx.fillStyle="#f5f8f6";ctx.font="22px -apple-system";ctx.fillText(vals.at(-1).toFixed(1)+" kg",pad,30);
-}
-
-function renderHistory(){
- const arr=get("p85_sessions",[]);
- let mins=0,cardio=0,core=0,volume=0;
- arr.forEach(x=>{mins+=+x.duration||0;cardio+=+x.cardio||0;core+=x.coreCompleted?1:0;volume+=+x.volume||0});
- $("#totalTime").textContent=(mins/60).toFixed(1).replace(".",",")+" h";
- $("#totalCardio").textContent=cardio+" min";$("#coreSessions").textContent=core;
- $("#totalVolume").textContent=Math.round(volume).toLocaleString("es-ES")+" kg";
- $("#history").innerHTML=arr.map(x=>`
-  <div class="history">
-   <div class="history-head"><h3>${x.programLabel||formatDate(x.date)}</h3><span class="badge">${x.rpe||"-"}/10</span></div>
-   <p>${x.duration||"-"} min · Cardio ${x.cardio||0} min · Core ${x.coreCompleted?"completo":"pendiente"}</p>
-   <p class="muted">Molestia ${x.pain||0}→${x.painAfter??x.pain??0}/10${x.volume?` · Volumen ${Math.round(x.volume).toLocaleString("es-ES")} kg`:""}</p>
-   ${x.notes?`<p>${escapeHtml(x.notes)}</p>`:""}
-  </div>`).join("");
-}
-
-$("#saveHealth").addEventListener("click",()=>{
- const obj={
-  date:todayISO(),
-  steps:+$("#steps").value||0,
-  sleepHours:+$("#sleepHours").value||0,
-  restingHr:+$("#restingHr").value||0,
-  activeCalories:+$("#activeCalories").value||0,
-  waterLiters:+$("#waterLiters").value||0,
-  dailyEnergy:+$("#dailyEnergy").value||0,
-  dailyStress:+$("#dailyStress").value||0,
-  dailyPain:+$("#dailyPain").value||0
- };
- const arr=get("p85_health",[]);
- const existing=arr.findIndex(x=>x.date===obj.date);
- if(existing>=0)arr[existing]=obj;else arr.unshift(obj);
- arr.sort((a,b)=>b.date.localeCompare(a.date));
- set("p85_health",arr);
- renderHealth();updateDashboard();
- toast(existing>=0?"Datos de hoy actualizados":"Datos de hoy guardados");
-});
-function fillTodayHealth(){
- const today=get("p85_health",[]).find(x=>x.date===todayISO());
- if(!today)return;
- $("#steps").value=today.steps||"";
- $("#sleepHours").value=today.sleepHours||"";
- $("#restingHr").value=today.restingHr||"";
- $("#activeCalories").value=today.activeCalories||"";
- $("#waterLiters").value=today.waterLiters||"";
- $("#dailyEnergy").value=today.dailyEnergy||"";
- $("#dailyStress").value=today.dailyStress||"";
- $("#dailyPain").value=today.dailyPain||"";
-}
-function renderHealth(){
- const arr=get("p85_health",[]);
- fillTodayHealth();
- $("#healthHistory").innerHTML=arr.map(x=>`
-  <div class="history">
-   <div class="history-head"><h3>${formatDate(x.date)}</h3><span class="badge">${(+x.steps).toLocaleString("es-ES")} pasos</span></div>
-   <p>Sueño ${x.sleepHours||"-"} h · FC reposo ${x.restingHr||"-"} · ${x.activeCalories||0} kcal activas</p>
-   <p class="muted">Agua ${x.waterLiters||0} L · Energía ${x.dailyEnergy||"-"}/10 · Estrés ${x.dailyStress||"-"}/10 · Molestia ${x.dailyPain||0}/10</p>
-  </div>`).join("");
-}
-
-function updateDashboard(){
- const s=settings(),sessions=get("p85_sessions",[]),measures=get("p85_measures",[]);
- $("#todayLabel").textContent=programLabel();$("#workoutDayLabel").textContent=programLabel();
- $("#todayTitle").textContent=WORKOUTS[s.currentDay-1].name.replace(/^Día \d · /,"");
- $("#todayMeta").textContent="Fuerza + core + cardio · sin saltos";
- $("#sessionCount").textContent=sessions.length;$("#homeGoal").textContent=s.goalWeight+" kg";
- if(measures[0])$("#homeWeight").textContent=String(measures[0].weight).replace(".",",")+" kg";
- const completed=(s.currentWeek-1)*5+(s.currentDay-1),pct=Math.round(completed/(TOTAL_WEEKS*5)*100);
- $("#programProgressText").textContent=`Semana ${s.currentWeek} de ${TOTAL_WEEKS}`;
- $("#programPercent").textContent=pct+"%";$("#programBar").style.width=pct+"%";
- $("#streak").textContent=calculateStreak(sessions)+" días";
- const todayHealth=get("p85_health",[]).find(x=>x.date===todayISO());
- if(todayHealth){
-  $("#healthTodayStatus").textContent="Datos registrados";
-  $("#dashSteps").textContent=(+todayHealth.steps||0).toLocaleString("es-ES");
-  $("#dashSleep").textContent=(todayHealth.sleepHours||0)+" h";
-  $("#dashHr").textContent=todayHealth.restingHr||"—";
-  $("#dashWater").textContent=(todayHealth.waterLiters||0)+" L";
- }else{
-  $("#healthTodayStatus").textContent="Pendiente de registrar";
-  $("#dashSteps").textContent="—";$("#dashSleep").textContent="—";$("#dashHr").textContent="—";$("#dashWater").textContent="—";
- }
- renderTodayMealsMini();
- $("#readinessScore").textContent=calculateReadiness();
- $("#profileName").value=s.name;$("#goalWeight").value=s.goalWeight;$("#currentWeek").value=s.currentWeek;$("#currentDay").value=s.currentDay;$("#restSetting").value=s.restSeconds||90;
-}
-
-function calculateStreak(arr){
- const dates=[...new Set(arr.map(x=>x.date).filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x)))].sort().reverse();
- if(!dates.length)return 0;
- let streak=1;
- for(let i=1;i<dates.length;i++){
-  const prev=new Date(dates[i-1]),cur=new Date(dates[i]);
-  const diff=Math.round((prev-cur)/86400000);
-  if(diff<=3)streak++;else break;
- }
- return streak;
-}
-
-$("#saveSettings").addEventListener("click",()=>{
- const s={name:$("#profileName").value.trim()||"Javier",goalWeight:+$("#goalWeight").value||90,currentWeek:Math.min(24,Math.max(1,+$("#currentWeek").value||1)),currentDay:Math.min(5,Math.max(1,+$("#currentDay").value||1)),restSeconds:Math.min(300,Math.max(30,+$("#restSetting").value||90))};
- set("p85_settings",s);renderWorkout();updateDashboard();toast("Ajustes guardados");
-});
-$("#changeDayBtn").addEventListener("click",()=>go("ajustes"));
-
-$("#exportData").addEventListener("click",()=>{
- const data={version:"2.0",exportedAt:new Date().toISOString(),sessions:get("p85_sessions",[]),measures:get("p85_measures",[]),health:get("p85_health",[]),nutrition:get("p85_nutrition",[]),photos:get("p85_photos",[]),menu:get("p85_menu",DEFAULT_MENU),settings:settings()};
- const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"}),a=document.createElement("a");
- a.href=URL.createObjectURL(blob);a.download="Proyecto85-copia-"+todayISO()+".json";a.click();URL.revokeObjectURL(a.href);
-});
-$("#importData").addEventListener("change",e=>{
- const file=e.target.files[0];if(!file)return;
- const reader=new FileReader();reader.onload=()=>{
-  try{const d=JSON.parse(reader.result);if(d.sessions)set("p85_sessions",d.sessions);if(d.measures)set("p85_measures",d.measures);if(d.health)set("p85_health",d.health);if(d.nutrition)set("p85_nutrition",d.nutrition);if(d.photos)set("p85_photos",d.photos);if(d.menu)set("p85_menu",d.menu);if(d.settings)set("p85_settings",d.settings);renderWorkout();updateDashboard();toast("Copia restaurada")}
-  catch{toast("El archivo no es válido")}
- };reader.readAsText(file);
-});
-$("#refreshBtn").addEventListener("click",async()=>{
- if("serviceWorker" in navigator){const regs=await navigator.serviceWorker.getRegistrations();for(const r of regs)await r.update()}
- location.reload();
-});
-
-function formatDate(v){if(!v)return"-";const d=new Date(v+"T12:00:00");return isNaN(d)?v:d.toLocaleDateString("es-ES",{day:"2-digit",month:"short",year:"numeric"})}
-function escapeHtml(s){return s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
-
-
-const EXERCISE_ALTERNATIVES={
- "Prensa":["Sentadilla Hack","Prensa horizontal","Extensión de cuádriceps"],
- "Curl femoral":["Curl femoral sentado","Curl femoral tumbado","Peso muerto rumano con mancuernas"],
- "Jalón al pecho":["Jalón agarre neutro","Dominadas asistidas","Pullover en polea"],
- "Jalón neutro":["Jalón al pecho","Dominadas asistidas","Pullover en polea"],
- "Remo con apoyo":["Remo en máquina","Remo en polea baja","Remo sentado guiado"],
- "Remo en máquina":["Remo con apoyo","Remo en polea baja","Remo sentado guiado"],
- "Remo en polea baja":["Remo con apoyo","Remo en máquina","Remo sentado guiado"],
- "Press de pecho":["Press inclinado","Press convergente","Peck Deck"],
- "Press inclinado":["Press de pecho","Press convergente","Peck Deck"],
- "Press militar":["Press de hombro en máquina","Elevaciones laterales","Landmine press"],
- "Elevaciones laterales":["Elevaciones en máquina","Elevaciones en polea","Press de hombro"],
- "Face Pull":["Pájaros en máquina","Remo alto en polea","Reverse fly"],
- "Curl bíceps":["Curl martillo","Curl en polea","Curl en máquina"],
- "Curl martillo":["Curl bíceps","Curl en polea","Curl en máquina"],
- "Tríceps polea":["Tríceps cuerda","Extensión unilateral","Máquina de tríceps"],
- "Tríceps cuerda":["Tríceps polea","Extensión unilateral","Máquina de tríceps"],
- "Peck Deck":["Press de pecho","Press inclinado","Aperturas en polea"],
- "Extensión de cuádriceps":["Prensa","Sentadilla Hack","Prensa horizontal"],
- "Abducción de cadera":["Abducción en polea","Caminata lateral con banda","Máquina de glúteo medio"],
- "Gemelos":["Gemelo sentado","Gemelo en prensa","Elevación de talones"],
- "Pullover en polea":["Jalón al pecho","Jalón neutro","Dominadas asistidas"]
-};
-
-let workoutModeIndex=0, restSeconds=settings().restSeconds||90, restInterval=null;
-
-function workoutCards(){return [...document.querySelectorAll(".exercise")]}
-
-function openWorkoutMode(){
- go("entreno");
- workoutModeIndex=0;
- $("#workoutMode").classList.add("active");
- renderWorkoutMode();
-}
-function closeWorkoutMode(){
- $("#workoutMode").classList.remove("active");
- stopRestTimer();
-}
-function getLastWeightForExercise(name){
- const sessions=get("p85_sessions",[]);
- for(const s of sessions){
-  const ex=(s.exercises||[]).find(x=>x.name===name);
-  if(ex?.sets?.length){
-   const done=ex.sets.filter(x=>x.done);
-   return (done[0]||ex.sets[0])?.weight ?? null;
-  }
- }
- return null;
-}
-function renderWorkoutMode(){
- const cards=workoutCards(); if(!cards.length)return;
- workoutModeIndex=Math.max(0,Math.min(workoutModeIndex,cards.length-1));
- const card=cards[workoutModeIndex];
- const title=card.querySelector("h3").textContent.replace(/^\d+\.\s*/,"");
- const rows=[...card.querySelectorAll(".set-row")];
- $("#modeProgramLabel").textContent=programLabel();
- $("#modeProgressTitle").textContent=`Ejercicio ${workoutModeIndex+1} de ${cards.length}`;
- $("#modeProgressBar").style.width=`${((workoutModeIndex+1)/cards.length)*100}%`;
- $("#modeExerciseName").textContent=title;
- $("#modeExerciseNote").textContent=card.querySelector(".muted")?.textContent||card.querySelector(".target").textContent;
- $("#modeRecommendedWeight").textContent=rows[0]?`${rows[0].querySelector(".set-weight").value} kg`:"—";
- const last=getLastWeightForExercise(title);
- $("#modeLastWeight").textContent=last==null?"—":`${last} kg`;
- $("#modeSets").innerHTML=rows.map((row,i)=>`
-  <div class="mode-set">
-   <b>${i+1}</b>
-   <input class="mode-weight" type="number" step=".1" value="${row.querySelector(".set-weight").value}">
-   <input class="mode-reps" type="number" value="${row.querySelector(".set-reps").value}">
-   <input class="mode-done" type="checkbox" ${row.querySelector(".set-done").checked?"checked":""}>
-  </div>`).join("");
- $$(".mode-weight").forEach((el,i)=>el.addEventListener("input",()=>rows[i].querySelector(".set-weight").value=el.value));
- $$(".mode-reps").forEach((el,i)=>el.addEventListener("input",()=>rows[i].querySelector(".set-reps").value=el.value));
- $$(".mode-done").forEach((el,i)=>el.addEventListener("change",()=>rows[i].querySelector(".set-done").checked=el.checked));
-}
-function completeNextSet(){
- const next=$$(".mode-done").find(x=>!x.checked);
- if(!next){toast("Todas las series están completadas");return}
- next.checked=true;next.dispatchEvent(new Event("change"));startRestTimer();
-}
-function updateRestDisplay(){
- $("#restTimer").textContent=`${String(Math.floor(restSeconds/60)).padStart(2,"0")}:${String(restSeconds%60).padStart(2,"0")}`;
-}
-function startRestTimer(){
- stopRestTimer();
- restInterval=setInterval(()=>{
-  restSeconds--;updateRestDisplay();
-  if(restSeconds<=0){stopRestTimer();if(navigator.vibrate)navigator.vibrate([200,100,200]);toast("Descanso terminado")}
- },1000);
-}
-function stopRestTimer(){if(restInterval){clearInterval(restInterval);restInterval=null}}
-function resetRestTimer(){stopRestTimer();restSeconds=settings().restSeconds||90;updateRestDisplay()}
-function openReplacement(){
- const card=workoutCards()[workoutModeIndex];
- const current=card.querySelector("h3").textContent.replace(/^\d+\.\s*/,"");
- const options=EXERCISE_ALTERNATIVES[current]||["Ejercicio equivalente en máquina","Ejercicio equivalente en polea","Ejercicio equivalente con mancuernas"];
- $("#replacementSelect").innerHTML=options.map(x=>`<option>${x}</option>`).join("");
- $("#customReplacement").value="";
- $("#replaceModal").classList.add("active");
-}
-function applyReplacement(){
- const card=workoutCards()[workoutModeIndex];
- const oldName=card.querySelector("h3").textContent.replace(/^\d+\.\s*/,"");
- const newName=$("#customReplacement").value.trim()||$("#replacementSelect").value;
- const reason=$("#replacementReason").value;
- card.querySelector("h3").textContent=`${workoutModeIndex+1}. ${newName}`;
- const substitutions=get("p85_substitutions",[]);
- substitutions.unshift({date:todayISO(),programLabel:programLabel(),oldName,newName,reason});
- set("p85_substitutions",substitutions);
- $("#replaceModal").classList.remove("active");
- renderWorkoutMode();
- toast("Ejercicio cambiado. Historial conservado.");
-}
-
-$("#startWorkoutMode").addEventListener("click",openWorkoutMode);
-$("#closeWorkoutMode").addEventListener("click",closeWorkoutMode);
-$("#completeCurrentSet").addEventListener("click",completeNextSet);
-$("#prevExercise").addEventListener("click",()=>{workoutModeIndex--;renderWorkoutMode()});
-$("#nextExercise").addEventListener("click",()=>{workoutModeIndex++;renderWorkoutMode()});
-$("#startRest").addEventListener("click",startRestTimer);
-$("#resetRest").addEventListener("click",resetRestTimer);
-$("#replaceExerciseBtn").addEventListener("click",openReplacement);
-$("#closeReplace").addEventListener("click",()=>$("#replaceModal").classList.remove("active"));
-$("#confirmReplacement").addEventListener("click",applyReplacement);
-updateRestDisplay();
-
-
-const DEFAULT_MENU={breakfast:"Tostada integral con pavo y café",lunch:"Proteína magra + verdura + hidrato planificado",snack:"Fruta o yogur",dinner:"Cena ligera con proteína y verdura"};
-const EXERCISE_LIBRARY=[
-{name:"Prensa",muscle:"Piernas",technique:"Espalda apoyada, rodillas alineadas y recorrido controlado.",errors:"No despegar la cadera ni bloquear rodillas."},
-{name:"Curl femoral",muscle:"Piernas",technique:"Controla la subida y la bajada.",errors:"No uses impulso."},
-{name:"Jalón al pecho",muscle:"Espalda",technique:"Pecho alto y codos hacia abajo.",errors:"No balancearse."},
-{name:"Remo con apoyo",muscle:"Espalda",technique:"Pecho estable y escápulas atrás.",errors:"No encoger hombros."},
-{name:"Press de pecho",muscle:"Pecho",technique:"Escápulas estables y recorrido cómodo.",errors:"No adelantar hombros."},
-{name:"Press militar",muscle:"Hombros",technique:"Abdomen activo y recorrido sin dolor.",errors:"No arquear la zona lumbar."},
-{name:"Face Pull",muscle:"Hombros",technique:"Tira hacia la cara separando manos.",errors:"No encoger hombros."},
-{name:"Curl bíceps",muscle:"Brazos",technique:"Codos quietos.",errors:"No balancear el tronco."},
-{name:"Tríceps polea",muscle:"Brazos",technique:"Codos pegados.",errors:"No mover hombros."},
-{name:"Plancha",muscle:"Core",technique:"Cuerpo alineado y respiración normal.",errors:"No hundir la zona lumbar."},
-{name:"Dead Bug",muscle:"Core",technique:"Espalda baja apoyada.",errors:"No perder contacto lumbar."},
-{name:"Bird Dog",muscle:"Core",technique:"Cadera estable.",errors:"No rotar el tronco."}
-];
-let calendarDate=new Date();
-function getTodayNutrition(){return get("p85_nutrition",[]).find(x=>x.date===todayISO())}
-function renderTodayMealsMini(){const m=get("p85_menu",DEFAULT_MENU),n=getTodayNutrition(),a=[["Desayuno",m.breakfast,n?.meals?.breakfast],["Comida",m.lunch,n?.meals?.lunch],["Merienda",m.snack,n?.meals?.snack],["Cena",m.dinner,n?.meals?.dinner]];$("#todayMealsMini").innerHTML=a.map(x=>`<div><span>${x[0]}</span><b>${x[2]?"✓ ":""}${escapeHtml(x[1])}</b></div>`).join("");$("#nutritionStatus").textContent=n?`${Object.values(n.meals||{}).filter(Boolean).length}/4 cumplidas`:"Pendiente"}
-function renderNutrition(){const m=get("p85_menu",DEFAULT_MENU),t=getTodayNutrition(),rows=[["breakfast","Desayuno"],["lunch","Comida"],["snack","Merienda"],["dinner","Cena"]];$("#menuDayTitle").textContent=new Date().toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long"});$("#mealList").innerHTML=rows.map(([k,l])=>`<div class="meal-row"><input class="meal-check" data-key="${k}" type="checkbox" ${t?.meals?.[k]?"checked":""}><div><b>${l}</b><p class="muted">${escapeHtml(m[k])}</p></div></div>`).join("");$("#waterGoal").value=t?.waterGoal||2.5;$("#hungerScore").value=t?.hungerScore||"";$("#digestionNotes").value=t?.digestionNotes||"";$("#nutritionHistory").innerHTML=get("p85_nutrition",[]).map(x=>`<div class="history"><div class="history-head"><h3>${formatDate(x.date)}</h3><span class="badge">${Object.values(x.meals||{}).filter(Boolean).length}/4</span></div><p>Hambre ${x.hungerScore||"-"}/10 · Agua ${x.waterGoal||"-"} L</p></div>`).join("")}
-$("#saveNutrition").addEventListener("click",()=>{const meals={};$$('.meal-check').forEach(x=>meals[x.dataset.key]=x.checked);const o={date:todayISO(),meals,waterGoal:+$("#waterGoal").value||0,hungerScore:+$("#hungerScore").value||0,digestionNotes:$("#digestionNotes").value.trim()},a=get("p85_nutrition",[]),i=a.findIndex(x=>x.date===o.date);i>=0?a[i]=o:a.unshift(o);set("p85_nutrition",a);renderNutrition();renderTodayMealsMini();toast("Nutrición guardada")});
-$("#editMenuBtn").addEventListener("click",()=>{const m=get("p85_menu",DEFAULT_MENU),b=prompt("Desayuno",m.breakfast);if(b===null)return;const l=prompt("Comida",m.lunch);if(l===null)return;const s=prompt("Merienda",m.snack);if(s===null)return;const d=prompt("Cena",m.dinner);if(d===null)return;set("p85_menu",{breakfast:b,lunch:l,snack:s,dinner:d});renderNutrition();renderTodayMealsMini()});
-function renderLibrary(){const q=($("#exerciseSearch").value||"").toLowerCase(),m=$("#muscleFilter").value;$("#exerciseLibrary").innerHTML=EXERCISE_LIBRARY.filter(x=>(!m||x.muscle===m)&&(!q||x.name.toLowerCase().includes(q))).map(x=>`<div class="library-card"><span class="tag">${x.muscle}</span><h3>${x.name}</h3><p><b>Técnica:</b> ${x.technique}</p><p class="muted"><b>Evita:</b> ${x.errors}</p></div>`).join("")}
-$("#exerciseSearch").addEventListener("input",renderLibrary);$("#muscleFilter").addEventListener("change",renderLibrary);
-function renderCalendar(){const y=calendarDate.getFullYear(),m=calendarDate.getMonth(),start=(new Date(y,m,1).getDay()+6)%7,days=new Date(y,m+1,0).getDate(),trained=new Set(get("p85_sessions",[]).map(x=>x.date));$("#calendarTitle").textContent=calendarDate.toLocaleDateString("es-ES",{month:"long",year:"numeric"});let h=["L","M","X","J","V","S","D"].map(x=>`<div class="calendar-cell head">${x}</div>`).join("");for(let i=0;i<start;i++)h+='<div class="calendar-cell"></div>';for(let d=1;d<=days;d++){const iso=`${y}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;h+=`<div class="calendar-cell ${trained.has(iso)?"trained":""}"><b>${d}</b>${trained.has(iso)?'<span class="dot"></span>':""}</div>`}$("#calendarGrid").innerHTML=h}
-$("#prevMonth").addEventListener("click",()=>{calendarDate=new Date(calendarDate.getFullYear(),calendarDate.getMonth()-1,1);renderCalendar()});$("#nextMonth").addEventListener("click",()=>{calendarDate=new Date(calendarDate.getFullYear(),calendarDate.getMonth()+1,1);renderCalendar()});
-function readFileData(f){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(f)})}
-$("#savePhotos").addEventListener("click",async()=>{const f=$("#photoFront").files[0],s=$("#photoSide").files[0];if(!f&&!s){toast("Selecciona una foto");return}const o={date:todayISO(),front:f?await readFileData(f):null,side:s?await readFileData(s):null},a=get("p85_photos",[]);a.unshift(o);try{set("p85_photos",a);renderPhotos();toast("Fotos guardadas")}catch{toast("Sin espacio suficiente")}});
-function renderPhotos(){$("#photoHistory").innerHTML=get("p85_photos",[]).flatMap(x=>[x.front?`<img src="${x.front}">`:"",x.side?`<img src="${x.side}">`:""]).join("")}
-
-seed();renderWorkout();calculateReadiness();updateDashboard();renderTodayMealsMini();
-if("serviceWorker" in navigator)navigator.serviceWorker.register("./sw.js");
+function dayName(){return ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'][new Date().getDay()]}
+function checkInAppReminders(){const now=new Date(), hh=now.toTimeString().slice(0,5),day=dayName();store('reminders').forEach(r=>{const relevant=r.days==='Todos los días'||(r.days==='Lunes a viernes'&&!['Sábado','Domingo'].includes(day))||r.days===day;if(relevant&&r.time===hh){const key=`p85_notified_${todayISO()}_${r.id}_${hh}`;if(!sessionStorage.getItem(key)){toast(`Recordatorio: ${r.name}`);if(Notification.permission==='granted')new Notification('Proyecto85',{body:r.name});sessionStorage.setItem(key,'1')}}})}
+setInterval(checkInAppReminders,30000);
+if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js').catch(()=>{});
+renderHome();
