@@ -4,14 +4,43 @@ const get=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return
 const set=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
 const uid=()=>crypto.randomUUID?crypto.randomUUID():Date.now()+Math.random().toString(16).slice(2);
 
+const INITIAL_MEASURE={
+ date:'2026-07-27',weight:106,bmi:31.6,bodyFat:39.5,fatFreeMass:64.13,
+ subcutaneousFat:34.9,visceralFat:15,water:43.7,skeletalMuscle:39.1,
+ muscle:63.8,protein:16.5,bmr:1755,metabolicAge:58,
+ waist:108,hip:110,chest:119,arm:34,thigh:54,calf:37
+};
 const DEFAULTS={
- settings:{name:'Javier',goalWeight:90,currentWeight:106,currentWeek:3,currentDay:1,totalWeeks:24,restSeconds:90},
- sessions:[], health:[], measures:[{date:'2026-07-29',weight:106,waist:108,bodyFat:39.5,muscle:63.8}],
+ settings:{name:'Javier',initialWeight:106,goalWeight:90,currentWeight:106,currentWeek:3,currentDay:1,totalWeeks:24,restSeconds:90},
+ sessions:[], health:[], measures:[INITIAL_MEASURE],
  pantry:[], shopping:[], analytics:[], reminders:[], nutritionLog:[], workoutQueue:[]
 };
 Object.entries(DEFAULTS).forEach(([k,v])=>{if(localStorage.getItem('p85_'+k)===null)set('p85_'+k,v)});
 const store=(k)=>get('p85_'+k,DEFAULTS[k]);
 const save=(k,v)=>set('p85_'+k,v);
+
+// Migración V3.1.1: completa datos antiguos sin borrar registros del usuario.
+function migrateData(){
+ const savedSettings=store('settings')||{};
+ const settings={...DEFAULTS.settings,...savedSettings};
+ const measures=Array.isArray(store('measures'))?store('measures'):[];
+ const hasOfficialStart=measures.some(x=>x&&x.date===INITIAL_MEASURE.date&&Number(x.weight)===106);
+ if(!hasOfficialStart) measures.unshift({...INITIAL_MEASURE});
+ else {
+  const i=measures.findIndex(x=>x&&x.date===INITIAL_MEASURE.date&&Number(x.weight)===106);
+  measures[i]={...INITIAL_MEASURE,...measures[i]};
+ }
+ const validWeights=measures.filter(x=>Number.isFinite(Number(x?.weight))).sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+ settings.initialWeight=106;
+ settings.currentWeight=validWeights.length?Number(validWeights.at(-1).weight):106;
+ settings.goalWeight=Number.isFinite(Number(settings.goalWeight))?Number(settings.goalWeight):90;
+ settings.currentWeek=Math.max(1,Number(settings.currentWeek)||3);
+ settings.currentDay=Math.min(5,Math.max(1,Number(settings.currentDay)||1));
+ settings.totalWeeks=Math.max(settings.currentWeek,Number(settings.totalWeeks)||24);
+ save('settings',settings);save('measures',measures);
+}
+migrateData();
+const fmt=(v,d=1)=>Number.isFinite(Number(v))?Number(v).toFixed(d).replace('.',','):'—';
 
 const BLOCK3=[
  {name:'Día 1 · Fuerza base',focus:'Pierna + tirón + empuje',ex:[['Prensa',3,10,50],['Curl femoral',3,10,42],['Jalón neutro',3,10,45],['Remo con apoyo',3,10,35],['Press convergente',3,10,34],['Elevaciones laterales',3,14,7],['Tríceps cuerda',3,12,15.9]],core:[['Crunch en máquina',3,12],['Pallof press en polea',3,12]],cardio:{type:'Cinta inclinada',minutes:25,plan:'5 min suave + 15 min inclinación moderada + 5 min suave'}},
@@ -43,19 +72,27 @@ function readiness(){const h=store('health').find(x=>x.date===todayISO());if(!h)
 function renderHome(){
  const s=store('settings'), sessions=store('sessions'), today=dayName(), menu=MENU[today], pending=store('workoutQueue').filter(x=>x.status==='pending');
  const doneMeals=store('nutritionLog').filter(x=>x.date===todayISO()&&x.done).length;
+ const dayIndex=Math.min(BLOCK3.length-1,Math.max(0,(Number(s.currentDay)||1)-1));
+ const workout=BLOCK3[dayIndex];
+ const initial=Number(s.initialWeight)||106, current=Number(s.currentWeight)||initial, goal=Number(s.goalWeight)||90;
+ const lost=Math.max(0,initial-current), remaining=Math.max(0,current-goal);
+ const totalWeeks=Math.max(Number(s.totalWeeks)||24,Number(s.currentWeek)||1);
+ const week=Math.min(totalWeeks,Math.max(1,Number(s.currentWeek)||1));
+ const day=Math.min(5,Math.max(1,Number(s.currentDay)||1));
+ const progress=Math.min(100,Math.max(0,Math.round(((week-1)*5+day)/(totalWeeks*5)*100)));
  $('#inicio').innerHTML=`
- <div class="card hero"><div class="hero-grid"><div><div class="kicker">Semana ${s.currentWeek} · Día ${s.currentDay}</div><h2>${BLOCK3[s.currentDay-1].name}</h2><p class="muted">Fuerza + core en máquina + cardio progresivo</p></div><div class="score">${readiness()}<small>Preparación</small></div></div></div>
+ <div class="card hero"><div class="hero-grid"><div><div class="kicker">Semana ${week} · Día ${day}</div><h2>${workout.name}</h2><p class="muted">Fuerza + core en máquina + cardio progresivo</p></div><div class="score">${readiness()}<small>Preparación</small></div></div></div>
  ${pending.length?`<div class="banner"><strong>Tienes ${pending.length} sesión/es pendiente/s de recuperar.</strong><div class="btn-row" style="margin-top:10px"><button class="btn small" onclick="go('entrenamiento')">Ver recuperación</button></div></div>`:''}
- <div class="grid-2"><div class="stat"><span class="muted">Peso actual</span><strong>${s.currentWeight} kg</strong></div><div class="stat"><span class="muted">Objetivo</span><strong>${s.goalWeight} kg</strong></div><div class="stat"><span class="muted">Sesiones</span><strong>${sessions.length}</strong></div><div class="stat"><span class="muted">Semana</span><strong>${s.currentWeek}/${s.totalWeeks}</strong></div></div>
+ <div class="grid-2"><div class="stat"><span class="muted">Peso inicial</span><strong>${fmt(initial)} kg</strong></div><div class="stat"><span class="muted">Peso actual</span><strong>${fmt(current)} kg</strong></div><div class="stat"><span class="muted">Objetivo</span><strong>${fmt(goal)} kg</strong></div><div class="stat"><span class="muted">Semana</span><strong>${week} de ${totalWeeks}</strong></div><div class="stat"><span class="muted">Pérdida acumulada</span><strong>${fmt(lost)} kg</strong></div><div class="stat"><span class="muted">Faltan</span><strong>${fmt(remaining)} kg</strong></div></div>
  <div class="card"><div class="section-title"><h2>Mi día</h2><span class="pill">${today}</span></div>
- <div class="task"><div><strong>Entrenamiento</strong><div class="muted">${BLOCK3[s.currentDay-1].focus}</div></div><button class="btn small primary" onclick="go('entrenamiento')">Abrir</button></div>
+ <div class="task"><div><strong>Entrenamiento</strong><div class="muted">${workout.focus}</div></div><button class="btn small primary" onclick="go('entrenamiento')">Abrir</button></div>
  <div class="task"><div><strong>Nutrición</strong><div class="muted">${doneMeals}/5 comidas registradas · ${menu.training}</div></div><button class="btn small" onclick="go('nutricion')">Ver menú</button></div>
  <div class="task"><div><strong>Salud</strong><div class="muted">${store('health').some(x=>x.date===todayISO())?'Registro realizado':'Pendiente de registrar'}</div></div><button class="btn small" onclick="openHealthForm()">Registrar</button></div></div>
- <div class="card"><div class="section-title"><h3>Progreso del programa</h3><strong>${Math.round(((s.currentWeek-1)*5+s.currentDay)/(s.totalWeeks*5)*100)}%</strong></div><div class="progress"><span style="width:${Math.round(((s.currentWeek-1)*5+s.currentDay)/(s.totalWeeks*5)*100)}%"></span></div></div>`;
+ <div class="card"><div class="section-title"><h3>Progreso del programa</h3><strong>${progress}%</strong></div><div class="progress"><span style="width:${progress}%"></span></div></div>`;
 }
 
 function renderWorkout(){
- const s=store('settings'), w=BLOCK3[s.currentDay-1], queue=store('workoutQueue');
+ const s=store('settings'), w=BLOCK3[Math.min(BLOCK3.length-1,Math.max(0,(Number(s.currentDay)||1)-1))], queue=store('workoutQueue');
  $('#entrenamiento').innerHTML=`<div class="section-title"><div><span class="eyebrow">BLOQUE 2 · SEMANA ${s.currentWeek}</span><h2>${w.name}</h2><p class="muted">${w.focus}</p></div></div>
  <div class="card"><h3>Flexibilidad del día</h3><p class="muted">Puedes entrenar por la mañana o por la tarde. Si hoy no puedes, reprograma la sesión sin perderla.</p><div class="btn-row"><button class="btn primary" onclick="startWorkout()">Comenzar sesión</button><button class="btn" onclick="postponeWorkout('tarde')">Pasar a la tarde</button><button class="btn secondary" onclick="postponeWorkout('mañana')">Recuperar mañana</button></div></div>
  ${queue.filter(x=>x.status==='pending').map(q=>`<div class="banner"><strong>Pendiente: ${q.label}</strong><p>${q.reason||'Sesión reprogramada'}</p><button class="btn small" onclick="recoverQueue('${q.id}')">Recuperar ahora</button></div>`).join('')}
@@ -107,7 +144,7 @@ function addReminder(){const n=$('#rName').value.trim();if(!n)return;const r=sto
 function removeReminder(id){save('reminders',store('reminders').filter(x=>x.id!==id));showReminders()}
 async function requestNotifications(){if(!('Notification'in window))return toast('Este navegador no admite notificaciones');const p=await Notification.requestPermission();if(p==='granted'){new Notification('Proyecto85',{body:'Avisos activados correctamente'});toast('Notificaciones activadas')}else toast('Permiso no concedido')}
 function showBackup(){$('#moreContent').innerHTML=`<div class="card"><h3>Copia de seguridad</h3><div class="btn-row"><button class="btn primary" onclick="exportData()">Exportar datos</button><label class="btn">Importar<input type="file" accept="application/json" class="hidden" onchange="importData(this.files[0])"></label></div><p class="note">El archivo puede contener información personal y médica. Guárdalo de forma privada.</p></div>`}
-function exportData(){const data={version:'3.1.0',exported:new Date().toISOString()};Object.keys(DEFAULTS).forEach(k=>data[k]=store(k));const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`Proyecto85-backup-${todayISO()}.json`;a.click();URL.revokeObjectURL(a.href)}
+function exportData(){const data={version:'3.1.1',exported:new Date().toISOString()};Object.keys(DEFAULTS).forEach(k=>data[k]=store(k));const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`Proyecto85-backup-${todayISO()}.json`;a.click();URL.revokeObjectURL(a.href)}
 function importData(file){if(!file)return;const fr=new FileReader();fr.onload=()=>{try{const d=JSON.parse(fr.result);Object.keys(DEFAULTS).forEach(k=>{if(d[k]!==undefined)save(k,d[k])});toast('Copia importada');renderMore()}catch{toast('Archivo no válido')}};fr.readAsText(file)}
 
 function dayName(){return ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'][new Date().getDay()]}
