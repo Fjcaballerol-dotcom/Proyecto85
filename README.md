@@ -1,18 +1,21 @@
-# Proyecto85 V3.1 estable
+# Proyecto85 V3.2 estable
 
-Versión base para uso diario. Integra entrenamiento flexible, recuperación de sesiones, core en máquinas y poleas, cardio progresivo, nutrición semanal, lista de compra y despensa, evolución, salud, analíticas locales, recordatorios y copias de seguridad.
+Versión corregida sobre la base V3.1.
+
+## Correcciones principales
+
+- Migración defensiva de los datos existentes en `localStorage`.
+- Peso inicial oficial: **106,0 kg**.
+- Peso actual inicial: **106,0 kg** hasta registrar un nuevo control oficial.
+- Semana mostrada como **2 de 24**.
+- La interfaz no muestra valores `undefined` aunque existan datos antiguos incompletos.
+- Inicio ampliado con peso inicial, peso actual, objetivo, pérdida acumulada y kilos restantes.
+- Caché V3.2 con activación inmediata y carga prioritaria del código más reciente.
+
+## Instalación en GitHub Pages
+
+Sustituye todos los archivos del repositorio por los de esta carpeta. Los datos personales permanecen en el almacenamiento local del dispositivo.
 
 ## Privacidad
-El repositorio contiene solo el código. Los datos personales y médicos se guardan en el dispositivo mediante almacenamiento local. No subas analíticas, informes médicos, fotos personales ni copias de seguridad a un repositorio público.
 
-## Actualización en GitHub Pages
-Sustituye los archivos actuales por los de esta carpeta. Los datos ya registrados en la aplicación deberían conservarse porque permanecen en el almacenamiento local del navegador.
-
-## Cambios V3.1.2
-
-- Migración real de configuraciones antiguas: completa automáticamente `currentWeight`, `totalWeeks` y otros campos ausentes sin borrar datos locales.
-- Registro oficial inicial del 27/07/2026 con 106 kg y todas las métricas disponibles.
-- El peso actual se obtiene del último control válido registrado.
-- La pantalla de inicio nunca muestra `undefined`; utiliza valores validados o un guion.
-- Inicio con peso inicial, peso actual, objetivo, pérdida acumulada, kilos restantes y semana completa.
-- Service worker V3.1.2 con activación inmediata y renovación de caché.
+No subas analíticas, informes médicos, fotografías personales ni copias de seguridad al repositorio público.

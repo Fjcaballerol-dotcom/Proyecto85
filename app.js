@@ -4,44 +4,58 @@ const get=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return
 const set=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
 const uid=()=>crypto.randomUUID?crypto.randomUUID():Date.now()+Math.random().toString(16).slice(2);
 
+const APP_VERSION='3.2.0';
 const INITIAL_MEASURE={
- date:'2026-07-27',weight:106,bmi:31.6,bodyFat:39.5,fatFreeMass:64.13,
- subcutaneousFat:34.9,visceralFat:15,bodyWater:43.7,skeletalMuscle:39.1,
- muscle:63.8,protein:16.5,bmr:1755,metabolicAge:58,
- waist:108,hip:110,chest:119,arm:34,thigh:54,calf:37
+ date:'2026-07-27',official:true,weight:106,bmi:31.6,bodyFat:39.5,fatFreeMass:64.13,
+ subcutaneousFat:34.9,visceralFat:15,water:43.7,skeletalMuscle:39.1,muscle:63.8,
+ protein:16.5,bmr:1755,metabolicAge:58,waist:108,hip:110,chest:119,arm:34,thigh:54,calf:37
 };
 const DEFAULTS={
- settings:{name:'Javier',initialWeight:106,goalWeight:90,currentWeight:106,currentWeek:2,currentDay:5,totalWeeks:24,restSeconds:90},
+ settings:{name:'Javier',initialWeight:106,goalWeight:90,currentWeight:106,currentWeek:2,currentDay:5,totalWeeks:24,restSeconds:90,dataVersion:APP_VERSION},
  sessions:[], health:[], measures:[INITIAL_MEASURE],
  pantry:[], shopping:[], analytics:[], reminders:[], nutritionLog:[], workoutQueue:[]
 };
-
-function validNumber(value,fallback){const n=Number(value);return Number.isFinite(n)?n:fallback}
+const finite=(value,fallback)=>Number.isFinite(Number(value))?Number(value):fallback;
+const clamp=(value,min,max)=>Math.min(max,Math.max(min,value));
 function migrateData(){
  Object.entries(DEFAULTS).forEach(([k,v])=>{if(localStorage.getItem('p85_'+k)===null)set('p85_'+k,v)});
- const rawSettings=get('p85_settings',{});
- const settings={...DEFAULTS.settings,...(rawSettings&&typeof rawSettings==='object'?rawSettings:{})};
- settings.initialWeight=validNumber(settings.initialWeight,106);
- settings.goalWeight=validNumber(settings.goalWeight,90);
- settings.currentWeek=Math.max(1,Math.round(validNumber(settings.currentWeek,2)));
- settings.currentDay=Math.min(5,Math.max(1,Math.round(validNumber(settings.currentDay,5))));
- settings.totalWeeks=Math.max(settings.currentWeek,Math.round(validNumber(settings.totalWeeks,24)));
- settings.restSeconds=Math.max(15,Math.round(validNumber(settings.restSeconds,90)));
+ const raw=get('p85_settings',{});
+ const settings={...DEFAULTS.settings,...(raw&&typeof raw==='object'?raw:{})};
+ settings.initialWeight=finite(settings.initialWeight,106);
+ settings.goalWeight=finite(settings.goalWeight,90);
+ settings.currentWeight=finite(settings.currentWeight,settings.initialWeight);
+ settings.currentWeek=clamp(Math.trunc(finite(settings.currentWeek,2)),1,24);
+ settings.currentDay=clamp(Math.trunc(finite(settings.currentDay,5)),1,5);
+ settings.totalWeeks=Math.max(settings.currentWeek,Math.trunc(finite(settings.totalWeeks,24)));
+ settings.restSeconds=Math.max(15,Math.trunc(finite(settings.restSeconds,90)));
+ settings.dataVersion=APP_VERSION;
+ set('p85_settings',settings);
  let measures=get('p85_measures',[]);
  if(!Array.isArray(measures))measures=[];
- const hasOfficial=measures.some(x=>x&&x.date===INITIAL_MEASURE.date&&validNumber(x.weight,0)===106);
- if(!hasOfficial)measures.unshift({...INITIAL_MEASURE});
- measures=measures.filter(x=>x&&typeof x==='object').sort((a,b)=>String(a.date||'').localeCompare(String(b.date||'')));
- const latest=[...measures].reverse().find(x=>Number.isFinite(Number(x.weight)));
- settings.currentWeight=validNumber(latest?.weight,validNumber(settings.currentWeight,settings.initialWeight));
+ const hasInitial=measures.some(x=>x&&x.date===INITIAL_MEASURE.date&&finite(x.weight,0)===106);
+ if(!hasInitial)measures.unshift({...INITIAL_MEASURE});
+ measures=measures.filter(x=>x&&typeof x==='object').map(x=>({...x,weight:x.weight==null?null:finite(x.weight,null)}));
  set('p85_measures',measures);
- set('p85_settings',settings);
- set('p85_data_version','3.1.2');
+ Object.keys(DEFAULTS).filter(k=>!['settings','measures'].includes(k)).forEach(k=>{
+   const value=get('p85_'+k,DEFAULTS[k]);
+   if(!Array.isArray(value))set('p85_'+k,DEFAULTS[k]);
+ });
 }
 migrateData();
 const store=(k)=>get('p85_'+k,DEFAULTS[k]);
 const save=(k,v)=>set('p85_'+k,v);
-const fmt=(value,digits=1)=>Number.isFinite(Number(value))?Number(value).toLocaleString('es-ES',{minimumFractionDigits:digits,maximumFractionDigits:digits}):'—';
+function safeSettings(){
+ const s={...DEFAULTS.settings,...store('settings')};
+ return {
+  ...s,
+  initialWeight:finite(s.initialWeight,106),goalWeight:finite(s.goalWeight,90),
+  currentWeight:finite(s.currentWeight,finite(s.initialWeight,106)),
+  currentWeek:clamp(Math.trunc(finite(s.currentWeek,2)),1,24),
+  currentDay:clamp(Math.trunc(finite(s.currentDay,5)),1,5),
+  totalWeeks:Math.max(1,Math.trunc(finite(s.totalWeeks,24)))
+ };
+}
+const fmt=n=>finite(n,0).toLocaleString('es-ES',{minimumFractionDigits:1,maximumFractionDigits:1});
 
 const BLOCK3=[
  {name:'Día 1 · Fuerza base',focus:'Pierna + tirón + empuje',ex:[['Prensa',3,10,50],['Curl femoral',3,10,42],['Jalón neutro',3,10,45],['Remo con apoyo',3,10,35],['Press convergente',3,10,34],['Elevaciones laterales',3,14,7],['Tríceps cuerda',3,12,15.9]],core:[['Crunch en máquina',3,12],['Pallof press en polea',3,12]],cardio:{type:'Cinta inclinada',minutes:25,plan:'5 min suave + 15 min inclinación moderada + 5 min suave'}},
@@ -66,42 +80,27 @@ const SHOP_BASE=[
 
 function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200)}
 function go(id){$$('.view').forEach(v=>v.classList.toggle('active',v.id===id));$$('.bottom-nav button').forEach(b=>b.classList.toggle('active',b.dataset.go===id));render(id);scrollTo({top:0,behavior:'smooth'})}
-$$('[data-go]').forEach(b=>b.onclick=()=>go(b.dataset.go));$('#refreshBtn').onclick=()=>render($('.view.active').id);
+$$('[data-go]').forEach(b=>b.onclick=()=>go(b.dataset.go));$('#refreshBtn').onclick=forceAppUpdate;
 function render(id){({inicio:renderHome,entrenamiento:renderWorkout,nutricion:renderNutrition,evolucion:renderProgress,mas:renderMore})[id]?.()}
 
 function readiness(){const h=store('health').find(x=>x.date===todayISO());if(!h)return 76;return Math.max(20,Math.min(100,Math.round((h.energy||7)*5+(h.sleep||7)*5-(h.pain||0)*4)))}
 function renderHome(){
- const s={...DEFAULTS.settings,...store('settings')}, sessions=store('sessions'), today=dayName(), menu=MENU[today], pending=store('workoutQueue').filter(x=>x.status==='pending');
- const measures=store('measures');
- const latest=[...measures].reverse().find(x=>Number.isFinite(Number(x.weight)));
- const currentWeight=validNumber(latest?.weight,validNumber(s.currentWeight,s.initialWeight));
- const initialWeight=validNumber(s.initialWeight,106), goalWeight=validNumber(s.goalWeight,90);
- const lost=Math.max(0,initialWeight-currentWeight), remaining=Math.max(0,currentWeight-goalWeight);
- const currentWeek=Math.max(1,Math.round(validNumber(s.currentWeek,2))), totalWeeks=Math.max(currentWeek,Math.round(validNumber(s.totalWeeks,24)));
- const currentDay=Math.min(5,Math.max(1,Math.round(validNumber(s.currentDay,5))));
- const workout=BLOCK3[currentDay-1]||BLOCK3[0];
+ const s=safeSettings(), sessions=store('sessions'), today=dayName(), menu=MENU[today], pending=store('workoutQueue').filter(x=>x.status==='pending');
  const doneMeals=store('nutritionLog').filter(x=>x.date===todayISO()&&x.done).length;
- const progress=Math.max(0,Math.min(100,Math.round(((currentWeek-1)*5+currentDay)/(totalWeeks*5)*100)));
  $('#inicio').innerHTML=`
- <div class="card hero"><div class="hero-grid"><div><div class="kicker">Semana ${currentWeek} · Día ${currentDay}</div><h2>${workout.name}</h2><p class="muted">Fuerza + core en máquina + cardio progresivo</p></div><div class="score">${readiness()}<small>Preparación</small></div></div></div>
+ <div class="card hero"><div class="hero-grid"><div><div class="kicker">Semana ${s.currentWeek} · Día ${s.currentDay}</div><h2>${BLOCK3[s.currentDay-1].name}</h2><p class="muted">Fuerza + core en máquina + cardio progresivo</p></div><div class="score">${readiness()}<small>Preparación</small></div></div></div>
  ${pending.length?`<div class="banner"><strong>Tienes ${pending.length} sesión/es pendiente/s de recuperar.</strong><div class="btn-row" style="margin-top:10px"><button class="btn small" onclick="go('entrenamiento')">Ver recuperación</button></div></div>`:''}
- <div class="grid-2">
-  <div class="stat"><span class="muted">Peso inicial</span><strong>${fmt(initialWeight)} kg</strong></div>
-  <div class="stat"><span class="muted">Peso actual</span><strong>${fmt(currentWeight)} kg</strong></div>
-  <div class="stat"><span class="muted">Objetivo</span><strong>${fmt(goalWeight)} kg</strong></div>
-  <div class="stat"><span class="muted">Pérdida acumulada</span><strong>${fmt(lost)} kg</strong></div>
-  <div class="stat"><span class="muted">Faltan</span><strong>${fmt(remaining)} kg</strong></div>
-  <div class="stat"><span class="muted">Semana</span><strong>${currentWeek} de ${totalWeeks}</strong></div>
- </div>
+ <div class="grid-2"><div class="stat"><span class="muted">Peso inicial</span><strong>${fmt(s.initialWeight)} kg</strong></div><div class="stat"><span class="muted">Peso actual</span><strong>${fmt(s.currentWeight)} kg</strong></div><div class="stat"><span class="muted">Objetivo</span><strong>${fmt(s.goalWeight)} kg</strong></div><div class="stat"><span class="muted">Semana</span><strong>${s.currentWeek} de ${s.totalWeeks}</strong></div></div>
+ <div class="grid-2"><div class="stat compact"><span class="muted">Pérdida acumulada</span><strong>${fmt(Math.max(0,s.initialWeight-s.currentWeight))} kg</strong></div><div class="stat compact"><span class="muted">Faltan</span><strong>${fmt(Math.max(0,s.currentWeight-s.goalWeight))} kg</strong></div></div>
  <div class="card"><div class="section-title"><h2>Mi día</h2><span class="pill">${today}</span></div>
- <div class="task"><div><strong>Entrenamiento</strong><div class="muted">${workout.focus}</div></div><button class="btn small primary" onclick="go('entrenamiento')">Abrir</button></div>
+ <div class="task"><div><strong>Entrenamiento</strong><div class="muted">${BLOCK3[s.currentDay-1].focus}</div></div><button class="btn small primary" onclick="go('entrenamiento')">Abrir</button></div>
  <div class="task"><div><strong>Nutrición</strong><div class="muted">${doneMeals}/5 comidas registradas · ${menu.training}</div></div><button class="btn small" onclick="go('nutricion')">Ver menú</button></div>
  <div class="task"><div><strong>Salud</strong><div class="muted">${store('health').some(x=>x.date===todayISO())?'Registro realizado':'Pendiente de registrar'}</div></div><button class="btn small" onclick="openHealthForm()">Registrar</button></div></div>
- <div class="card"><div class="section-title"><h3>Progreso del programa</h3><strong>${progress}%</strong></div><div class="progress"><span style="width:${progress}%"></span></div><p class="note">${sessions.length} sesiones registradas</p></div>`;
+ <div class="card"><div class="section-title"><h3>Progreso del programa</h3><strong>${Math.round(((s.currentWeek-1)*5+s.currentDay)/(s.totalWeeks*5)*100)}%</strong></div><div class="progress"><span style="width:${Math.round(((s.currentWeek-1)*5+s.currentDay)/(s.totalWeeks*5)*100)}%"></span></div></div>`;
 }
 
 function renderWorkout(){
- const s={...DEFAULTS.settings,...store('settings')}, w=BLOCK3[Math.min(5,Math.max(1,validNumber(s.currentDay,1)))-1]||BLOCK3[0], queue=store('workoutQueue');
+ const s=safeSettings(), w=BLOCK3[s.currentDay-1], queue=store('workoutQueue');
  $('#entrenamiento').innerHTML=`<div class="section-title"><div><span class="eyebrow">BLOQUE 2 · SEMANA ${s.currentWeek}</span><h2>${w.name}</h2><p class="muted">${w.focus}</p></div></div>
  <div class="card"><h3>Flexibilidad del día</h3><p class="muted">Puedes entrenar por la mañana o por la tarde. Si hoy no puedes, reprograma la sesión sin perderla.</p><div class="btn-row"><button class="btn primary" onclick="startWorkout()">Comenzar sesión</button><button class="btn" onclick="postponeWorkout('tarde')">Pasar a la tarde</button><button class="btn secondary" onclick="postponeWorkout('mañana')">Recuperar mañana</button></div></div>
  ${queue.filter(x=>x.status==='pending').map(q=>`<div class="banner"><strong>Pendiente: ${q.label}</strong><p>${q.reason||'Sesión reprogramada'}</p><button class="btn small" onclick="recoverQueue('${q.id}')">Recuperar ahora</button></div>`).join('')}
@@ -112,11 +111,11 @@ function workoutMarkup(w){return `<div class="card"><div class="section-title"><
  <div class="card"><div class="section-title"><h3>Cardio</h3><span class="pill amber">${w.cardio.minutes} min</span></div><strong>${w.cardio.type}</strong><p class="muted">${w.cardio.plan}</p><label class="check"><input id="cardioDone" type="checkbox"> Cardio completado</label></div>
  <div class="card"><div class="form-grid"><label>Duración (min)<input id="duration" type="number" value="70"></label><label>Sensación 1-10<input id="rpe" type="number" min="1" max="10" step=".1" value="8"></label><label>Dolor antes 0-10<input id="painBefore" type="number" min="0" max="10" value="0"></label><label>Dolor después 0-10<input id="painAfter" type="number" min="0" max="10" value="0"></label><label class="wide">Notas<textarea id="workoutNotes" placeholder="Sensaciones, molestias, cambios..."></textarea></label></div><div class="btn-row" style="margin-top:14px"><button class="btn primary" onclick="finishWorkout()">Guardar entrenamiento</button><button class="btn" onclick="shortSession()">Modo 40 minutos</button></div></div>`}
 function startWorkout(){toast('Sesión preparada')}
-function postponeWorkout(when){const s=store('settings'),q=store('workoutQueue');q.push({id:uid(),label:`Semana ${s.currentWeek} · Día ${s.currentDay}`,day:s.currentDay,status:'pending',reason:when==='tarde'?'Pendiente para esta tarde':'Pendiente para mañana',created:todayISO()});save('workoutQueue',q);toast('Sesión reprogramada');renderWorkout()}
-function recoverQueue(id){const q=store('workoutQueue'),item=q.find(x=>x.id===id);if(item){const s=store('settings');s.currentDay=item.day;save('settings',s);item.status='in_progress';save('workoutQueue',q);renderWorkout();toast('Sesión recuperada') }}
-function skipExercise(i){const s=store('settings'),w=BLOCK3[s.currentDay-1],q=store('workoutQueue');q.push({id:uid(),label:`Recuperar: ${w.ex[i][0]}`,day:s.currentDay,status:'pending',reason:'Ejercicio no realizado',exercise:w.ex[i][0],created:todayISO()});save('workoutQueue',q);toast('Ejercicio guardado para recuperar')}
+function postponeWorkout(when){const s=safeSettings(),q=store('workoutQueue');q.push({id:uid(),label:`Semana ${s.currentWeek} · Día ${s.currentDay}`,day:s.currentDay,status:'pending',reason:when==='tarde'?'Pendiente para esta tarde':'Pendiente para mañana',created:todayISO()});save('workoutQueue',q);toast('Sesión reprogramada');renderWorkout()}
+function recoverQueue(id){const q=store('workoutQueue'),item=q.find(x=>x.id===id);if(item){const s=safeSettings();s.currentDay=item.day;save('settings',s);item.status='in_progress';save('workoutQueue',q);renderWorkout();toast('Sesión recuperada') }}
+function skipExercise(i){const s=safeSettings(),w=BLOCK3[s.currentDay-1],q=store('workoutQueue');q.push({id:uid(),label:`Recuperar: ${w.ex[i][0]}`,day:s.currentDay,status:'pending',reason:'Ejercicio no realizado',exercise:w.ex[i][0],created:todayISO()});save('workoutQueue',q);toast('Ejercicio guardado para recuperar')}
 function shortSession(){document.querySelectorAll('.exercise').forEach((el,i)=>{if(i>4)el.classList.add('hidden')});toast('Modo 40 minutos: se mantienen los ejercicios prioritarios')}
-function finishWorkout(){const s=store('settings'),w=BLOCK3[s.currentDay-1],cards=[...document.querySelectorAll('#workoutForm .exercise[data-i]')];let completed=0,total=0,volume=0;cards.forEach(c=>c.querySelectorAll('.set-row').forEach(r=>{total++;if(r.querySelector('.done').checked){completed++;volume+=(+r.querySelector('.kg').value||0)*(+r.querySelector('.reps').value||0)}}));const sessions=store('sessions');sessions.push({id:uid(),date:todayISO(),week:s.currentWeek,day:s.currentDay,label:w.name,duration:+$('#duration').value||0,rpe:+$('#rpe').value||0,painBefore:+$('#painBefore').value||0,painAfter:+$('#painAfter').value||0,completed,total,volume,cardio:$('#cardioDone').checked,notes:$('#workoutNotes').value});save('sessions',sessions);if(s.currentDay<5)s.currentDay++;else{s.currentDay=1;s.currentWeek++}save('settings',s);toast('Entrenamiento guardado');renderWorkout()}
+function finishWorkout(){const s=safeSettings(),w=BLOCK3[s.currentDay-1],cards=[...document.querySelectorAll('#workoutForm .exercise[data-i]')];let completed=0,total=0,volume=0;cards.forEach(c=>c.querySelectorAll('.set-row').forEach(r=>{total++;if(r.querySelector('.done').checked){completed++;volume+=(+r.querySelector('.kg').value||0)*(+r.querySelector('.reps').value||0)}}));const sessions=store('sessions');sessions.push({id:uid(),date:todayISO(),week:s.currentWeek,day:s.currentDay,label:w.name,duration:+$('#duration').value||0,rpe:+$('#rpe').value||0,painBefore:+$('#painBefore').value||0,painAfter:+$('#painAfter').value||0,completed,total,volume,cardio:$('#cardioDone').checked,notes:$('#workoutNotes').value});save('sessions',sessions);if(s.currentDay<5)s.currentDay++;else{s.currentDay=1;s.currentWeek++}save('settings',s);toast('Entrenamiento guardado');renderWorkout()}
 
 function renderNutrition(){
  const log=store('nutritionLog'), today=dayName(), shop=ensureShopping(), pantry=store('pantry');
@@ -141,7 +140,7 @@ function removePantry(id){save('pantry',store('pantry').filter(x=>x.id!==id));$(
 function batchPanel(){return `<div class="card"><h3>Preparación del domingo · 2 horas</h3>${['Hornear pollo y churrasco para varias raciones','Cocer arroz y pasta; enfriar y guardar porciones','Asar pimientos y preparar calabacín','Lavar y secar ensaladas y tomates','Preparar garbanzos con espinacas','Separar pescado por raciones y congelar lo que no se use en 48 horas','Dejar fruta, yogures y queso fresco visibles para meriendas'].map((x,i)=>`<label class="check task"><input type="checkbox"> <span><strong>${i+1}. ${x}</strong></span></label>`).join('')}<p class="note">Conserva y congela de forma segura según el alimento. El pescado fresco y las preparaciones cocinadas no deben permanecer varios días sin refrigeración adecuada.</p></div>`}
 
 function renderProgress(){const m=store('measures'),sessions=store('sessions');const last=m.at(-1)||{};$('#evolucion').innerHTML=`<div class="section-title"><div><span class="eyebrow">DATOS Y TENDENCIAS</span><h2>Evolución</h2></div></div><div class="grid-2"><div class="stat"><span class="muted">Peso</span><strong>${last.weight||'—'} kg</strong></div><div class="stat"><span class="muted">Cintura</span><strong>${last.waist||'—'} cm</strong></div><div class="stat"><span class="muted">Entrenos</span><strong>${sessions.length}</strong></div><div class="stat"><span class="muted">Volumen último</span><strong>${sessions.at(-1)?.volume||0}</strong></div></div><div class="card"><h3>Nueva medición</h3><div class="form-grid"><label>Fecha<input id="measureDate" type="date" value="${todayISO()}"></label><label>Peso kg<input id="measureWeight" type="number" step=".1"></label><label>Cintura cm<input id="measureWaist" type="number" step=".1"></label><label>Grasa %<input id="measureFat" type="number" step=".1"></label><label>Masa muscular kg<input id="measureMuscle" type="number" step=".1"></label></div><button class="btn primary" style="margin-top:12px" onclick="saveMeasure()">Guardar medición</button></div><div class="card"><h3>Histórico</h3><div class="table-wrap"><table class="simple-table"><thead><tr><th>Fecha</th><th>Peso</th><th>Cintura</th><th>Grasa</th><th>Músculo</th></tr></thead><tbody>${[...m].reverse().map(x=>`<tr><td>${x.date}</td><td>${x.weight||'—'}</td><td>${x.waist||'—'}</td><td>${x.bodyFat||'—'}</td><td>${x.muscle||'—'}</td></tr>`).join('')}</tbody></table></div></div>`}
-function saveMeasure(){const m=store('measures');m.push({date:$('#measureDate').value,weight:+$('#measureWeight').value||null,waist:+$('#measureWaist').value||null,bodyFat:+$('#measureFat').value||null,muscle:+$('#measureMuscle').value||null});save('measures',m);const s=store('settings');if($('#measureWeight').value)s.currentWeight=+$('#measureWeight').value;save('settings',s);renderProgress();toast('Medición guardada')}
+function saveMeasure(){const weight=$('#measureWeight').value===''?null:finite($('#measureWeight').value,null);const m=store('measures');m.push({date:$('#measureDate').value,official:true,weight,waist:$('#measureWaist').value===''?null:finite($('#measureWaist').value,null),bodyFat:$('#measureFat').value===''?null:finite($('#measureFat').value,null),muscle:$('#measureMuscle').value===''?null:finite($('#measureMuscle').value,null)});m.sort((a,b)=>(a.date||'').localeCompare(b.date||''));save('measures',m);const s=safeSettings();if(weight!==null)s.currentWeight=weight;save('settings',s);renderProgress();toast('Medición guardada')}
 
 function renderMore(){const a=store('analytics'),r=store('reminders');$('#mas').innerHTML=`<div class="section-title"><div><span class="eyebrow">SALUD Y AJUSTES</span><h2>Más</h2></div></div><div class="card"><div class="task"><div><strong>Registro diario de salud</strong><div class="muted">Sueño, energía, pasos, agua y dolor</div></div><button class="btn small" onclick="openHealthForm()">Abrir</button></div><div class="task"><div><strong>Analíticas</strong><div class="muted">${a.length} registros locales</div></div><button class="btn small" onclick="showAnalytics()">Gestionar</button></div><div class="task"><div><strong>Notificaciones</strong><div class="muted">${r.length} recordatorios configurados</div></div><button class="btn small" onclick="showReminders()">Configurar</button></div><div class="task"><div><strong>Copia de seguridad</strong><div class="muted">Exportar o importar datos del dispositivo</div></div><button class="btn small" onclick="showBackup()">Abrir</button></div></div><div id="moreContent"></div>`}
 function openHealthForm(){go('mas');$('#moreContent').innerHTML=`<div class="card"><h3>Salud de hoy</h3><div class="form-grid"><label>Pasos<input id="steps" type="number"></label><label>Sueño (h)<input id="sleep" type="number" step=".1"></label><label>FC reposo<input id="hr" type="number"></label><label>Agua (L)<input id="water" type="number" step=".1"></label><label>Energía 1-10<input id="energy" type="number" min="1" max="10"></label><label>Dolor 0-10<input id="healthPain" type="number" min="0" max="10"></label><label class="wide">Observaciones<textarea id="healthNotes"></textarea></label></div><button class="btn primary" style="margin-top:12px" onclick="saveHealth()">Guardar</button></div>`}
@@ -153,11 +152,22 @@ function addReminder(){const n=$('#rName').value.trim();if(!n)return;const r=sto
 function removeReminder(id){save('reminders',store('reminders').filter(x=>x.id!==id));showReminders()}
 async function requestNotifications(){if(!('Notification'in window))return toast('Este navegador no admite notificaciones');const p=await Notification.requestPermission();if(p==='granted'){new Notification('Proyecto85',{body:'Avisos activados correctamente'});toast('Notificaciones activadas')}else toast('Permiso no concedido')}
 function showBackup(){$('#moreContent').innerHTML=`<div class="card"><h3>Copia de seguridad</h3><div class="btn-row"><button class="btn primary" onclick="exportData()">Exportar datos</button><label class="btn">Importar<input type="file" accept="application/json" class="hidden" onchange="importData(this.files[0])"></label></div><p class="note">El archivo puede contener información personal y médica. Guárdalo de forma privada.</p></div>`}
-function exportData(){const data={version:'3.1.2',exported:new Date().toISOString()};Object.keys(DEFAULTS).forEach(k=>data[k]=store(k));const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`Proyecto85-backup-${todayISO()}.json`;a.click();URL.revokeObjectURL(a.href)}
+function exportData(){const data={version:APP_VERSION,exported:new Date().toISOString()};Object.keys(DEFAULTS).forEach(k=>data[k]=store(k));const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`Proyecto85-backup-${todayISO()}.json`;a.click();URL.revokeObjectURL(a.href)}
 function importData(file){if(!file)return;const fr=new FileReader();fr.onload=()=>{try{const d=JSON.parse(fr.result);Object.keys(DEFAULTS).forEach(k=>{if(d[k]!==undefined)save(k,d[k])});toast('Copia importada');renderMore()}catch{toast('Archivo no válido')}};fr.readAsText(file)}
 
 function dayName(){return ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'][new Date().getDay()]}
 function checkInAppReminders(){const now=new Date(), hh=now.toTimeString().slice(0,5),day=dayName();store('reminders').forEach(r=>{const relevant=r.days==='Todos los días'||(r.days==='Lunes a viernes'&&!['Sábado','Domingo'].includes(day))||r.days===day;if(relevant&&r.time===hh){const key=`p85_notified_${todayISO()}_${r.id}_${hh}`;if(!sessionStorage.getItem(key)){toast(`Recordatorio: ${r.name}`);if(Notification.permission==='granted')new Notification('Proyecto85',{body:r.name});sessionStorage.setItem(key,'1')}}})}
 setInterval(checkInAppReminders,30000);
-if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js').catch(()=>{});
+async function forceAppUpdate(){
+ migrateData();
+ if('serviceWorker'in navigator){
+  try{const reg=await navigator.serviceWorker.getRegistration();if(reg)await reg.update()}catch{}
+ }
+ render($('.view.active')?.id||'inicio');
+ toast('Datos y aplicación actualizados');
+}
+if('serviceWorker'in navigator){
+ navigator.serviceWorker.register('./sw.js?v=3.2.0').then(reg=>reg.update()).catch(()=>{});
+ navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!sessionStorage.getItem('p85_reloaded_320')){sessionStorage.setItem('p85_reloaded_320','1');location.reload()}});
+}
 renderHome();
