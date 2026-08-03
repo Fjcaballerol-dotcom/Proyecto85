@@ -4,7 +4,7 @@ const get=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return
 const set=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
 const uid=()=>crypto.randomUUID?crypto.randomUUID():Date.now()+Math.random().toString(16).slice(2);
 
-const APP_VERSION='3.2.0';
+const APP_VERSION='4.0.0';
 const INITIAL_MEASURE={
  date:'2026-07-27',official:true,weight:106,bmi:31.6,bodyFat:39.5,fatFreeMass:64.13,
  subcutaneousFat:34.9,visceralFat:15,water:43.7,skeletalMuscle:39.1,muscle:63.8,
@@ -13,7 +13,7 @@ const INITIAL_MEASURE={
 const DEFAULTS={
  settings:{name:'Javier',initialWeight:106,goalWeight:90,currentWeight:106,currentWeek:2,currentDay:5,totalWeeks:24,restSeconds:90,dataVersion:APP_VERSION},
  sessions:[], health:[], measures:[INITIAL_MEASURE],
- pantry:[], shopping:[], analytics:[], reminders:[], nutritionLog:[], workoutQueue:[]
+ pantry:[], shopping:[], analytics:[], reminders:[], nutritionLog:[], workoutQueue:[], workoutDraft:null, exercisePreferences:{}
 };
 const finite=(value,fallback)=>Number.isFinite(Number(value))?Number(value):fallback;
 const clamp=(value,min,max)=>Math.min(max,Math.max(min,value));
@@ -57,6 +57,47 @@ function safeSettings(){
 }
 const fmt=n=>finite(n,0).toLocaleString('es-ES',{minimumFractionDigits:1,maximumFractionDigits:1});
 
+
+const EXERCISE_GUIDES={
+ 'Prensa':{muscles:'Cuádriceps, glúteos e isquiotibiales',steps:['Apoya completamente espalda y cadera.','Coloca los pies al ancho de hombros.','Baja con control sin despegar la pelvis.','Empuja sin bloquear completamente las rodillas.'],errors:['Juntar las rodillas hacia dentro.','Bajar más de lo que permite la movilidad.','Rebotar en la parte inferior.']},
+ 'Curl femoral':{muscles:'Isquiotibiales',steps:['Ajusta el rodillo sobre la parte baja de la pierna.','Mantén la cadera apoyada.','Flexiona de forma controlada.','Regresa lentamente.'],errors:['Levantar la cadera.','Usar impulso.','Soltar el peso en la bajada.']},
+ 'Jalón neutro':{muscles:'Dorsal ancho, bíceps y espalda alta',steps:['Sujeta con agarre neutro.','Eleva ligeramente el pecho.','Lleva los codos hacia abajo.','Controla la vuelta sin encoger hombros.'],errors:['Balancear el tronco.','Tirar solo con los brazos.','Llevar el agarre detrás de la cabeza.']},
+ 'Jalón al pecho agarre medio':{muscles:'Dorsal ancho y bíceps',steps:['Pecho alto y abdomen estable.','Lleva la barra hacia la parte alta del pecho.','Junta ligeramente las escápulas.','Sube de forma controlada.'],errors:['Inclinarse demasiado hacia atrás.','Dar tirones.','Encoger los hombros.']},
+ 'Jalón al pecho':{muscles:'Dorsal ancho y bíceps',steps:['Pecho alto.','Codos hacia abajo y atrás.','Barra hacia la parte alta del pecho.','Regreso lento.'],errors:['Balanceo.','Agarre excesivamente ancho.','Tirar detrás de la nuca.']},
+ 'Remo con apoyo':{muscles:'Espalda media, dorsal y bíceps',steps:['Apoya el pecho firmemente.','Tira llevando los codos atrás.','Junta escápulas sin encoger hombros.','Vuelve lentamente.'],errors:['Despegar el pecho.','Elevar los hombros.','Usar impulso.']},
+ 'Remo polea baja':{muscles:'Espalda media y dorsal',steps:['Espalda neutra y pecho alto.','Tira hacia el abdomen.','Codos cerca del cuerpo.','Extiende sin redondear la espalda.'],errors:['Balancearse.','Redondear la zona lumbar.','Tirar con los hombros elevados.']},
+ 'Remo máquina':{muscles:'Espalda media y dorsal',steps:['Ajusta asiento y apoyo.','Tira con los codos.','Mantén el pecho estable.','Controla el retorno.'],errors:['Recorrido demasiado corto.','Impulso.','Cuello adelantado.']},
+ 'Press convergente':{muscles:'Pectoral, tríceps y deltoide anterior',steps:['Ajusta el asiento para alinear las manos con el pecho.','Mantén escápulas apoyadas.','Empuja sin bloquear los codos.','Regresa con control.'],errors:['Hombros adelantados.','Arquear demasiado la espalda.','Rebotar.']},
+ 'Press inclinado máquina':{muscles:'Pectoral superior, hombro y tríceps',steps:['Ajusta el asiento.','Mantén el pecho elevado.','Empuja en línea con la máquina.','Controla la bajada.'],errors:['Abrir demasiado los codos.','Despegar la espalda.','Usar una carga excesiva.']},
+ 'Press hombro máquina':{muscles:'Hombros y tríceps',steps:['Espalda apoyada y abdomen firme.','Empuja sin encoger hombros.','No bloquees los codos.','Baja hasta un rango cómodo.'],errors:['Arquear la zona lumbar.','Bajar demasiado.','Empujar de forma desigual.']},
+ 'Press pecho máquina':{muscles:'Pectoral, tríceps y hombro anterior',steps:['Escápulas estables.','Empuja al frente.','Mantén muñecas neutras.','Controla el regreso.'],errors:['Hombros adelantados.','Rebotar.','Separar la espalda del respaldo.']},
+ 'Press militar máquina':{muscles:'Deltoides y tríceps',steps:['Espalda apoyada.','Abdomen activo.','Empuja verticalmente.','Baja de forma controlada.'],errors:['Arquear la espalda.','Encoger hombros.','Forzar el rango.']},
+ 'Elevaciones laterales':{muscles:'Deltoide lateral',steps:['Codos ligeramente flexionados.','Eleva hasta aproximadamente la altura del hombro.','Mantén el tronco quieto.','Baja lentamente.'],errors:['Balancearse.','Subir demasiado.','Encoger hombros.']},
+ 'Face Pull':{muscles:'Deltoide posterior, trapecio medio y manguito rotador',steps:['Polea a la altura de la cara.','Tira separando las manos.','Codos altos sin dolor.','Aprieta escápulas.'],errors:['Arquear la espalda.','Tirar hacia el pecho.','Usar demasiado peso.']},
+ 'Peck Deck':{muscles:'Pectoral',steps:['Espalda apoyada.','Codos alineados con el pecho.','Cierra sin golpear las placas.','Abre hasta un rango cómodo.'],errors:['Estirar en exceso.','Despegar la espalda.','Mover los hombros hacia delante.']},
+ 'Curl bíceps':{muscles:'Bíceps y braquial',steps:['Codos junto al cuerpo.','Flexiona sin mover los hombros.','Aprieta arriba.','Baja lentamente.'],errors:['Balancear el tronco.','Adelantar los codos.','Soltar la bajada.']},
+ 'Curl martillo':{muscles:'Braquial, bíceps y antebrazo',steps:['Agarre neutro.','Codos quietos.','Sube de forma controlada.','Baja lentamente.'],errors:['Balanceo.','Muñecas dobladas.','Carga excesiva.']},
+ 'Tríceps cuerda':{muscles:'Tríceps',steps:['Codos pegados al cuerpo.','Extiende hacia abajo.','Separa la cuerda al final.','Regresa sin mover los hombros.'],errors:['Abrir los codos.','Inclinarse demasiado.','Usar impulso.']},
+ 'Tríceps polea':{muscles:'Tríceps',steps:['Codos fijos.','Extiende completamente sin bloquear con violencia.','Mantén muñecas neutras.','Sube con control.'],errors:['Mover los hombros.','Abrir codos.','Balancear el cuerpo.']},
+ 'Extensión cuádriceps':{muscles:'Cuádriceps',steps:['Alinea la rodilla con el eje de la máquina.','Extiende sin golpe.','Aprieta arriba.','Baja lentamente.'],errors:['Carga excesiva.','Movimiento brusco.','Despegar la cadera.']},
+ 'Abducción cadera':{muscles:'Glúteo medio y menor',steps:['Espalda apoyada.','Abre las piernas de forma controlada.','Mantén un segundo.','Regresa lentamente.'],errors:['Rebotar.','Cerrar de golpe.','Arquear la espalda.']},
+ 'Pullover en polea':{muscles:'Dorsal ancho y core',steps:['Brazos casi estirados.','Lleva la barra hacia los muslos.','Mantén abdomen activo.','Regresa sin perder tensión.'],errors:['Flexionar demasiado los codos.','Arquear la espalda.','Usar impulso.']},
+ 'Crunch en máquina':{muscles:'Recto abdominal',steps:['Ajusta la máquina a un rango cómodo.','Acerca costillas y pelvis.','Exhala al contraer.','Regresa sin soltar el peso.'],errors:['Tirar con brazos o cuello.','Recorrido excesivo.','Usar una carga que provoque calambres.']},
+ 'Rotación de tronco en máquina':{muscles:'Oblicuos y estabilizadores del core',steps:['Ajusta el rango corto.','Mantén pelvis estable.','Rota de forma lenta.','Trabaja ambos lados.'],errors:['Girar con impulso.','Rango excesivo.','Mover las caderas.']},
+ 'Extensión lumbar en máquina':{muscles:'Erectores espinales, glúteos e isquiotibiales',steps:['Ajusta el apoyo.','Mantén columna neutra.','Extiende hasta quedar alineado.','Regresa lentamente.'],errors:['Hiperextender.','Movimiento rápido.','Carga excesiva.']},
+ 'Crunch polea con cuerda':{muscles:'Recto abdominal',steps:['Rodillas estables.','Flexiona el tronco acercando costillas a pelvis.','Exhala al bajar.','Vuelve lentamente.'],errors:['Tirar con los brazos.','Mover la cadera.','Redondear bruscamente el cuello.']},
+ 'Wood chop en polea':{muscles:'Oblicuos y core',steps:['Mantén pelvis estable.','Mueve brazos y tronco juntos.','Controla la rotación.','Trabaja ambos lados.'],errors:['Girar solo con los brazos.','Usar impulso.','Forzar la zona lumbar.']},
+ 'Pallof press en polea':{muscles:'Core antirotación',steps:['Colócate lateral a la polea.','Mantén pelvis y hombros rectos.','Extiende brazos sin girar.','Regresa lentamente.'],errors:['Rotar hacia la polea.','Separar los pies demasiado poco.','Usar carga excesiva.']},
+ 'Pallof press':{muscles:'Core antirotación',steps:['Colócate lateral a la polea.','Mantén abdomen firme.','Extiende brazos.','Evita que el tronco rote.'],errors:['Girar.','Arquear la espalda.','Perder estabilidad.']}
+};
+function guideFor(name){
+ return EXERCISE_GUIDES[name]||{
+  muscles:'Consulta la máquina y ajusta el ejercicio a un rango sin dolor.',
+  steps:['Ajusta asiento y apoyos.','Mantén una postura estable.','Realiza el movimiento lentamente.','Detente si aparece dolor.'],
+  errors:['Usar una carga excesiva.','Hacer movimientos bruscos.','Sacrificar la técnica.']
+ };
+}
+
 const BLOCK3=[
  {name:'Día 1 · Fuerza base',focus:'Pierna + tirón + empuje',ex:[['Prensa',3,10,50],['Curl femoral',3,10,42],['Jalón neutro',3,10,45],['Remo con apoyo',3,10,35],['Press convergente',3,10,34],['Elevaciones laterales',3,14,7],['Tríceps cuerda',3,12,15.9]],core:[['Crunch en máquina',3,12],['Pallof press en polea',3,12]],cardio:{type:'Cinta inclinada',minutes:25,plan:'5 min suave + 15 min inclinación moderada + 5 min suave'}},
  {name:'Día 2 · Espalda y pierna',focus:'Espalda + cuádriceps',ex:[['Jalón al pecho agarre medio',3,10,45],['Remo polea baja',3,10,32],['Pullover en polea',3,12,15.9],['Extensión cuádriceps',3,12,32],['Abducción cadera',3,15,39],['Press inclinado máquina',3,10,20],['Face Pull',3,15,15.9]],core:[['Rotación de tronco en máquina',3,12],['Extensión lumbar en máquina',3,12]],cardio:{type:'Bicicleta',minutes:28,plan:'Ritmo continuo: 6/10 de esfuerzo'}},
@@ -99,23 +140,124 @@ function renderHome(){
  <div class="card"><div class="section-title"><h3>Progreso del programa</h3><strong>${Math.round(((s.currentWeek-1)*5+s.currentDay)/(s.totalWeeks*5)*100)}%</strong></div><div class="progress"><span style="width:${Math.round(((s.currentWeek-1)*5+s.currentDay)/(s.totalWeeks*5)*100)}%"></span></div></div>`;
 }
 
-function renderWorkout(){
- const s=safeSettings(), w=BLOCK3[s.currentDay-1], queue=store('workoutQueue');
- $('#entrenamiento').innerHTML=`<div class="section-title"><div><span class="eyebrow">BLOQUE 2 · SEMANA ${s.currentWeek}</span><h2>${w.name}</h2><p class="muted">${w.focus}</p></div></div>
- <div class="card"><h3>Flexibilidad del día</h3><p class="muted">Puedes entrenar por la mañana o por la tarde. Si hoy no puedes, reprograma la sesión sin perderla.</p><div class="btn-row"><button class="btn primary" onclick="startWorkout()">Comenzar sesión</button><button class="btn" onclick="postponeWorkout('tarde')">Pasar a la tarde</button><button class="btn secondary" onclick="postponeWorkout('mañana')">Recuperar mañana</button></div></div>
- ${queue.filter(x=>x.status==='pending').map(q=>`<div class="banner"><strong>Pendiente: ${q.label}</strong><p>${q.reason||'Sesión reprogramada'}</p><button class="btn small" onclick="recoverQueue('${q.id}')">Recuperar ahora</button></div>`).join('')}
- <div id="workoutForm">${workoutMarkup(w)}</div>`;
+
+function emptyWorkoutDraft(s,w){
+ return {
+  version:APP_VERSION,week:s.currentWeek,day:s.currentDay,date:todayISO(),startedAt:null,updatedAt:null,
+  exercises:w.ex.map(e=>({name:e[0],rating:'',sets:Array.from({length:e[1]},()=>({kg:e[3],reps:e[2],done:false}))})),
+  core:w.core.map(c=>({name:c[0],done:false})),
+  cardioDone:false,duration:70,rpe:8,painBefore:0,painAfter:0,notes:''
+ };
 }
-function workoutMarkup(w){return `<div class="card"><div class="section-title"><h3>Fuerza</h3><span class="pill">Prioridad alta</span></div>${w.ex.map((e,i)=>`<div class="exercise" data-i="${i}"><h3>${i+1}. ${e[0]}</h3><div class="muted">${e[1]} × ${e[2]} · referencia ${e[3]} kg</div>${Array.from({length:e[1]},(_,j)=>`<div class="set-row"><b>${j+1}</b><input class="kg" type="number" step=".1" value="${e[3]}"><input class="reps" type="number" value="${e[2]}"><input class="done" type="checkbox"></div>`).join('')}<button class="btn small secondary" onclick="skipExercise(${i})">Saltar y recuperar</button></div>`).join('')}</div>
- <div class="card"><div class="section-title"><h3>Core en máquina/polea</h3><span class="pill blue">Progresivo</span></div>${w.core.map((c,i)=>`<label class="check exercise"><input class="coreDone" type="checkbox"> <span><strong>${c[0]}</strong><br><span class="muted">${c[1]} × ${c[2]}</span></span></label>`).join('')}</div>
- <div class="card"><div class="section-title"><h3>Cardio</h3><span class="pill amber">${w.cardio.minutes} min</span></div><strong>${w.cardio.type}</strong><p class="muted">${w.cardio.plan}</p><label class="check"><input id="cardioDone" type="checkbox"> Cardio completado</label></div>
- <div class="card"><div class="form-grid"><label>Duración (min)<input id="duration" type="number" value="70"></label><label>Sensación 1-10<input id="rpe" type="number" min="1" max="10" step=".1" value="8"></label><label>Dolor antes 0-10<input id="painBefore" type="number" min="0" max="10" value="0"></label><label>Dolor después 0-10<input id="painAfter" type="number" min="0" max="10" value="0"></label><label class="wide">Notas<textarea id="workoutNotes" placeholder="Sensaciones, molestias, cambios..."></textarea></label></div><div class="btn-row" style="margin-top:14px"><button class="btn primary" onclick="finishWorkout()">Guardar entrenamiento</button><button class="btn" onclick="shortSession()">Modo 40 minutos</button></div></div>`}
-function startWorkout(){toast('Sesión preparada')}
+function currentDraft(s,w){
+ let d=store('workoutDraft');
+ if(!d||d.week!==s.currentWeek||d.day!==s.currentDay||!Array.isArray(d.exercises)){
+  d=emptyWorkoutDraft(s,w);save('workoutDraft',d);
+ }
+ return d;
+}
+function draftProgress(d){
+ const sets=d.exercises.flatMap(x=>x.sets||[]);
+ return {done:sets.filter(x=>x.done).length,total:sets.length};
+}
+function saveWorkoutDraftFromForm(){
+ const form=$('#workoutForm');if(!form)return;
+ const s=safeSettings(),w=BLOCK3[s.currentDay-1],d=currentDraft(s,w);
+ d.updatedAt=new Date().toISOString();
+ d.exercises=[...form.querySelectorAll('.exercise[data-i]')].map((card,i)=>({
+  name:w.ex[i][0],
+  rating:card.dataset.rating||'',
+  sets:[...card.querySelectorAll('.set-row')].map(row=>({
+   kg:finite(row.querySelector('.kg').value,0),
+   reps:finite(row.querySelector('.reps').value,0),
+   done:row.querySelector('.done').checked
+  }))
+ }));
+ d.core=[...form.querySelectorAll('.coreDone')].map((x,i)=>({name:w.core[i][0],done:x.checked}));
+ d.cardioDone=$('#cardioDone')?.checked||false;
+ d.duration=finite($('#duration')?.value,70);
+ d.rpe=finite($('#rpe')?.value,8);
+ d.painBefore=finite($('#painBefore')?.value,0);
+ d.painAfter=finite($('#painAfter')?.value,0);
+ d.notes=$('#workoutNotes')?.value||'';
+ save('workoutDraft',d);
+ updateDraftStatus();
+}
+function bindWorkoutAutosave(){
+ const form=$('#workoutForm');if(!form)return;
+ form.addEventListener('input',saveWorkoutDraftFromForm);
+ form.addEventListener('change',saveWorkoutDraftFromForm);
+ updateDraftStatus();
+}
+function updateDraftStatus(){
+ const el=$('#draftStatus');if(!el)return;
+ const d=store('workoutDraft');if(!d)return;
+ const p=draftProgress(d);
+ el.textContent=`Autoguardado · ${p.done}/${p.total} series`;
+}
+function setExerciseRating(index,rating){
+ const card=document.querySelector(`.exercise[data-i="${index}"]`);if(!card)return;
+ card.dataset.rating=rating;
+ card.querySelectorAll('.rating-btn').forEach(b=>b.classList.toggle('active',b.dataset.value===rating));
+ saveWorkoutDraftFromForm();
+ toast(rating==='up'?'Marcado para subir peso':rating==='down'?'Marcado para bajar peso':'Peso correcto para mantener');
+}
+function openExerciseGuide(name){
+ const g=guideFor(name);
+ $('#guideTitle').textContent=name;
+ $('#guideMuscles').textContent=g.muscles;
+ $('#guideSteps').innerHTML=g.steps.map((x,i)=>`<li><b>${i+1}.</b> ${x}</li>`).join('');
+ $('#guideErrors').innerHTML=g.errors.map(x=>`<li>${x}</li>`).join('');
+ $('#exerciseGuideModal').classList.add('open');
+}
+function closeExerciseGuide(){$('#exerciseGuideModal').classList.remove('open')}
+
+function renderWorkout(){
+ const s=safeSettings(),w=BLOCK3[s.currentDay-1],queue=store('workoutQueue'),d=currentDraft(s,w),p=draftProgress(d);
+ $('#entrenamiento').innerHTML=`<div class="section-title"><div><span class="eyebrow">BLOQUE 2 · SEMANA ${s.currentWeek}</span><h2>${w.name}</h2><p class="muted">${w.focus}</p></div><span id="draftStatus" class="pill blue">Autoguardado · ${p.done}/${p.total} series</span></div>
+ <div class="card"><h3>Flexibilidad del día</h3><p class="muted">Puedes entrenar por la mañana o por la tarde. Todo lo que marques se guarda automáticamente, incluso si cierras la aplicación.</p><div class="btn-row"><button class="btn primary" onclick="startWorkout()">Comenzar o continuar</button><button class="btn" onclick="postponeWorkout('tarde')">Pasar a la tarde</button><button class="btn secondary" onclick="postponeWorkout('mañana')">Recuperar mañana</button></div></div>
+ ${d.updatedAt?`<div class="banner"><strong>Sesión recuperada automáticamente.</strong><p>Llevabas ${p.done} de ${p.total} series completadas.</p></div>`:''}
+ ${queue.filter(x=>x.status==='pending').map(q=>`<div class="banner"><strong>Pendiente: ${q.label}</strong><p>${q.reason||'Sesión reprogramada'}</p><button class="btn small" onclick="recoverQueue('${q.id}')">Recuperar ahora</button></div>`).join('')}
+ <div id="workoutForm">${workoutMarkup(w,d)}</div>`;
+ bindWorkoutAutosave();
+}
+function workoutMarkup(w,d){return `<div class="card"><div class="section-title"><h3>Fuerza</h3><span class="pill">Prioridad alta</span></div>${w.ex.map((e,i)=>{
+ const de=d.exercises[i]||{rating:'',sets:[]};
+ return `<div class="exercise" data-i="${i}" data-rating="${de.rating||''}"><div class="exercise-head"><div><h3>${i+1}. ${e[0]}</h3><div class="muted">${e[1]} × ${e[2]} · referencia ${e[3]} kg</div></div><button class="guide-btn" type="button" onclick="openExerciseGuide('${e[0].replace(/'/g,"\\'")}')">? Técnica</button></div>
+ ${Array.from({length:e[1]},(_,j)=>{const ds=de.sets[j]||{kg:e[3],reps:e[2],done:false};return `<div class="set-row"><b>${j+1}</b><input class="kg" type="number" step=".1" value="${ds.kg}"><input class="reps" type="number" value="${ds.reps}"><input class="done" type="checkbox" ${ds.done?'checked':''}></div>`}).join('')}
+ <div class="rating-row"><span>Próxima vez:</span><button type="button" class="rating-btn ${de.rating==='ok'?'active':''}" data-value="ok" onclick="setExerciseRating(${i},'ok')">✓ OK</button><button type="button" class="rating-btn ${de.rating==='up'?'active':''}" data-value="up" onclick="setExerciseRating(${i},'up')">↑ Subir</button><button type="button" class="rating-btn ${de.rating==='down'?'active':''}" data-value="down" onclick="setExerciseRating(${i},'down')">↓ Bajar</button></div>
+ <button class="btn small secondary" type="button" onclick="skipExercise(${i})">Saltar y recuperar</button></div>`}).join('')}</div>
+ <div class="card"><div class="section-title"><h3>Core en máquina/polea</h3><span class="pill blue">Progresivo</span></div>${w.core.map((c,i)=>`<div class="exercise core-exercise"><label class="check"><input class="coreDone" type="checkbox" ${d.core[i]?.done?'checked':''}> <span><strong>${c[0]}</strong><br><span class="muted">${c[1]} × ${c[2]}</span></span></label><button class="guide-btn" type="button" onclick="openExerciseGuide('${c[0].replace(/'/g,"\\'")}')">? Técnica</button></div>`).join('')}</div>
+ <div class="card"><div class="section-title"><h3>Cardio</h3><span class="pill amber">${w.cardio.minutes} min</span></div><strong>${w.cardio.type}</strong><p class="muted">${w.cardio.plan}</p><label class="check"><input id="cardioDone" type="checkbox" ${d.cardioDone?'checked':''}> Cardio completado</label></div>
+ <div class="card"><div class="form-grid"><label>Duración (min)<input id="duration" type="number" value="${d.duration}"></label><label>Sensación 1-10<input id="rpe" type="number" min="1" max="10" step=".1" value="${d.rpe}"></label><label>Dolor antes 0-10<input id="painBefore" type="number" min="0" max="10" value="${d.painBefore}"></label><label>Dolor después 0-10<input id="painAfter" type="number" min="0" max="10" value="${d.painAfter}"></label><label class="wide">Notas<textarea id="workoutNotes" placeholder="Sensaciones, molestias, cambios...">${d.notes||''}</textarea></label></div><div class="btn-row" style="margin-top:14px"><button class="btn primary" type="button" onclick="finishWorkout()">Guardar entrenamiento</button><button class="btn" type="button" onclick="shortSession()">Modo 40 minutos</button></div></div>`}
+function startWorkoutfunction startWorkout(){const s=safeSettings(),w=BLOCK3[s.currentDay-1],d=currentDraft(s,w);if(!d.startedAt)d.startedAt=new Date().toISOString();d.updatedAt=new Date().toISOString();save('workoutDraft',d);toast('Sesión iniciada y autoguardada');updateDraftStatus()}
 function postponeWorkout(when){const s=safeSettings(),q=store('workoutQueue');q.push({id:uid(),label:`Semana ${s.currentWeek} · Día ${s.currentDay}`,day:s.currentDay,status:'pending',reason:when==='tarde'?'Pendiente para esta tarde':'Pendiente para mañana',created:todayISO()});save('workoutQueue',q);toast('Sesión reprogramada');renderWorkout()}
 function recoverQueue(id){const q=store('workoutQueue'),item=q.find(x=>x.id===id);if(item){const s=safeSettings();s.currentDay=item.day;save('settings',s);item.status='in_progress';save('workoutQueue',q);renderWorkout();toast('Sesión recuperada') }}
 function skipExercise(i){const s=safeSettings(),w=BLOCK3[s.currentDay-1],q=store('workoutQueue');q.push({id:uid(),label:`Recuperar: ${w.ex[i][0]}`,day:s.currentDay,status:'pending',reason:'Ejercicio no realizado',exercise:w.ex[i][0],created:todayISO()});save('workoutQueue',q);toast('Ejercicio guardado para recuperar')}
 function shortSession(){document.querySelectorAll('.exercise').forEach((el,i)=>{if(i>4)el.classList.add('hidden')});toast('Modo 40 minutos: se mantienen los ejercicios prioritarios')}
-function finishWorkout(){const s=safeSettings(),w=BLOCK3[s.currentDay-1],cards=[...document.querySelectorAll('#workoutForm .exercise[data-i]')];let completed=0,total=0,volume=0;cards.forEach(c=>c.querySelectorAll('.set-row').forEach(r=>{total++;if(r.querySelector('.done').checked){completed++;volume+=(+r.querySelector('.kg').value||0)*(+r.querySelector('.reps').value||0)}}));const sessions=store('sessions');sessions.push({id:uid(),date:todayISO(),week:s.currentWeek,day:s.currentDay,label:w.name,duration:+$('#duration').value||0,rpe:+$('#rpe').value||0,painBefore:+$('#painBefore').value||0,painAfter:+$('#painAfter').value||0,completed,total,volume,cardio:$('#cardioDone').checked,notes:$('#workoutNotes').value});save('sessions',sessions);if(s.currentDay<5)s.currentDay++;else{s.currentDay=1;s.currentWeek++}save('settings',s);toast('Entrenamiento guardado');renderWorkout()}
+function finishWorkout(){
+ saveWorkoutDraftFromForm();
+ const s=safeSettings(),w=BLOCK3[s.currentDay-1],d=currentDraft(s,w);
+ const sets=d.exercises.flatMap(x=>x.sets||[]);
+ let completed=0,total=sets.length,volume=0;
+ sets.forEach(x=>{if(x.done){completed++;volume+=finite(x.kg,0)*finite(x.reps,0)}});
+ const sessions=store('sessions');
+ sessions.push({
+  id:uid(),date:todayISO(),week:s.currentWeek,day:s.currentDay,label:w.name,
+  duration:d.duration,rpe:d.rpe,painBefore:d.painBefore,painAfter:d.painAfter,
+  completed,total,volume,cardio:d.cardioDone,notes:d.notes,
+  exercises:d.exercises,core:d.core,startedAt:d.startedAt,finishedAt:new Date().toISOString()
+ });
+ save('sessions',sessions);
+ const prefs=store('exercisePreferences');
+ d.exercises.forEach(x=>{if(x.rating)prefs[x.name]={rating:x.rating,date:todayISO(),week:s.currentWeek,day:s.currentDay}});
+ save('exercisePreferences',prefs);
+ save('workoutDraft',null);
+ if(s.currentDay<5)s.currentDay++;else{s.currentDay=1;s.currentWeek=Math.min(s.totalWeeks,s.currentWeek+1)}
+ save('settings',s);
+ toast('Entrenamiento guardado definitivamente');
+ renderWorkout();
+}
 
 function renderNutrition(){
  const log=store('nutritionLog'), today=dayName(), shop=ensureShopping(), pantry=store('pantry');
@@ -167,7 +309,7 @@ async function forceAppUpdate(){
  toast('Datos y aplicación actualizados');
 }
 if('serviceWorker'in navigator){
- navigator.serviceWorker.register('./sw.js?v=3.2.0').then(reg=>reg.update()).catch(()=>{});
- navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!sessionStorage.getItem('p85_reloaded_320')){sessionStorage.setItem('p85_reloaded_320','1');location.reload()}});
+ navigator.serviceWorker.register('./sw.js?v=4.0.0').then(reg=>reg.update()).catch(()=>{});
+ navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!sessionStorage.getItem('p85_reloaded_400')){sessionStorage.setItem('p85_reloaded_400','1');location.reload()}});
 }
 renderHome();

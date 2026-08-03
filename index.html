@@ -8,9 +8,9 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <link rel="manifest" href="manifest.json" />
   <link rel="apple-touch-icon" href="icon-192.png" />
-  <link rel="stylesheet" href="styles.css?v=3.2.0" />
+  <link rel="stylesheet" href="styles.css?v=4.0.0" />
   <title>Proyecto 85</title>
-  <meta name="application-version" content="3.2.0" />
+  <meta name="application-version" content="4.0.0" />
 </head>
 <body>
   <header class="topbar">
@@ -34,7 +34,21 @@
     <button data-go="mas"><span>☰</span>Más</button>
   </nav>
 
+
+  <div id="exerciseGuideModal" class="modal-overlay" onclick="if(event.target===this)closeExerciseGuide()">
+    <div class="modal-card">
+      <div class="modal-head">
+        <div><span class="eyebrow">BIBLIOTECA DE EJERCICIOS</span><h2 id="guideTitle">Ejercicio</h2></div>
+        <button class="icon-btn modal-close" onclick="closeExerciseGuide()">×</button>
+      </div>
+      <div class="guide-section"><span class="muted">Músculos trabajados</span><strong id="guideMuscles"></strong></div>
+      <div class="guide-section"><h3>Técnica correcta</h3><ol id="guideSteps" class="guide-list"></ol></div>
+      <div class="guide-section warning-box"><h3>Errores que debes evitar</h3><ul id="guideErrors" class="guide-list"></ul></div>
+      <p class="note">Utiliza siempre un rango sin dolor. Si aparece una molestia nueva o intensa, detén el ejercicio.</p>
+    </div>
+  </div>
+
   <div id="toast" class="toast" role="status"></div>
-  <script src="app.js?v=3.2.0"></script>
+  <script src="app.js?v=4.0.0"></script>
 </body>
 </html>
