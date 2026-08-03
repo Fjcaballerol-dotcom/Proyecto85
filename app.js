@@ -4,7 +4,7 @@ const get=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return
 const set=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
 const uid=()=>crypto.randomUUID?crypto.randomUUID():Date.now()+Math.random().toString(16).slice(2);
 
-const APP_VERSION='4.0.0';
+const APP_VERSION='4.0.1';
 const INITIAL_MEASURE={
  date:'2026-07-27',official:true,weight:106,bmi:31.6,bodyFat:39.5,fatFreeMass:64.13,
  subcutaneousFat:34.9,visceralFat:15,water:43.7,skeletalMuscle:39.1,muscle:63.8,
@@ -230,7 +230,7 @@ function workoutMarkup(w,d){return `<div class="card"><div class="section-title"
  <div class="card"><div class="section-title"><h3>Core en máquina/polea</h3><span class="pill blue">Progresivo</span></div>${w.core.map((c,i)=>`<div class="exercise core-exercise"><label class="check"><input class="coreDone" type="checkbox" ${d.core[i]?.done?'checked':''}> <span><strong>${c[0]}</strong><br><span class="muted">${c[1]} × ${c[2]}</span></span></label><button class="guide-btn" type="button" onclick="openExerciseGuide('${c[0].replace(/'/g,"\\'")}')">? Técnica</button></div>`).join('')}</div>
  <div class="card"><div class="section-title"><h3>Cardio</h3><span class="pill amber">${w.cardio.minutes} min</span></div><strong>${w.cardio.type}</strong><p class="muted">${w.cardio.plan}</p><label class="check"><input id="cardioDone" type="checkbox" ${d.cardioDone?'checked':''}> Cardio completado</label></div>
  <div class="card"><div class="form-grid"><label>Duración (min)<input id="duration" type="number" value="${d.duration}"></label><label>Sensación 1-10<input id="rpe" type="number" min="1" max="10" step=".1" value="${d.rpe}"></label><label>Dolor antes 0-10<input id="painBefore" type="number" min="0" max="10" value="${d.painBefore}"></label><label>Dolor después 0-10<input id="painAfter" type="number" min="0" max="10" value="${d.painAfter}"></label><label class="wide">Notas<textarea id="workoutNotes" placeholder="Sensaciones, molestias, cambios...">${d.notes||''}</textarea></label></div><div class="btn-row" style="margin-top:14px"><button class="btn primary" type="button" onclick="finishWorkout()">Guardar entrenamiento</button><button class="btn" type="button" onclick="shortSession()">Modo 40 minutos</button></div></div>`}
-function startWorkoutfunction startWorkout(){const s=safeSettings(),w=BLOCK3[s.currentDay-1],d=currentDraft(s,w);if(!d.startedAt)d.startedAt=new Date().toISOString();d.updatedAt=new Date().toISOString();save('workoutDraft',d);toast('Sesión iniciada y autoguardada');updateDraftStatus()}
+function startWorkout(){const s=safeSettings(),w=BLOCK3[s.currentDay-1],d=currentDraft(s,w);if(!d.startedAt)d.startedAt=new Date().toISOString();d.updatedAt=new Date().toISOString();save('workoutDraft',d);toast('Sesión iniciada y autoguardada');updateDraftStatus()}
 function postponeWorkout(when){const s=safeSettings(),q=store('workoutQueue');q.push({id:uid(),label:`Semana ${s.currentWeek} · Día ${s.currentDay}`,day:s.currentDay,status:'pending',reason:when==='tarde'?'Pendiente para esta tarde':'Pendiente para mañana',created:todayISO()});save('workoutQueue',q);toast('Sesión reprogramada');renderWorkout()}
 function recoverQueue(id){const q=store('workoutQueue'),item=q.find(x=>x.id===id);if(item){const s=safeSettings();s.currentDay=item.day;save('settings',s);item.status='in_progress';save('workoutQueue',q);renderWorkout();toast('Sesión recuperada') }}
 function skipExercise(i){const s=safeSettings(),w=BLOCK3[s.currentDay-1],q=store('workoutQueue');q.push({id:uid(),label:`Recuperar: ${w.ex[i][0]}`,day:s.currentDay,status:'pending',reason:'Ejercicio no realizado',exercise:w.ex[i][0],created:todayISO()});save('workoutQueue',q);toast('Ejercicio guardado para recuperar')}
@@ -309,7 +309,7 @@ async function forceAppUpdate(){
  toast('Datos y aplicación actualizados');
 }
 if('serviceWorker'in navigator){
- navigator.serviceWorker.register('./sw.js?v=4.0.0').then(reg=>reg.update()).catch(()=>{});
- navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!sessionStorage.getItem('p85_reloaded_400')){sessionStorage.setItem('p85_reloaded_400','1');location.reload()}});
+ navigator.serviceWorker.register('./sw.js?v=4.0.1').then(reg=>reg.update()).catch(()=>{});
+ navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!sessionStorage.getItem('p85_reloaded_401')){sessionStorage.setItem('p85_reloaded_401','1');location.reload()}});
 }
 renderHome();

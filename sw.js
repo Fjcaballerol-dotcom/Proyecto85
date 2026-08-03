@@ -1,5 +1,5 @@
-const CACHE='proyecto85-v4.0.0';
-const ASSETS=['./','./index.html','./styles.css?v=4.0.0','./app.js?v=4.0.0','./manifest.json','./icon-192.png','./icon-512.png'];
+const CACHE='proyecto85-v4.0.1';
+const ASSETS=['./','./index.html','./styles.css?v=4.0.1','./app.js?v=4.0.1','./manifest.json','./icon-192.png','./icon-512.png'];
 self.addEventListener('install',event=>{self.skipWaiting();event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS)))});
 self.addEventListener('activate',event=>event.waitUntil(Promise.all([caches.keys().then(keys=>Promise.all(keys.filter(key=>key!==CACHE).map(key=>caches.delete(key)))),self.clients.claim()])));
 self.addEventListener('fetch',event=>{
