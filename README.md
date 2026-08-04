@@ -1,7 +1,3 @@
-# Proyecto85 V6 — Base definitiva
+# Proyecto85 V6.1 — Inteligente
 
-Versión cerrada sobre la que se desarrollarán únicamente mejoras compatibles.
-
-Incluye inicio inteligente, entrenamiento Full Body con autoguardado, reprogramación sin duplicados, core, cardio, biblioteca técnica, nutrición con cantidades y sustituciones, recetas, favoritos, compra, despensa, batch cooking, control de los lunes, gráficas, fotos, salud, analíticas, calendario, estadísticas, objetivos, logros, asistente, migración y copias de seguridad.
-
-Los datos personales permanecen en el dispositivo.
+Añade plan inteligente diario, recomendaciones de comidas, sugerencias de progresión, adherencia y revisión semanal. Conserva los datos de V6.

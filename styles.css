@@ -45,3 +45,11 @@ main{max-width:780px;margin:auto;padding:14px}.view{display:none}.view.active{di
 @media(max-width:430px){.calendar-day{min-height:58px;padding:5px}.achievement-grid{grid-template-columns:1fr 1fr}}
 
 .migration-summary{display:grid;gap:8px}.migration-row{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-top:1px solid rgba(255,255,255,.07)}.migration-row span{color:var(--muted)}.migration-row b{color:var(--green)}
+
+.smart-coach{border-color:#3c7658;background:radial-gradient(circle at 90% 0,rgba(73,211,131,.16),transparent 40%),linear-gradient(145deg,var(--panel),var(--panel2))}
+.smart-suggestion{display:grid;grid-template-columns:1fr auto;gap:4px 10px;padding:11px 0;border-top:1px solid rgba(255,255,255,.06)}
+.smart-suggestion small{grid-column:1/-1;color:var(--muted)}
+.smart-suggestion b{padding:4px 8px;border-radius:99px;font-size:.75rem}
+.smart-suggestion b.up{background:#173b28;color:#b9f4ce}
+.smart-suggestion b.down{background:#3a2615;color:#ffd39b}
+.smart-suggestion b.hold{background:#172a3a;color:#b6dcff}

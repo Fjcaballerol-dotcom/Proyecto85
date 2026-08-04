@@ -1,5 +1,5 @@
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
-const APP_VERSION='6.0.0',PREFIX='p85_';
+const APP_VERSION='6.1.0',PREFIX='p85_';
 const todayISO=()=>new Date().toISOString().slice(0,10);
 const uid=()=>crypto.randomUUID?crypto.randomUUID():Date.now()+'-'+Math.random().toString(16).slice(2);
 const finite=(v,f=0)=>Number.isFinite(Number(v))?Number(v):f;
@@ -18,7 +18,7 @@ const INITIAL={
  sessions:[],workoutDraft:null,workoutQueue:[],exercisePreferences:{},
  nutritionLog:[],mealRatings:[],mealSwaps:[],pantry:[],shopping:[],
  health:[],analytics:[],photos:[],reminders:[],weeklyGoals:[],
- settings:{notifications:false},goals:[],achievements:[],calendarNotes:[],favoriteExercises:[],favoriteRecipes:[],migrationBackups:[],migrationState:{}
+ settings:{notifications:false},goals:[],achievements:[],calendarNotes:[],favoriteExercises:[],favoriteRecipes:[],migrationBackups:[],migrationState:{},weeklyReviews:[],mealSelections:{}
 };
 
 function migrate(){
@@ -46,7 +46,7 @@ function closeModal(){$('#modal').classList.remove('open');$('#modal').setAttrib
 $('#modalClose').onclick=closeModal;$('#modal').onclick=e=>{if(e.target===$('#modal'))closeModal()};
 
 
-const MIGRATION_TARGET='6.0.0';
+const MIGRATION_TARGET='6.1.0';
 const LEGACY_KEYS=[
  'settings','profile','sessions','health','measures','pantry','shopping','analytics',
  'reminders','nutritionLog','workoutQueue','workoutDraft','exercisePreferences',
@@ -314,7 +314,7 @@ const WEEK_MENU={
 };
 const mealLabels={breakfast:'Desayuno',midmorning:'Media mañana',lunch:'Comida',snack:'Merienda',dinner:'Cena'};
 function recipeById(type,id){return RECIPES[type].find(x=>x.id===id)||RECIPES[type][0]}
-function activeRecipe(type){const swaps=store('mealSwaps');const today=swaps.find(x=>x.date===todayISO()&&x.type===type);return today?.custom||recipeById(type,WEEK_MENU[dayName()][type])}
+function activeRecipe(type){const swaps=store('mealSwaps');const today=swaps.find(x=>x.date===todayISO()&&x.type===type);const sel=store('mealSelections')||{};return today?.custom||recipeById(type,sel[todayISO()]?.[type]||WEEK_MENU[dayName()][type])}
 
 function dedupeQueue(){
  let q=get('workoutQueue',[]);if(!Array.isArray(q))q=[];
@@ -372,7 +372,7 @@ function renderHome(){
  <div class="task"><div><b>Entrenamiento</b><div class="muted">${w.name} · ${w.cardio[1]} min cardio</div></div><button class="btn small primary" onclick="go('entrenamiento')">Abrir</button></div>
  <div class="task"><div><b>Nutrición</b><div class="muted">${doneMeals}/5 comidas completadas</div></div><button class="btn small" onclick="go('nutricion')">Menú</button></div>
  <div class="task"><div><b>Control semanal</b><div class="muted">${new Date().getDay()===1?'Hoy toca medir':'Todos los lunes'}</div></div><button class="btn small" onclick="go('evolucion')">Evolución</button></div></div>
- <div class="card"><h3>Asistente Proyecto85</h3>${recommendations().map(x=>`<div class="assistant-item">${x}</div>`).join('')}</div>`;
+ ${assistantPanel()}<div class="card"><h3>Asistente Proyecto85</h3>${recommendations().map(x=>`<div class="assistant-item">${x}</div>`).join('')}</div>`;
 }
 
 function renderWorkout(){
@@ -408,7 +408,7 @@ function shopUpdate(i,k,v){const l=store('shopping');l[i][k]=v;save('shopping',l
 function addPantry(){const name=$('#pantryName').value.trim(),qty=finite($('#pantryQty').value);if(!name)return;const p=store('pantry'),i=p.findIndex(x=>x.name.toLowerCase()===name.toLowerCase());if(i>=0)p[i].qty=qty;else p.push({name,qty,unit:'g'});save('pantry',p);renderPantry()}
 function renderPantry(){$('#pantryArea').innerHTML=store('pantry').map((x,i)=>`<div class="pantry-row"><span>•</span><div><b>${x.name}</b><small class="muted">${x.qty} ${x.unit}</small></div><button class="btn small danger" onclick="let p=store('pantry');p.splice(${i},1);save('pantry',p);renderPantry()">Quitar</button></div>`).join('')}
 function renderNutrition(){
- $('#nutricion').innerHTML=`<div class="section-title"><div><span class="eyebrow">APRENDER A COMER</span><h2>Plan semanal sostenible</h2></div><span class="pill">${dayName()}</span></div><div class="tabs"><button class="tab-btn active" onclick="nutritionTab('menu',this)">Menú</button><button class="tab-btn" onclick="nutritionTab('shopping',this)">Compra</button><button class="tab-btn" onclick="nutritionTab('pantry',this)">Despensa</button><button class="tab-btn" onclick="nutritionTab('batch',this)">Batch cooking</button></div>
+ $('#nutricion').innerHTML=`<div class="section-title"><div><span class="eyebrow">APRENDER A COMER</span><h2>Plan semanal sostenible</h2></div><span class="pill">${dayName()}</span></div><div class="card"><button class="btn primary" onclick="applySmartMenu()">Generar menú inteligente</button><p class="note">Usa despensa y preferencias registradas.</p></div><div class="tabs"><button class="tab-btn active" onclick="nutritionTab('menu',this)">Menú</button><button class="tab-btn" onclick="nutritionTab('shopping',this)">Compra</button><button class="tab-btn" onclick="nutritionTab('pantry',this)">Despensa</button><button class="tab-btn" onclick="nutritionTab('batch',this)">Batch cooking</button></div>
  <div id="nutMenu">${Object.keys(mealLabels).map(recipeCard).join('')}</div><div id="nutShopping" class="hidden"><div class="card"><button class="btn primary" onclick="generateShopping()">Generar lista semanal</button><div id="shoppingArea"></div></div></div><div id="nutPantry" class="hidden"><div class="card"><div class="form-grid"><label>Producto<input id="pantryName"></label><label>Cantidad (g/unidades)<input id="pantryQty" type="number"></label></div><button class="btn primary" onclick="addPantry()">Guardar en despensa</button><div id="pantryArea"></div></div></div><div id="nutBatch" class="hidden"><div class="card"><h3>Preparación del domingo</h3><ol class="guide-list"><li>Hornear o planchar pollo y lomo.</li><li>Cocer arroz, pasta y patata por raciones.</li><li>Preparar pimientos, espinacas y verduras.</li><li>Lavar ensaladas y organizar frutas.</li><li>Separar raciones y etiquetar fecha.</li></ol><p class="note">Objetivo aproximado: dejar preparadas las bases en 2 horas.</p></div></div>`;renderShopping();renderPantry()
 }
 function nutritionTab(id,b){$$('.tab-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');['Menu','Shopping','Pantry','Batch'].forEach(x=>$('#nut'+x).classList.toggle('hidden',x.toLowerCase()!==id.toLowerCase()))}
@@ -532,6 +532,65 @@ function renderLibraryBlock(){
  return `<div class="card"><span class="eyebrow">BIBLIOTECA PERSONAL</span><h2>Tus referencias</h2><h3>Platos favoritos</h3>${favRecipes.length?favRecipes.map(x=>`<div class="pr-row"><span>${x.name}</span><b>${x.flavor}</b></div>`).join(''):'<p class="muted">Puntúa con 9 o 10 para añadir platos.</p>'}<h3>Ejercicios consolidados</h3>${favExercises.length?favExercises.map(x=>`<div class="pr-row"><span>${x[0]}</span><b>${x[1].rating==='up'?'Subir':'Mantener'}</b></div>`).join(''):'<p class="muted">Usa OK/Subir/Bajar durante los entrenamientos.</p>'}</div>`
 }
 
+
+function weeklyAdherence(){
+ const start=new Date();start.setDate(start.getDate()-6);const iso=start.toISOString().slice(0,10);
+ const sessions=store('sessions').filter(x=>x.date>=iso).length;
+ const meals=store('nutritionLog').filter(x=>x.date>=iso&&x.done).length;
+ const health=store('health').filter(x=>x.date>=iso).length;
+ return {sessions,meals,health,total:Math.round(clamp(sessions/5*50,0,50)+clamp(meals/35*35,0,35)+clamp(health/7*15,0,15))};
+}
+function exerciseSuggestion(name){
+ const pref=store('exercisePreferences')[name];
+ if(pref?.rating==='up')return['up','Subir','Marcaste subir la última vez.'];
+ if(pref?.rating==='down')return['down','Bajar','Marcaste bajar la última vez.'];
+ if(pref?.rating==='ok')return['hold','Mantener','La carga actual está consolidada.'];
+ return['hold','Mantener','Registra más sesiones para afinar la recomendación.'];
+}
+function bestRecipeFor(type){
+ const list=RECIPES[type]||[],ratings=store('mealRatings'),pantry=store('pantry').map(x=>x.name.toLowerCase());
+ const score=id=>ratings.find(x=>x.mealId===id)?.score||0;
+ return [...list].sort((a,b)=>{
+  const ma=a.items.filter(x=>pantry.some(p=>p.includes(x[0].toLowerCase())||x[0].toLowerCase().includes(p))).length;
+  const mb=b.items.filter(x=>pantry.some(p=>p.includes(x[0].toLowerCase())||x[0].toLowerCase().includes(p))).length;
+  return (score(b.id)*2+mb)-(score(a.id)*2+ma);
+ })[0]||list[0];
+}
+function assistantPanel(){
+ const p=profile(),w=WORKOUTS[p.currentDay-1],ad=weeklyAdherence(),lunch=bestRecipeFor('lunch'),dinner=bestRecipeFor('dinner');
+ return `<div class="card smart-coach"><div class="section-title"><div><span class="eyebrow">MI ENTRENADOR</span><h2>Plan inteligente de hoy</h2></div><span class="pill blue">${ad.total}% adherencia</span></div>
+ <div class="assistant-item"><b>Entrenamiento</b><p>${w.name} · ${w.focus}</p></div>
+ <div class="assistant-item"><b>Comida recomendada</b><p>${lunch?.name||'Completa la despensa'}</p></div>
+ <div class="assistant-item"><b>Cena recomendada</b><p>${dinner?.name||'Completa la despensa'}</p></div>
+ <h3>Progresión sugerida</h3>${w.ex.slice(0,4).map(e=>{const s=exerciseSuggestion(e[0]);return `<div class="smart-suggestion"><span>${e[0]}</span><b class="${s[0]}">${s[1]}</b><small>${s[2]}</small></div>`}).join('')}
+ <button class="btn primary" onclick="openWeeklyReview()">Analizar mi semana</button></div>`;
+}
+function openWeeklyReview(){
+ const ad=weeklyAdherence(),ms=[...store('measures')].sort((a,b)=>b.date.localeCompare(a.date)),cur=ms[0],prev=ms[1];
+ const positives=[],actions=[],alerts=[];
+ if(cur&&prev){
+  const dw=finite(cur.weight)-finite(prev.weight),dc=finite(cur.waist)-finite(prev.waist);
+  if(dw<0)positives.push(`Peso: ${Math.abs(dw).toFixed(1)} kg menos.`);
+  if(dc<0)positives.push(`Cintura: ${Math.abs(dc).toFixed(1)} cm menos.`);
+  if(dw===0&&dc<0)positives.push('El peso está estable, pero la cintura baja.');
+ }
+ if(ad.total<65)actions.push('Mejora primero la adherencia antes de cambiar dieta o rutina.');
+ else actions.push('Mantén el plan actual una semana más.');
+ if(store('sessions').slice(0,3).some(x=>finite(x.painAfter)>=4))alerts.push('Hay molestias recientes: no subas carga hasta revisarlas.');
+ const review={id:uid(),date:todayISO(),adherence:ad,positives,actions,alerts};
+ const rows=store('weeklyReviews');rows.unshift(review);save('weeklyReviews',rows);
+ openModal(`<span class="eyebrow">REVISIÓN SEMANAL</span><h2>Análisis Proyecto85</h2>`,
+ `${positives.length?positives.map(x=>`<div class="assistant-item">${x}</div>`).join(''):'<p class="muted">Aún faltan datos comparables.</p>'}
+ ${alerts.map(x=>`<div class="banner danger">${x}</div>`).join('')}
+ <h3>Acciones</h3>${actions.map(x=>`<div class="assistant-item">${x}</div>`).join('')}
+ <p class="note">Apoyo al seguimiento; no sustituye la indicación médica.</p>`);
+}
+function applySmartMenu(){
+ const sel=store('mealSelections');sel[todayISO()]={};
+ Object.keys(mealLabels).forEach(type=>{const r=bestRecipeFor(type);if(r)sel[todayISO()][type]=r.id});
+ save('mealSelections',sel);toast('Menú inteligente aplicado');renderNutrition();
+}
+
 function saveHealth(){const o={date:todayISO(),steps:finite($('#h_steps').value),sleep:finite($('#h_sleep').value),restHr:finite($('#h_hr').value),water:finite($('#h_water').value),energy:finite($('#h_energy').value),stress:finite($('#h_stress').value),pain:finite($('#h_pain').value)};let a=store('health'),i=a.findIndex(x=>x.date===o.date);if(i>=0)a[i]=o;else a.unshift(o);save('health',a);toast('Salud guardada')}
 function addAnalytic(){const o={id:uid(),date:$('#a_date').value||todayISO(),name:$('#a_name').value.trim(),value:$('#a_value').value,unit:$('#a_unit').value,reference:$('#a_ref').value};if(!o.name)return;const a=store('analytics');a.unshift(o);save('analytics',a);renderMore()}
 function requestNotifications(){if(!('Notification'in window))return toast('No disponible');Notification.requestPermission().then(x=>{const s=store('settings');s.notifications=x==='granted';save('settings',s);toast(x==='granted'?'Notificaciones permitidas':'Permiso no concedido')})}
@@ -573,4 +632,4 @@ function moreTab(id,b){$$('.tab-btn').forEach(x=>x.classList.remove('active'));b
 async function forceUpdate(){await hardRefresh();}
 $('#refreshBtn').onclick=forceUpdate;
 migrate();runMigrationAndNotify();updateAppShell();renderHome();
-if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js?v=6.0.0');
+if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js?v=6.1.0');

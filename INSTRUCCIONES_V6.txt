@@ -1,0 +1,11 @@
+PROYECTO85 V6
+
+1. Descomprime el ZIP.
+2. Sustituye todos los archivos del repositorio.
+3. Espera 2–3 minutos.
+4. Abre GitHub Pages en Safari.
+5. Pulsa ↻.
+6. Comprueba que aparece V6.0.
+
+La primera carga conserva y migra los datos locales compatibles.
+En Más → Ajustes existe el botón “Forzar actualización limpia”.

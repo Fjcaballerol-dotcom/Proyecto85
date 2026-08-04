@@ -1,8 +1,8 @@
 {
-  "name": "Proyecto 85 V6",
+  "name": "Proyecto 85 V6.1",
   "short_name": "Proyecto85",
-  "description": "Base definitiva de entrenamiento, nutrición, salud, compras, evolución y asistente personal.",
-  "start_url": "./index.html?v=6.0.0",
+  "description": "Proyecto85 con asistente conectado a entrenamiento, nutrición, despensa y evolución.",
+  "start_url": "./index.html?v=6.1.0",
   "scope": "./",
   "display": "standalone",
   "background_color": "#07130f",
