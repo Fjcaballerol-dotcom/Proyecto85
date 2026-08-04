@@ -1,10 +1,5 @@
-# Proyecto85 V4.0.1
+# Proyecto85 V4.1 PRUEBA
 
-Corrección urgente de la pantalla vacía de V4.0.
+Incluye autoguardado, biblioteca técnica, OK/Subir/Bajar, corrección de pendientes duplicados, control oficial de los lunes y nutrición con cantidades y sustituciones.
 
-## Incluye
-- Autoguardado del entrenamiento.
-- Recuperación al volver a abrir la aplicación.
-- Botones OK, Subir y Bajar.
-- Biblioteca técnica por ejercicio.
-- Corrección del error JavaScript que impedía cargar las pantallas.
+Antes de actualizar, exporta una copia de seguridad.

@@ -1,7 +1,7 @@
 {
-  "name": "Proyecto 85 V4.0.1",
+  "name": "Proyecto 85 V4.1 Prueba",
   "short_name": "Proyecto 85",
-  "description": "Entrenamiento, nutrición y salud con autoguardado, valoración de cargas y biblioteca técnica.",
+  "description": "Versión de prueba con pendientes sin duplicados, control semanal y nutrición con cantidades y sustituciones.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
