@@ -1,13 +1,7 @@
-# Proyecto85 V5.1.1 — Migrador automático
+# Proyecto85 V6 — Base definitiva
 
-Incluye todas las funciones de la Base Definitiva V5.1 y añade:
+Versión cerrada sobre la que se desarrollarán únicamente mejoras compatibles.
 
-- Detección de datos de versiones anteriores.
-- Copia automática antes de migrar.
-- Conversión de perfil, entrenamientos, medidas, nutrición, salud, compras y ajustes.
-- Limpieza de duplicados.
-- Resumen visible al finalizar la migración.
-- Descarga de la copia automática.
-- Restauración de la copia previa a la migración.
+Incluye inicio inteligente, entrenamiento Full Body con autoguardado, reprogramación sin duplicados, core, cardio, biblioteca técnica, nutrición con cantidades y sustituciones, recetas, favoritos, compra, despensa, batch cooking, control de los lunes, gráficas, fotos, salud, analíticas, calendario, estadísticas, objetivos, logros, asistente, migración y copias de seguridad.
 
-Los datos permanecen en el dispositivo.
+Los datos personales permanecen en el dispositivo.

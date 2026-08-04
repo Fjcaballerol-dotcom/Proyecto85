@@ -1,8 +1,8 @@
 {
-  "name": "Proyecto 85 V5.1.1",
+  "name": "Proyecto 85 V6",
   "short_name": "Proyecto85",
-  "description": "Base definitiva con migración automática y copia previa de seguridad.",
-  "start_url": "./index.html",
+  "description": "Base definitiva de entrenamiento, nutrición, salud, compras, evolución y asistente personal.",
+  "start_url": "./index.html?v=6.0.0",
   "scope": "./",
   "display": "standalone",
   "background_color": "#07130f",
