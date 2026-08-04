@@ -1,5 +1,13 @@
-# Proyecto85 V4.1 PRUEBA
+# Proyecto85 V5.1.1 — Migrador automático
 
-Incluye autoguardado, biblioteca técnica, OK/Subir/Bajar, corrección de pendientes duplicados, control oficial de los lunes y nutrición con cantidades y sustituciones.
+Incluye todas las funciones de la Base Definitiva V5.1 y añade:
 
-Antes de actualizar, exporta una copia de seguridad.
+- Detección de datos de versiones anteriores.
+- Copia automática antes de migrar.
+- Conversión de perfil, entrenamientos, medidas, nutrición, salud, compras y ajustes.
+- Limpieza de duplicados.
+- Resumen visible al finalizar la migración.
+- Descarga de la copia automática.
+- Restauración de la copia previa a la migración.
+
+Los datos permanecen en el dispositivo.

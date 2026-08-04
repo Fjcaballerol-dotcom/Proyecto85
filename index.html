@@ -1,54 +1,46 @@
 <!doctype html>
 <html lang="es">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <meta name="theme-color" content="#07120f" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <link rel="manifest" href="manifest.json" />
-  <link rel="apple-touch-icon" href="icon-192.png" />
-  <link rel="stylesheet" href="styles.css?v=4.1.0-beta" />
-  <title>Proyecto 85</title>
-  <meta name="application-version" content="4.0.1" />
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#07130f">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Proyecto85">
+  <title>Proyecto85 V5</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="stylesheet" href="styles.css?v=5.1.1">
 </head>
 <body>
-  <header class="topbar">
-    <div><span class="eyebrow">PLAN PERSONAL</span><h1>Proyecto 85 <small style="font-size:.45em;color:#43d17d">V4.1 PRUEBA</small></h1></div>
-    <button id="refreshBtn" class="icon-btn" aria-label="Actualizar">↻</button>
-  </header>
+<header class="topbar">
+  <div><span class="kicker">ENTRENADOR PERSONAL</span><h1>Proyecto 85 <small>V5.1.1</small></h1></div>
+  <button id="refreshBtn" class="icon-btn" aria-label="Actualizar">↻</button>
+</header>
 
-  <main>
-    <section id="inicio" class="view active"></section>
-    <section id="entrenamiento" class="view"></section>
-    <section id="nutricion" class="view"></section>
-    <section id="evolucion" class="view"></section>
-    <section id="mas" class="view"></section>
-  </main>
+<main>
+  <section id="inicio" class="view active"></section>
+  <section id="entrenamiento" class="view"></section>
+  <section id="nutricion" class="view"></section>
+  <section id="evolucion" class="view"></section>
+  <section id="mas" class="view"></section>
+</main>
 
-  <nav class="bottom-nav" aria-label="Navegación principal">
-    <button data-go="inicio" class="active"><span>⌂</span>Inicio</button>
-    <button data-go="entrenamiento"><span>🏋️</span>Entreno</button>
-    <button data-go="nutricion"><span>🍽️</span>Nutrición</button>
-    <button data-go="evolucion"><span>↗</span>Evolución</button>
-    <button data-go="mas"><span>☰</span>Más</button>
-  </nav>
+<nav class="bottom-nav">
+  <button data-go="inicio" class="active"><span>⌂</span>Inicio</button>
+  <button data-go="entrenamiento"><span>🏋</span>Entreno</button>
+  <button data-go="nutricion"><span>🍽</span>Nutrición</button>
+  <button data-go="evolucion"><span>↗</span>Evolución</button>
+  <button data-go="mas"><span>•••</span>Más</button>
+</nav>
 
-
-  <div id="exerciseGuideModal" class="modal-overlay" onclick="if(event.target===this)closeExerciseGuide()">
-    <div class="modal-card">
-      <div class="modal-head">
-        <div><span class="eyebrow">BIBLIOTECA DE EJERCICIOS</span><h2 id="guideTitle">Ejercicio</h2></div>
-        <button class="icon-btn modal-close" onclick="closeExerciseGuide()">×</button>
-      </div>
-      <div class="guide-section"><span class="muted">Músculos trabajados</span><strong id="guideMuscles"></strong></div>
-      <div class="guide-section"><h3>Técnica correcta</h3><ol id="guideSteps" class="guide-list"></ol></div>
-      <div class="guide-section warning-box"><h3>Errores que debes evitar</h3><ul id="guideErrors" class="guide-list"></ul></div>
-      <p class="note">Utiliza siempre un rango sin dolor. Si aparece una molestia nueva o intensa, detén el ejercicio.</p>
-    </div>
+<div id="modal" class="modal-overlay" aria-hidden="true">
+  <div class="modal-card">
+    <div class="modal-head"><div id="modalTitle"></div><button class="icon-btn" id="modalClose">×</button></div>
+    <div id="modalBody"></div>
   </div>
-
-  <div id="toast" class="toast" role="status"></div>
-  <script src="app.js?v=4.1.0-beta"></script>
+</div>
+<div id="toast" class="toast"></div>
+<script src="app.js?v=5.1.1"></script>
 </body>
 </html>

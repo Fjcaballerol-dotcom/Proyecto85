@@ -1,22 +1,25 @@
 {
-  "name": "Proyecto 85 V4.1 Prueba",
-  "short_name": "Proyecto 85",
-  "description": "Versión de prueba con pendientes sin duplicados, control semanal y nutrición con cantidades y sustituciones.",
+  "name": "Proyecto 85 V5.1.1",
+  "short_name": "Proyecto85",
+  "description": "Base definitiva con migración automática y copia previa de seguridad.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#06100d",
-  "theme_color": "#06100d",
+  "background_color": "#07130f",
+  "theme_color": "#07130f",
+  "orientation": "portrait",
   "icons": [
     {
       "src": "icon-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
       "src": "icon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }
