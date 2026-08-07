@@ -1,8 +1,8 @@
 {
-  "name": "Proyecto 85 V7",
+  "name": "Proyecto 85 V7.0.1",
   "short_name": "Proyecto85",
-  "description": "Proyecto85 con módulo completo de nutrición inteligente.",
-  "start_url": "./index.html?v=7.0.0",
+  "description": "Proyecto85 Nutrición Inteligente con actualización automática y conservación de datos.",
+  "start_url": "./index.html?v=7.0.1",
   "scope": "./",
   "display": "standalone",
   "background_color": "#07130f",

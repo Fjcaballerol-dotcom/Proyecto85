@@ -1,5 +1,5 @@
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
-const APP_VERSION='7.0.0',PREFIX='p85_';
+const APP_VERSION='7.0.1',PREFIX='p85_';
 const todayISO=()=>new Date().toISOString().slice(0,10);
 const uid=()=>crypto.randomUUID?crypto.randomUUID():Date.now()+'-'+Math.random().toString(16).slice(2);
 const finite=(v,f=0)=>Number.isFinite(Number(v))?Number(v):f;
@@ -46,7 +46,7 @@ function closeModal(){$('#modal').classList.remove('open');$('#modal').setAttrib
 $('#modalClose').onclick=closeModal;$('#modal').onclick=e=>{if(e.target===$('#modal'))closeModal()};
 
 
-const MIGRATION_TARGET='7.0.0';
+const MIGRATION_TARGET='7.0.1';
 const LEGACY_KEYS=[
  'settings','profile','sessions','health','measures','pantry','shopping','analytics',
  'reminders','nutritionLog','workoutQueue','workoutDraft','exercisePreferences',
@@ -251,6 +251,84 @@ function renderVersionBadge(){
 function updateAppShell(){
  renderVersionBadge();
  localStorage.setItem(PREFIX+'versionInfo',JSON.stringify(versionInfo()));
+}
+
+
+const VERSION_CHECK_INTERVAL=15*60*1000;
+let updateCheckTimer=null;
+
+function compareVersions(a,b){
+ const pa=String(a||'0').split('.').map(n=>parseInt(n,10)||0);
+ const pb=String(b||'0').split('.').map(n=>parseInt(n,10)||0);
+ for(let i=0;i<Math.max(pa.length,pb.length);i++){
+  const diff=(pa[i]||0)-(pb[i]||0);
+  if(diff!==0)return diff;
+ }
+ return 0;
+}
+
+async function fetchPublishedVersion(){
+ const response=await fetch(`./version.json?t=${Date.now()}`,{cache:'no-store'});
+ if(!response.ok)throw new Error('No se pudo consultar la versión publicada');
+ return response.json();
+}
+
+function showUpdateAvailable(info){
+ if(document.querySelector('.update-available-banner'))return;
+ const banner=document.createElement('div');
+ banner.className='update-available-banner';
+ banner.innerHTML=`<div><b>Nueva versión ${info.version} disponible</b><small>${info.message||'Incluye mejoras y correcciones.'}</small></div><button class="btn primary small" id="installUpdateBtn">Actualizar ahora</button><button class="icon-btn update-dismiss" aria-label="Cerrar">×</button>`;
+ document.body.appendChild(banner);
+ banner.querySelector('#installUpdateBtn').onclick=()=>installPublishedUpdate(info.version);
+ banner.querySelector('.update-dismiss').onclick=()=>banner.remove();
+}
+
+async function checkForAppUpdate({silent=true}={}){
+ try{
+  const info=await fetchPublishedVersion();
+  localStorage.setItem(PREFIX+'lastVersionCheck',new Date().toISOString());
+  if(compareVersions(info.version,APP_VERSION)>0){
+   showUpdateAvailable(info);
+   return true;
+  }
+  if(!silent)toast(`Proyecto85 ${APP_VERSION} está actualizado`);
+  return false;
+ }catch(error){
+  if(!silent)toast('No se pudo comprobar la actualización');
+  return false;
+ }
+}
+
+async function installPublishedUpdate(targetVersion){
+ try{
+  const button=document.getElementById('installUpdateBtn');
+  if(button){button.disabled=true;button.textContent='Actualizando…'}
+  // Los datos p85_* se mantienen en localStorage. Solo se eliminan archivos en caché.
+  if('serviceWorker' in navigator){
+   const regs=await navigator.serviceWorker.getRegistrations();
+   for(const reg of regs){
+    if(reg.waiting)reg.waiting.postMessage('SKIP_WAITING');
+    await reg.unregister();
+   }
+  }
+  if('caches' in window){
+   const keys=await caches.keys();
+   await Promise.all(keys.map(key=>caches.delete(key)));
+  }
+  localStorage.setItem(PREFIX+'requestedVersion',targetVersion||'latest');
+  location.replace(`./index.html?v=${encodeURIComponent(targetVersion||Date.now())}&updated=${Date.now()}`);
+ }catch(error){
+  toast('No se pudo completar la actualización');
+ }
+}
+
+function startAutomaticUpdateChecks(){
+ checkForAppUpdate({silent:true});
+ if(updateCheckTimer)clearInterval(updateCheckTimer);
+ updateCheckTimer=setInterval(()=>checkForAppUpdate({silent:true}),VERSION_CHECK_INTERVAL);
+ document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible')checkForAppUpdate({silent:true});
+ });
 }
 
 const GUIDES={
@@ -661,11 +739,11 @@ function renderMore(){
  <div id="moreAchievements" class="hidden">${renderAchievementsBlock()}</div>
  <div id="moreAnalytics" class="hidden"><div class="card"><h2>Analíticas locales</h2><p class="note">Los datos permanecen en este dispositivo. No subas informes médicos a GitHub.</p><div class="form-grid"><label>Fecha<input id="a_date" type="date"></label><label>Parámetro<input id="a_name" placeholder="Glucosa, vitamina D..."></label><label>Valor<input id="a_value"></label><label>Unidad<input id="a_unit"></label><label class="wide">Rango de referencia<input id="a_ref"></label></div><button class="btn primary" onclick="addAnalytic()">Guardar parámetro</button>${analytics.map(x=>`<div class="pr-row"><span>${x.date} · ${x.name}</span><b>${x.value} ${x.unit}</b></div>`).join('')}</div></div>
  <div id="moreAssistant" class="hidden"><div class="card"><h2>Asistente Proyecto85</h2>${recommendations().map(x=>`<div class="assistant-item">${x}</div>`).join('')}</div></div>
- <div id="moreSettings" class="hidden"><div class="card"><h2>Ajustes y seguridad</h2><button class="btn" onclick="requestNotifications()">Permitir notificaciones</button><button class="btn" onclick="hardRefresh()">Forzar actualización limpia</button><button class="btn" onclick="exportData()">Exportar copia de seguridad</button><button class="btn" onclick="exportAutomaticBackup()">Descargar copia automática previa</button><button class="btn danger" onclick="restoreLatestAutomaticBackup()">Restaurar copia previa a la migración</button><label class="file-btn">Importar copia<input type="file" accept="application/json" hidden onchange="importData(this)"></label><p class="note">Las notificaciones web en iPhone dependen de permisos y del sistema. Los avisos esenciales también aparecen dentro de la aplicación.</p></div></div>`
+ <div id="moreSettings" class="hidden"><div class="card"><h2>Ajustes y seguridad</h2><button class="btn" onclick="requestNotifications()">Permitir notificaciones</button><button class="btn" onclick="checkForAppUpdate({silent:false})">Buscar actualización</button><button class="btn" onclick="hardRefresh()">Forzar actualización limpia</button><button class="btn" onclick="exportData()">Exportar copia de seguridad</button><button class="btn" onclick="exportAutomaticBackup()">Descargar copia automática previa</button><button class="btn danger" onclick="restoreLatestAutomaticBackup()">Restaurar copia previa a la migración</button><label class="file-btn">Importar copia<input type="file" accept="application/json" hidden onchange="importData(this)"></label><p class="note">Las notificaciones web en iPhone dependen de permisos y del sistema. Los avisos esenciales también aparecen dentro de la aplicación.</p></div></div>`
 }
 function moreTab(id,b){$$('.tab-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');['Health','Calendar','Stats','Goals','Library','Achievements','Analytics','Assistant','Settings'].forEach(x=>$('#more'+x).classList.toggle('hidden',x.toLowerCase()!==id.toLowerCase()))}
 
 async function forceUpdate(){await hardRefresh();}
 $('#refreshBtn').onclick=forceUpdate;
-migrate();runMigrationAndNotify();updateAppShell();renderHome();
-if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js?v=7.0.0');
+migrate();runMigrationAndNotify();updateAppShell();renderHome();startAutomaticUpdateChecks();
+if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js?v=7.0.1');
