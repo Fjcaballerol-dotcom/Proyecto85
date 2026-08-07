@@ -59,3 +59,9 @@ main{max-width:780px;margin:auto;padding:14px}.view{display:none}.view.active{di
 .update-available-banner{position:fixed;left:12px;right:12px;bottom:calc(92px + env(safe-area-inset-bottom));z-index:90;display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;padding:13px;background:#effaf3;color:#082014;border:1px solid #6bc891;border-radius:16px;box-shadow:0 18px 50px rgba(0,0,0,.45)}
 .update-available-banner b,.update-available-banner small{display:block}.update-available-banner small{margin-top:3px;color:#365345;font-size:.76rem}.update-available-banner .update-dismiss{background:transparent;color:#183c2b;border-color:#9bcfb0;padding:7px 10px}
 @media(max-width:480px){.update-available-banner{grid-template-columns:1fr auto}.update-available-banner .update-dismiss{position:absolute;right:5px;top:5px;border:0}.update-available-banner>div{padding-right:24px}.update-available-banner .btn{grid-column:1/-1;width:100%}}
+
+.balance-card{border-color:#365e4a}
+.group-chips{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}.group-chips span{border:1px solid var(--line);color:var(--muted);border-radius:99px;padding:7px 9px;font-size:.72rem}.group-chips span.good{border-color:#397456;background:#10291f;color:#b9f4ce}
+.recipe-photo{width:100%;max-height:280px;object-fit:cover;border-radius:15px;border:1px solid var(--line);margin-bottom:12px}.recipe-photo.placeholder{height:150px;display:grid;place-items:center;background:#081811;color:var(--muted)}
+.app-link{color:var(--green);font-weight:800}
+.tabs{scrollbar-width:none}.tabs::-webkit-scrollbar{display:none}

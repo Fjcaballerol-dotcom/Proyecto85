@@ -1,5 +1,5 @@
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
-const APP_VERSION='7.0.1',PREFIX='p85_';
+const APP_VERSION='7.1.0',PREFIX='p85_';
 const todayISO=()=>new Date().toISOString().slice(0,10);
 const uid=()=>crypto.randomUUID?crypto.randomUUID():Date.now()+'-'+Math.random().toString(16).slice(2);
 const finite=(v,f=0)=>Number.isFinite(Number(v))?Number(v):f;
@@ -20,6 +20,19 @@ const INITIAL={
  health:[],analytics:[],photos:[],reminders:[],weeklyGoals:[],
  settings:{notifications:false},goals:[],achievements:[],calendarNotes:[],favoriteExercises:[],favoriteRecipes:[],migrationBackups:[],migrationState:{},weeklyReviews:[],mealSelections:{},weeklyMenus:[],socialMeals:[],recipeFavorites:[],nutritionGoals:{protein:150,fiber:25,water:2.5},restaurantHistory:[]
 };
+
+
+INITIAL.nutritionFeedback = INITIAL.nutritionFeedback || [];
+INITIAL.customRecipes = INITIAL.customRecipes || [];
+INITIAL.recipeMedia = INITIAL.recipeMedia || {};
+INITIAL.nutritionPreferences = INITIAL.nutritionPreferences || {avoidRepetition:true,variety:true};
+INITIAL.batchPlans = INITIAL.batchPlans || [];
+INITIAL.foodHistory = INITIAL.foodHistory || [];
+INITIAL.nutritionCheckins = INITIAL.nutritionCheckins || [];
+INITIAL.socialMeals = INITIAL.socialMeals || [];
+INITIAL.weeklyMenus = INITIAL.weeklyMenus || [];
+INITIAL.mealSelections = INITIAL.mealSelections || {};
+INITIAL.recipeFavorites = INITIAL.recipeFavorites || [];
 
 function migrate(){
  const oldSettings=get('settings',{});
@@ -46,7 +59,7 @@ function closeModal(){$('#modal').classList.remove('open');$('#modal').setAttrib
 $('#modalClose').onclick=closeModal;$('#modal').onclick=e=>{if(e.target===$('#modal'))closeModal()};
 
 
-const MIGRATION_TARGET='7.0.1';
+const MIGRATION_TARGET='7.1.0';
 const LEGACY_KEYS=[
  'settings','profile','sessions','health','measures','pantry','shopping','analytics',
  'reminders','nutritionLog','workoutQueue','workoutDraft','exercisePreferences',
@@ -679,6 +692,20 @@ const PRO_RECIPES=[
 {id:'r_media',name:'Yogur natural y tostada integral',meal:'midmorning',flavor:'Simple',time:3,items:[['Yogur natural',1,'unidad','listo'],['Pan integral',30,'g','tal como se consume']],steps:['Sirve yogur y tostada.'],nutrition:{kcal:180,protein:10,carbs:25,fat:4,fiber:3}},
 {id:'r_merienda',name:'Fruta con queso fresco',meal:'snack',flavor:'Simple',time:3,items:[['Fruta',1,'pieza','entera'],['Queso fresco sin sal',80,'g','tal como se consume']],steps:['Sirve fruta y queso fresco.'],nutrition:{kcal:210,protein:14,carbs:26,fat:6,fiber:4}}
 ];
+
+// --- V7.1: variedad extra para evitar monotonía ---
+PRO_RECIPES.push(
+{id:'r_ternera_asiatica',name:'Ternera magra con arroz y verduras estilo asiático',meal:'lunch',flavor:'Asiático',time:25,items:[['Ternera magra',180,'g','en crudo'],['Arroz integral',60,'g','en crudo'],['Verduras variadas',300,'g','en crudo'],['Aceite de oliva',10,'g','medido']],steps:['Corta la ternera en tiras.','Saltea verduras.','Añade ternera y especias suaves.','Sirve con el arroz.'],nutrition:{kcal:620,protein:46,carbs:56,fat:22,fiber:9}},
+{id:'r_pollo_italiano',name:'Pollo italiano con tomate, pasta y verduras',meal:'lunch',flavor:'Italiano',time:25,items:[['Pechuga de pollo',180,'g','en crudo'],['Pasta integral',70,'g','en crudo'],['Tomate',200,'g','cocinado'],['Verduras variadas',200,'g','en crudo']],steps:['Cuece la pasta.','Cocina el pollo.','Añade tomate y verduras.','Mezcla y sazona con hierbas.'],nutrition:{kcal:590,protein:50,carbs:62,fat:13,fiber:11}},
+{id:'r_bacalao',name:'Bacalao con patata y pimientos',meal:'dinner',flavor:'Mediterráneo',time:25,items:[['Bacalao',200,'g','en crudo'],['Patata',220,'g','cocida'],['Pimientos asados',250,'g','cocinados'],['Aceite de oliva',10,'g','medido']],steps:['Cocina el bacalao.','Sirve con patata y pimientos.','Añade el aceite medido al final.'],nutrition:{kcal:510,protein:42,carbs:44,fat:16,fiber:7}},
+{id:'r_salpicón',name:'Salpicón equilibrado con verduras y patata',meal:'dinner',flavor:'Fresco',time:15,items:[['Marisco o pescado cocido',180,'g','cocinado'],['Patata',180,'g','cocida'],['Tomate',150,'g','tal como se consume'],['Pimientos',150,'g','tal como se consume'],['Aceite de oliva',10,'g','medido']],steps:['Corta los ingredientes.','Mezcla y enfría.','Aliña justo antes de servir.'],nutrition:{kcal:470,protein:38,carbs:39,fat:16,fiber:7}},
+{id:'r_pavo_wrap',name:'Wrap integral de pavo, aguacate y ensalada',meal:'dinner',flavor:'Rápido',time:10,items:[['Tortilla integral',1,'unidad','tal como se consume'],['Pavo',120,'g','tal como se consume'],['Aguacate',50,'g','tal como se consume'],['Ensalada',200,'g','tal como se consume']],steps:['Calienta la tortilla.','Añade pavo, aguacate y ensalada.','Enrolla y sirve.'],nutrition:{kcal:480,protein:36,carbs:45,fat:18,fiber:10}},
+{id:'r_media_queso',name:'Queso fresco, fruta y pequeña tostada',meal:'midmorning',flavor:'Oficina',time:3,items:[['Queso fresco sin sal',80,'g','tal como se consume'],['Fruta',1,'pieza','entera'],['Pan integral',25,'g','tal como se consume']],steps:['Prepara en un recipiente.','Acompaña con fruta.'],nutrition:{kcal:250,protein:16,carbs:33,fat:7,fiber:5}},
+{id:'r_media_pavo',name:'Pavo con tostada integral y tomate',meal:'midmorning',flavor:'Salado',time:5,items:[['Pavo',60,'g','tal como se consume'],['Pan integral',30,'g','tal como se consume'],['Tomate',120,'g','tal como se consume']],steps:['Tuesta el pan.','Añade tomate y pavo.'],nutrition:{kcal:210,protein:17,carbs:27,fat:4,fiber:4}},
+{id:'r_merienda_yogur',name:'Yogur natural con fruta',meal:'snack',flavor:'Simple',time:3,items:[['Yogur natural',1,'unidad','listo'],['Fruta',1,'pieza','entera']],steps:['Sirve juntos o por separado.'],nutrition:{kcal:190,protein:9,carbs:30,fat:4,fiber:4}},
+{id:'r_desayuno_qf',name:'Queso fresco, pan integral, fruta y café',meal:'breakfast',flavor:'Alternativo',time:7,items:[['Queso fresco sin sal',80,'g','tal como se consume'],['Pan integral',40,'g','tal como se consume'],['Fruta',1,'pieza','entera'],['Café con leche desnatada',1,'taza','preparado']],steps:['Tuesta el pan.','Añade queso fresco.','Acompaña con fruta y café.'],nutrition:{kcal:360,protein:23,carbs:48,fat:8,fiber:7}}
+);
+
 function allProRecipes(){return PRO_RECIPES}
 function recipeScore(id){return store('mealRatings').find(x=>x.mealId===id)?.score||8}
 function recipeAvailability(r){const names=store('pantry').map(x=>x.name.toLowerCase());const m=r.items.filter(x=>names.some(n=>n.includes(x[0].toLowerCase())||x[0].toLowerCase().includes(n))).length;return{matched:m,total:r.items.length,pct:Math.round(m/r.items.length*100)}}
@@ -704,6 +731,326 @@ function proMealCard(type){const r=activeProRecipe(type),n=r.nutrition,log=store
 function recipeCardV7(r){return`<button class="recipe-card" onclick="openRecipe('${r.id}')"><div><span class="eyebrow">${mealLabels[r.meal]}</span><h3>${r.name}</h3><p>${r.flavor} · ${r.time} min</p></div><div class="recipe-score"><b>${recipeScore(r.id)}</b><small>/10</small></div><div class="recipe-macros"><span>${r.nutrition.kcal} kcal</span><span>${r.nutrition.protein} g prot.</span><span>${recipeAvailability(r).pct}% despensa</span></div></button>`}
 function renderNutritionV7(){$('#nutricion').innerHTML=`<div class="card nutrition-dashboard"><div class="section-title"><div><span class="eyebrow">NUTRICIÓN INTELIGENTE</span><h2>Planificar, comprar y aprender</h2></div><span class="pill green">V7</span></div><div class="btn-row"><button class="btn primary" onclick="buildWeeklyMenu()">Generar menú semanal</button><button class="btn" onclick="generateV7Shopping()">Generar compra</button></div><div class="btn-row" style="margin-top:8px"><button class="btn secondary" onclick="openSocialMeal()">Comida social</button><button class="btn secondary" onclick="restaurantMode()">Modo restaurante</button></div></div><div class="tabs"><button class="tab-btn active" onclick="nvTab('today',this)">Hoy</button><button class="tab-btn" onclick="nvTab('week',this)">Semana</button><button class="tab-btn" onclick="nvTab('recipes',this)">Recetas</button><button class="tab-btn" onclick="nvTab('shopping',this)">Compra</button><button class="tab-btn" onclick="nvTab('pantry',this)">Despensa</button></div><div id="nvToday">${Object.keys(mealLabels).map(proMealCard).join('')}</div><div id="nvWeek" class="hidden">${weeklyMenuMarkup()}</div><div id="nvRecipes" class="hidden"><div class="recipe-library">${PRO_RECIPES.map(recipeCardV7).join('')}</div></div><div id="nvShopping" class="hidden"><div class="card">${shoppingMarkup()}</div></div><div id="nvPantry" class="hidden"><div class="card"><div class="form-grid"><label>Producto<input id="pantryName"></label><label>Cantidad<input id="pantryQty" type="number"></label><label>Unidad<select id="pantryUnit"><option>g</option><option>kg</option><option>unidad</option><option>lata</option></select></label><label>Caducidad<input id="pantryExpiry" type="date"></label></div><button class="btn primary" onclick="addPantryV7()">Guardar</button>${store('pantry').map((x,i)=>`<div class="pantry-row"><span>•</span><div><b>${x.name}</b><small>${x.qty} ${x.unit||'g'} ${x.expiry?'· '+x.expiry:''}</small></div><button class="btn small danger" onclick="let p=store('pantry');p.splice(${i},1);save('pantry',p);renderNutrition()">Quitar</button></div>`).join('')}</div></div>`}
 function nvTab(id,b){$$('.tab-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');['Today','Week','Recipes','Shopping','Pantry'].forEach(x=>$('#nv'+x).classList.toggle('hidden',x.toLowerCase()!==id.toLowerCase()))}
+
+
+// =========================
+// V7.1 NUTRICIÓN COMPLETA
+// =========================
+const FOOD_GROUP_HINTS={
+ fruit:['fruta','kiwi','manzana','pera','naranja','plátano','fresa'],
+ veg:['verdura','ensalada','espinaca','pimiento','tomate','calabacín','berenjena'],
+ fish:['salmón','merluza','bacalao','atún','marisco','pescado'],
+ legumes:['garbanzo','lenteja','alubia','legumbre'],
+ dairy:['yogur','queso','leche'],
+ wholegrain:['integral','arroz','pasta','pan'],
+ nuts:['frutos secos','nuez','almendra'],
+ olive:['aceite de oliva','aguacate']
+};
+
+function completeRecipeList(){
+ return [...PRO_RECIPES,...store('customRecipes')];
+}
+function recipeByAnyId(id){return completeRecipeList().find(x=>x.id===id)}
+function allProRecipes(){return completeRecipeList()}
+
+function nutritionRatingMap(){
+ const map={};
+ store('mealRatings').forEach(x=>{if(map[x.mealId]==null)map[x.mealId]=x.score});
+ return map;
+}
+function nutritionHistoryIds(days=4){
+ const cutoff=new Date();cutoff.setDate(cutoff.getDate()-days);
+ const iso=cutoff.toISOString().slice(0,10),ids=[];
+ const sel=store('mealSelections')||{};
+ Object.entries(sel).forEach(([date,meals])=>{if(date>=iso)Object.values(meals||{}).forEach(id=>ids.push(id))});
+ return ids;
+}
+function smartRecipeList(meal){
+ const ratings=nutritionRatingMap(),recent=nutritionHistoryIds(3),pantry=store('pantry').map(x=>x.name.toLowerCase());
+ return completeRecipeList().filter(x=>x.meal===meal).sort((a,b)=>{
+   const avail=r=>{const items=r.items||[];return items.filter(i=>pantry.some(p=>p.includes(String(i[0]).toLowerCase())||String(i[0]).toLowerCase().includes(p))).length/Math.max(1,items.length)};
+   const score=r=>(ratings[r.id]??8)*3 + avail(r)*12 - (recent.includes(r.id)?10:0);
+   return score(b)-score(a);
+ });
+}
+function activeProRecipe(type){
+ const sw=store('mealSwaps').find(x=>x.date===todayISO()&&x.type===type);
+ const sel=store('mealSelections')||{},id=sel[todayISO()]?.[type];
+ return sw?.custom||recipeByAnyId(id)||smartRecipeList(type)[0];
+}
+function recipeScore(id){return nutritionRatingMap()[id]??8}
+function recipeAvailability(r){
+ const names=store('pantry').map(x=>x.name.toLowerCase()),items=r.items||[];
+ const m=items.filter(x=>names.some(n=>n.includes(String(x[0]).toLowerCase())||String(x[0]).toLowerCase().includes(n))).length;
+ return{matched:m,total:items.length,pct:items.length?Math.round(m/items.length*100):0}
+}
+
+function selectedRecipesToday(){
+ return Object.keys(mealLabels).map(type=>activeProRecipe(type)).filter(Boolean)
+}
+function todayNutritionTotals(){
+ return selectedRecipesToday().reduce((a,r)=>{
+  const n=r.nutrition||{};
+  a.kcal+=finite(n.kcal);a.protein+=finite(n.protein);a.carbs+=finite(n.carbs);a.fat+=finite(n.fat);a.fiber+=finite(n.fiber);
+  return a;
+ },{kcal:0,protein:0,carbs:0,fat:0,fiber:0});
+}
+function todayFoodGroupCoverage(){
+ const txt=selectedRecipesToday().flatMap(r=>(r.items||[]).map(i=>String(i[0]).toLowerCase()));
+ const count=keys=>txt.filter(t=>keys.some(k=>t.includes(k))).length;
+ return {
+  fruit:count(FOOD_GROUP_HINTS.fruit),
+  veg:count(FOOD_GROUP_HINTS.veg),
+  fish:count(FOOD_GROUP_HINTS.fish),
+  legumes:count(FOOD_GROUP_HINTS.legumes),
+  dairy:count(FOOD_GROUP_HINTS.dairy),
+  wholegrain:count(FOOD_GROUP_HINTS.wholegrain)
+ };
+}
+function dailyBalanceMarkup(){
+ const t=todayNutritionTotals(),g=todayFoodGroupCoverage();
+ return `<div class="card balance-card">
+  <div class="section-title"><div><span class="eyebrow">EQUILIBRIO DEL DÍA</span><h3>Lo que aporta el menú de hoy</h3></div><span class="pill blue">orientativo</span></div>
+  <div class="nutrition-grid">
+    <div><span>Proteína</span><b>${Math.round(t.protein)} g</b></div>
+    <div><span>Fibra</span><b>${Math.round(t.fiber)} g</b></div>
+    <div><span>Hidratos</span><b>${Math.round(t.carbs)} g</b></div>
+    <div><span>Grasas</span><b>${Math.round(t.fat)} g</b></div>
+  </div>
+  <div class="group-chips">
+   <span class="${g.fruit?'good':''}">Fruta ${g.fruit?'✓':'○'}</span>
+   <span class="${g.veg>=2?'good':''}">Verduras ${g.veg>=2?'✓':'○'}</span>
+   <span class="${g.dairy?'good':''}">Lácteo/equiv. ${g.dairy?'✓':'○'}</span>
+   <span class="${g.wholegrain?'good':''}">Cereal/legumbre ${g.wholegrain||g.legumes?'✓':'○'}</span>
+  </div>
+  <p class="note">Se usa como guía de variedad y suficiencia, no como límite rígido de comida.</p>
+ </div>`;
+}
+
+function saveNutritionCheckin(){
+ const row={
+  id:uid(),date:todayISO(),
+  hunger:finite($('#nfHunger').value),
+  energy:finite($('#nfEnergy').value),
+  satiety:finite($('#nfSatiety').value),
+  digestion:finite($('#nfDigestion').value),
+  notes:$('#nfNotes').value.trim()
+ };
+ let a=store('nutritionCheckins');a=a.filter(x=>x.date!==row.date);a.unshift(row);save('nutritionCheckins',a);
+ toast('Sensaciones guardadas');renderNutrition();
+}
+function nutritionCheckinMarkup(){
+ const x=store('nutritionCheckins').find(x=>x.date===todayISO())||{};
+ return `<div class="card"><div class="section-title"><div><span class="eyebrow">APRENDER DE TU DÍA</span><h3>Hambre, energía y saciedad</h3></div><span class="pill">1–10</span></div>
+ <div class="form-grid">
+  <label>Hambre<input id="nfHunger" type="number" min="1" max="10" value="${x.hunger||''}"></label>
+  <label>Energía<input id="nfEnergy" type="number" min="1" max="10" value="${x.energy||''}"></label>
+  <label>Saciedad<input id="nfSatiety" type="number" min="1" max="10" value="${x.satiety||''}"></label>
+  <label>Digestión<input id="nfDigestion" type="number" min="1" max="10" value="${x.digestion||''}"></label>
+  <label class="wide">Observaciones<textarea id="nfNotes" placeholder="Qué funcionó, qué cambiarías...">${x.notes||''}</textarea></label>
+ </div><button class="btn primary" onclick="saveNutritionCheckin()">Guardar sensaciones</button></div>`;
+}
+
+function weeklyLearning(){
+ const ratings=nutritionRatingMap(),checks=store('nutritionCheckins').slice(0,14);
+ const favorites=completeRecipeList().filter(r=>(ratings[r.id]||0)>=9).slice(0,5);
+ const low=completeRecipeList().filter(r=>(ratings[r.id]||99)<=4).slice(0,5);
+ const avg=(k)=>checks.length?(checks.reduce((a,x)=>a+finite(x[k]),0)/checks.length).toFixed(1):'-';
+ return {favorites,low,avgHunger:avg('hunger'),avgEnergy:avg('energy'),avgSatiety:avg('satiety')};
+}
+function learningMarkup(){
+ const l=weeklyLearning();
+ return `<div class="card"><div class="section-title"><div><span class="eyebrow">APRENDIZAJE</span><h3>Qué está funcionando</h3></div></div>
+ <div class="grid-3"><div class="stat"><span>Hambre media</span><strong>${l.avgHunger}</strong></div><div class="stat"><span>Energía media</span><strong>${l.avgEnergy}</strong></div><div class="stat"><span>Saciedad media</span><strong>${l.avgSatiety}</strong></div></div>
+ <h4>Platos prioritarios</h4>${l.favorites.length?l.favorites.map(r=>`<div class="pr-row"><span>${r.name}</span><b>${recipeScore(r.id)}/10</b></div>`).join(''):'<p class="muted">Puntúa platos con 9–10 para priorizarlos.</p>'}
+ ${l.low.length?`<h4>Aparecerán menos</h4>${l.low.map(r=>`<div class="pr-row"><span>${r.name}</span><b>${recipeScore(r.id)}/10</b></div>`).join('')}`:''}
+ </div>`;
+}
+
+function menuVarietyScore(menu){
+ if(!menu)return 0;
+ const ids=Object.values(menu.days||{}).flatMap(x=>Object.values(x||{}));
+ const unique=new Set(ids.filter(Boolean)).size;
+ return Math.round(unique/Math.max(1,ids.length)*100);
+}
+function weeklyCoverageV71(){
+ const m=currentWeeklyMenu();if(!m)return null;
+ const recipes=Object.values(m.days).flatMap(x=>Object.values(x)).map(recipeByAnyId).filter(Boolean);
+ const text=recipes.map(r=>(r.name+' '+(r.flavor||'')+' '+(r.items||[]).map(i=>i[0]).join(' ')).toLowerCase());
+ const count=(arr)=>text.filter(t=>arr.some(k=>t.includes(k))).length;
+ return {
+  fish:count(FOOD_GROUP_HINTS.fish),legumes:count(FOOD_GROUP_HINTS.legumes),
+  veg:count(FOOD_GROUP_HINTS.veg),fruit:count(FOOD_GROUP_HINTS.fruit),
+  variety:menuVarietyScore(m)
+ };
+}
+function weeklyCoverageMarkupV71(){
+ const c=weeklyCoverageV71();if(!c)return'';
+ return `<div class="coverage-grid">
+  <div class="${c.fish>=3?'ok':'warn'}"><span>Pescado/marisco</span><b>${c.fish}</b><small>presencias</small></div>
+  <div class="${c.legumes>=2?'ok':'warn'}"><span>Legumbres</span><b>${c.legumes}</b><small>presencias</small></div>
+  <div class="${c.veg>=7?'ok':'warn'}"><span>Verduras</span><b>${c.veg}</b><small>presencias</small></div>
+  <div class="${c.variety>=35?'ok':'warn'}"><span>Variedad</span><b>${c.variety}%</b><small>sin monotonía</small></div>
+ </div>`;
+}
+
+function buildWeeklyMenu(){
+ const days=['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+ const menu={id:uid(),createdAt:new Date().toISOString(),days:{}},used={};
+ Object.keys(mealLabels).forEach(t=>used[t]=[]);
+ days.forEach((d,di)=>{
+  menu.days[d]={};
+  Object.keys(mealLabels).forEach(type=>{
+   const pool=smartRecipeList(type).filter(r=>!used[type].slice(-2).includes(r.id));
+   const r=pool[0]||smartRecipeList(type)[0];
+   menu.days[d][type]=r?.id; if(r)used[type].push(r.id);
+  });
+ });
+ const a=store('weeklyMenus');a.unshift(menu);save('weeklyMenus',a);toast('Menú semanal generado con rotación');renderNutrition();
+}
+function weeklyMenuMarkup(){
+ const m=currentWeeklyMenu();if(!m)return'<p class="muted">Genera el menú semanal.</p>';
+ return `${weeklyCoverageMarkupV71()}${Object.entries(m.days).map(([d,ms])=>`<div class="week-day-card"><h3>${d}</h3>${Object.entries(ms).map(([t,id])=>{const r=recipeByAnyId(id);return`<div class="week-meal"><span>${mealLabels[t]}</span><b>${r?.name||'-'}</b></div>`}).join('')}</div>`).join('')}`;
+}
+
+function batchCookingPlan(){
+ const m=currentWeeklyMenu();if(!m)return toast('Genera primero el menú semanal');
+ const recipeIds=[...new Set(Object.values(m.days).flatMap(x=>Object.values(x)))];
+ const recipes=recipeIds.map(recipeByAnyId).filter(Boolean);
+ const plan={
+  id:uid(),date:todayISO(),
+  proteins:[...new Set(recipes.flatMap(r=>(r.items||[]).filter(i=>['pollo','lomo','ternera','pavo'].some(k=>String(i[0]).toLowerCase().includes(k))).map(i=>i[0])))],
+  carbs:[...new Set(recipes.flatMap(r=>(r.items||[]).filter(i=>['arroz','pasta','patata','garbanzo'].some(k=>String(i[0]).toLowerCase().includes(k))).map(i=>i[0])))],
+  veg:[...new Set(recipes.flatMap(r=>(r.items||[]).filter(i=>FOOD_GROUP_HINTS.veg.some(k=>String(i[0]).toLowerCase().includes(k))).map(i=>i[0])))]
+ };
+ const a=store('batchPlans');a.unshift(plan);save('batchPlans',a);renderNutrition();
+}
+function batchMarkup(){
+ const p=store('batchPlans')[0];
+ if(!p)return `<div class="card"><h3>Batch cooking</h3><p class="muted">Genera el menú y crea un plan de preparación.</p><button class="btn primary" onclick="batchCookingPlan()">Crear plan</button></div>`;
+ return `<div class="card"><div class="section-title"><h3>Batch cooking de la semana</h3><button class="btn small" onclick="batchCookingPlan()">Recalcular</button></div>
+ <ol class="guide-list">
+  <li><b>Proteínas:</b> ${p.proteins.join(', ')||'Preparar al día'}</li>
+  <li><b>Hidratos:</b> ${p.carbs.join(', ')||'Preparar al día'}</li>
+  <li><b>Verduras:</b> ${p.veg.join(', ')||'Lavar y cortar variedad'}</li>
+  <li>Separar porciones y etiquetar fecha.</li>
+  <li>Dejar pescado y ensaladas delicadas para cocinar más cerca del consumo.</li>
+ </ol><p class="note">Objetivo: reducir trabajo semanal sin sacrificar variedad.</p></div>`;
+}
+
+function pantryExpiryAlerts(){
+ const now=new Date();now.setHours(0,0,0,0);
+ return store('pantry').filter(x=>x.expiry).map(x=>{
+  const d=new Date(x.expiry+'T00:00:00');return{...x,days:Math.ceil((d-now)/86400000)}
+ }).filter(x=>x.days<=4).sort((a,b)=>a.days-b.days);
+}
+function expiryMarkup(){
+ const a=pantryExpiryAlerts();if(!a.length)return'';
+ return `<div class="banner warn"><b>Aprovechar primero</b><p>${a.map(x=>`${x.name}: ${x.days<0?'caducado':x.days===0?'hoy':x.days+' días'}`).join(' · ')}</p></div>`;
+}
+
+function addCustomRecipe(){
+ openModal(`<span class="eyebrow">RECETA PROPIA</span><h2>Añadir receta</h2>`,
+ `<label>Nombre<input id="crName"></label>
+ <label>Momento<select id="crMeal">${Object.entries(mealLabels).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}</select></label>
+ <label>Estilo<input id="crFlavor" placeholder="Mediterráneo, rápido..."></label>
+ <label>Tiempo (min)<input id="crTime" type="number"></label>
+ <label>Ingredientes<textarea id="crItems" placeholder="Uno por línea: Pollo | 180 | g | en crudo"></textarea></label>
+ <label>Preparación<textarea id="crSteps" placeholder="Un paso por línea"></textarea></label>
+ <button class="btn primary" onclick="saveCustomRecipe()">Guardar receta</button>`);
+}
+function saveCustomRecipe(){
+ const items=$('#crItems').value.split('\n').map(x=>x.split('|').map(v=>v.trim())).filter(x=>x[0]).map(x=>[x[0],finite(x[1],1),x[2]||'unidad',x[3]||'tal como se consume']);
+ const r={id:'custom-'+uid(),name:$('#crName').value.trim(),meal:$('#crMeal').value,flavor:$('#crFlavor').value.trim()||'Propio',time:finite($('#crTime').value,15),items,steps:$('#crSteps').value.split('\n').filter(Boolean),nutrition:{kcal:0,protein:0,carbs:0,fat:0,fiber:0}};
+ if(!r.name||!items.length)return toast('Añade nombre e ingredientes');
+ const a=store('customRecipes');a.unshift(r);save('customRecipes',a);closeModal();toast('Receta propia guardada');renderNutrition();
+}
+
+async function saveRecipePhoto(id,input){
+ const f=input.files?.[0];if(!f)return;
+ const data=await fileData(f),m=store('recipeMedia');m[id]={...(m[id]||{}),photo:data};save('recipeMedia',m);toast('Foto guardada');openRecipe(id);
+}
+function saveRecipeVideo(id){
+ const url=$('#recipeVideoUrl').value.trim(),m=store('recipeMedia');m[id]={...(m[id]||{}),video:url};save('recipeMedia',m);toast('Vídeo guardado');openRecipe(id);
+}
+function openRecipe(id){
+ const r=recipeByAnyId(id);if(!r)return;
+ const n=r.nutrition||{},av=recipeAvailability(r),media=store('recipeMedia')[id]||{};
+ openModal(`<span class="eyebrow">RECETA</span><h2>${r.name}</h2>`,
+ `${media.photo?`<img class="recipe-photo" src="${media.photo}" alt="">`:'<div class="recipe-photo placeholder">Añade una foto propia</div>'}
+ <div class="recipe-meta"><span>${r.flavor||'Variado'}</span><span>${r.time||'-'} min</span><span>${av.pct}% despensa</span></div>
+ <h3>Ingredientes</h3><ul class="meal-items">${(r.items||[]).map(x=>`<li><b>${x[1]} ${x[2]}</b> ${x[0]}<small>${x[3]}</small></li>`).join('')}</ul>
+ <h3>Preparación</h3><ol class="guide-list">${(r.steps||[]).map(x=>`<li>${x}</li>`).join('')}</ol>
+ <h3>Valor nutricional aproximado</h3><div class="nutrition-grid"><div><span>Proteína</span><b>${n.protein||'-'} g</b></div><div><span>Hidratos</span><b>${n.carbs||'-'} g</b></div><div><span>Grasa</span><b>${n.fat||'-'} g</b></div><div><span>Fibra</span><b>${n.fiber||'-'} g</b></div></div>
+ <div class="form-grid"><label>Foto propia<input type="file" accept="image/*" onchange="saveRecipePhoto('${id}',this)"></label><label>Vídeo/URL<input id="recipeVideoUrl" value="${media.video||''}" placeholder="Enlace opcional"></label></div><button class="btn" onclick="saveRecipeVideo('${id}')">Guardar vídeo</button>
+ ${media.video?`<p><a class="app-link" href="${media.video}" target="_blank" rel="noopener">Abrir vídeo de la receta</a></p>`:''}
+ <button class="btn primary" onclick="selectRecipeForToday('${r.meal}','${r.id}')">Usar hoy</button>`);
+}
+
+function substitutionsForItem(item){
+ const n=String(item[0]).toLowerCase();
+ const groups=[
+  {keys:['arroz','pasta','patata','pan','garbanzo'],alts:[['Arroz integral',60,'g','en crudo'],['Pasta integral',70,'g','en crudo'],['Patata',250,'g','cocida'],['Pan integral',80,'g','tal como se consume'],['Garbanzos',180,'g','cocidos']]},
+  {keys:['pollo','lomo','ternera','pavo','merluza','salmón','bacalao','atún','pescado'],alts:[['Pechuga de pollo',180,'g','en crudo'],['Lomo de cerdo magro',180,'g','en crudo'],['Ternera magra',180,'g','en crudo'],['Merluza',200,'g','en crudo'],['Bacalao',200,'g','en crudo'],['Atún al natural',160,'g','escurrido']]},
+  {keys:['verdura','ensalada','espinaca','pimiento','tomate'],alts:[['Verduras variadas',300,'g','en crudo'],['Ensalada completa',300,'g','tal como se consume'],['Pimientos asados',250,'g','cocinados'],['Espinacas',250,'g','cocinadas']]}
+ ];
+ const g=groups.find(g=>g.keys.some(k=>n.includes(k)));return g?g.alts.filter(a=>a[0].toLowerCase()!==n):[];
+}
+function smartIngredientSwap(type){
+ const r=activeProRecipe(type),opts=[];
+ (r.items||[]).forEach((item,itemIndex)=>substitutionsForItem(item).slice(0,4).forEach(alt=>opts.push({itemIndex,original:item[0],alt})));
+ openModal(`<span class="eyebrow">CAMBIAR INGREDIENTE</span><h2>${r.name}</h2>`,
+ `<p class="muted">Sustituciones orientativas para mantener un plato parecido y evitar quedarte sin opciones.</p><div class="alt-grid">${opts.map((o,i)=>`<button class="alt-btn" onclick="applyIngredientSwapV71('${type}',${i})"><b>${o.original} → ${o.alt[0]}</b><small>${o.alt[1]} ${o.alt[2]} · ${o.alt[3]}</small></button>`).join('')||'<p>No hay sustituciones disponibles.</p>'}</div>`);
+ window._p85SwapOptions=opts;
+}
+function applyIngredientSwapV71(type,index){
+ const r=activeProRecipe(type),o=window._p85SwapOptions?.[index];if(!o)return;
+ const clone=JSON.parse(JSON.stringify(r));clone.id='swap-'+uid();clone.name=r.name+' · adaptada';
+ clone.items[o.itemIndex]=[o.alt[0],o.alt[1],o.alt[2],o.alt[3]];
+ const sw=store('mealSwaps').filter(a=>!(a.date===todayISO()&&a.type===type));sw.unshift({date:todayISO(),type,custom:clone});save('mealSwaps',sw);closeModal();toast('Ingrediente cambiado');renderNutrition();
+}
+
+function socialAdviceV71(){
+ const s=store('socialMeals').find(x=>x.date===todayISO());if(!s)return'';
+ return `<div class="banner warn"><b>${s.type} registrada</b><p>El día sigue siendo válido. Mantén comidas normales, variedad, agua y vuelve al plan en la siguiente comida.</p></div>`;
+}
+function saveSocialMeal(){
+ const a=store('socialMeals');a.unshift({id:uid(),date:todayISO(),type:$('#socialType').value,moment:$('#socialMoment').value});save('socialMeals',a);closeModal();toast('Comida social guardada');renderNutrition();
+}
+
+function nutritionHistoryMarkup(){
+ const checks=store('nutritionCheckins').slice(0,7);
+ const logs=store('nutritionLog').filter(x=>x.done);
+ const days=new Set(logs.map(x=>x.date)).size;
+ return `<div class="card"><div class="section-title"><div><span class="eyebrow">HISTORIAL</span><h3>Adherencia y sensaciones</h3></div><span class="pill">${days} días con registro</span></div>
+ ${checks.length?checks.map(x=>`<div class="pr-row"><span>${x.date} · hambre ${x.hunger||'-'} · energía ${x.energy||'-'}</span><b>saciedad ${x.satiety||'-'}</b></div>`).join(''):'<p class="muted">Aún no hay suficientes registros.</p>'}
+ </div>`;
+}
+
+function recipeCardV7(r){
+ const n=r.nutrition||{},av=recipeAvailability(r);
+ return `<button class="recipe-card" onclick="openRecipe('${r.id}')"><div><span class="eyebrow">${mealLabels[r.meal]||r.meal}</span><h3>${r.name}</h3><p>${r.flavor||'Variado'} · ${r.time||'-'} min</p></div><div class="recipe-score"><b>${recipeScore(r.id)}</b><small>/10</small></div><div class="recipe-macros"><span>${n.protein||'-'} g prot.</span><span>${n.fiber||'-'} g fibra</span><span>${av.pct}% despensa</span></div></button>`;
+}
+
+function renderNutritionV7(){
+ $('#nutricion').innerHTML=`<div class="card nutrition-dashboard"><div class="section-title"><div><span class="eyebrow">NUTRICIÓN INTELIGENTE</span><h2>Aprender a comer con variedad</h2></div><span class="pill green">V7.1 COMPLETO</span></div>
+ <div class="btn-row"><button class="btn primary" onclick="buildWeeklyMenu()">Generar menú semanal</button><button class="btn" onclick="generateV7Shopping()">Generar compra</button></div>
+ <div class="btn-row" style="margin-top:8px"><button class="btn secondary" onclick="openSocialMeal()">Comida social</button><button class="btn secondary" onclick="restaurantMode()">Modo restaurante</button></div>
+ </div>
+ ${expiryMarkup()}${socialAdviceV71()}${dailyBalanceMarkup()}
+ <div class="tabs"><button class="tab-btn active" onclick="nvTab('today',this)">Hoy</button><button class="tab-btn" onclick="nvTab('week',this)">Semana</button><button class="tab-btn" onclick="nvTab('recipes',this)">Recetas</button><button class="tab-btn" onclick="nvTab('shopping',this)">Compra</button><button class="tab-btn" onclick="nvTab('pantry',this)">Despensa</button><button class="tab-btn" onclick="nvTab('batch',this)">Preparación</button><button class="tab-btn" onclick="nvTab('learning',this)">Aprendizaje</button></div>
+ <div id="nvToday">${Object.keys(mealLabels).map(proMealCard).join('')}${nutritionCheckinMarkup()}</div>
+ <div id="nvWeek" class="hidden">${weeklyMenuMarkup()}</div>
+ <div id="nvRecipes" class="hidden"><div class="card"><button class="btn primary" onclick="addCustomRecipe()">+ Añadir receta propia</button></div><div class="recipe-library">${completeRecipeList().map(recipeCardV7).join('')}</div></div>
+ <div id="nvShopping" class="hidden"><div class="card">${shoppingMarkup()}</div></div>
+ <div id="nvPantry" class="hidden"><div class="card"><div class="form-grid"><label>Producto<input id="pantryName"></label><label>Cantidad<input id="pantryQty" type="number"></label><label>Unidad<select id="pantryUnit"><option>g</option><option>kg</option><option>unidad</option><option>lata</option></select></label><label>Caducidad<input id="pantryExpiry" type="date"></label></div><button class="btn primary" onclick="addPantryV7()">Guardar</button>${store('pantry').map((x,i)=>`<div class="pantry-row"><span>•</span><div><b>${x.name}</b><small>${x.qty} ${x.unit||'g'} ${x.expiry?'· '+x.expiry:''}</small></div><button class="btn small danger" onclick="let p=store('pantry');p.splice(${i},1);save('pantry',p);renderNutrition()">Quitar</button></div>`).join('')}</div></div>
+ <div id="nvBatch" class="hidden">${batchMarkup()}</div>
+ <div id="nvLearning" class="hidden">${learningMarkup()}${nutritionHistoryMarkup()}</div>`;
+}
+function nvTab(id,b){
+ $$('.tab-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');
+ ['Today','Week','Recipes','Shopping','Pantry','Batch','Learning'].forEach(x=>$('#nv'+x).classList.toggle('hidden',x.toLowerCase()!==id.toLowerCase()));
+}
 
 function saveHealth(){const o={date:todayISO(),steps:finite($('#h_steps').value),sleep:finite($('#h_sleep').value),restHr:finite($('#h_hr').value),water:finite($('#h_water').value),energy:finite($('#h_energy').value),stress:finite($('#h_stress').value),pain:finite($('#h_pain').value)};let a=store('health'),i=a.findIndex(x=>x.date===o.date);if(i>=0)a[i]=o;else a.unshift(o);save('health',a);toast('Salud guardada')}
 function addAnalytic(){const o={id:uid(),date:$('#a_date').value||todayISO(),name:$('#a_name').value.trim(),value:$('#a_value').value,unit:$('#a_unit').value,reference:$('#a_ref').value};if(!o.name)return;const a=store('analytics');a.unshift(o);save('analytics',a);renderMore()}
@@ -746,4 +1093,4 @@ function moreTab(id,b){$$('.tab-btn').forEach(x=>x.classList.remove('active'));b
 async function forceUpdate(){await hardRefresh();}
 $('#refreshBtn').onclick=forceUpdate;
 migrate();runMigrationAndNotify();updateAppShell();renderHome();startAutomaticUpdateChecks();
-if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js?v=7.0.1');
+if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js?v=7.1.0');
