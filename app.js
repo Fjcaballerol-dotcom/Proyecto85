@@ -1,5 +1,5 @@
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
-const APP_VERSION='7.2.0',PREFIX='p85_';
+const APP_VERSION='7.3.0',PREFIX='p85_';
 const todayISO=()=>new Date().toISOString().slice(0,10);
 const uid=()=>crypto.randomUUID?crypto.randomUUID():Date.now()+'-'+Math.random().toString(16).slice(2);
 const finite=(v,f=0)=>Number.isFinite(Number(v))?Number(v):f;
@@ -66,7 +66,7 @@ function closeModal(){$('#modal').classList.remove('open');$('#modal').setAttrib
 $('#modalClose').onclick=closeModal;$('#modal').onclick=e=>{if(e.target===$('#modal'))closeModal()};
 
 
-const MIGRATION_TARGET='7.2.0';
+const MIGRATION_TARGET='7.3.0';
 const LEGACY_KEYS=[
  'settings','profile','sessions','health','measures','pantry','shopping','analytics',
  'reminders','nutritionLog','workoutQueue','workoutDraft','exercisePreferences',
@@ -1082,7 +1082,127 @@ function nutritionWeeklyReport(){const c=store('nutritionCheckins').slice(0,7),r
 function openNutritionWeeklyReport(){const r=nutritionWeeklyReport();openModal(`<span class="eyebrow">RESUMEN SEMANAL</span><h2>Nutrición Proyecto85</h2>`,`<div class="nutrition-grid"><div><span>Adherencia</span><b>${r.adherence.total}%</b></div><div><span>Variedad</span><b>${r.variety||0}%</b></div><div><span>Hambre</span><b>${r.avgHunger||'—'}</b></div><div><span>Energía</span><b>${r.avgEnergy||'—'}</b></div></div><h3>Adaptación</h3><p>${r.trend.message}</p>`)}
 function nutritionSafetyMarkup(){return `<div class="card safety-card"><span class="eyebrow">REGLAS DEL SISTEMA</span><p>✓ Una mala puntuación no prohíbe un alimento.</p><p>✓ No hay recortes agresivos automáticos.</p><p>✓ La pauta antigua de 1.200 kcal se usa como referencia de raciones/equivalencias, no como objetivo automático.</p><p>✓ Los cambios importantes se apoyan en tendencias de varias semanas.</p></div>`}
 function proMealCard(type){const r=activeProRecipe(type),n=r.nutrition||{},log=store('nutritionLog').find(x=>x.date===todayISO()&&x.type===type),score=recipeScore(r.id);return `<div class="meal-card"><div class="meal-head"><div><span class="eyebrow">${mealLabels[type]}</span><h3>${r.name}</h3><div class="recipe-meta"><span>${r.flavor||'Variado'}</span><span>${r.time||'-'} min</span><span>${finite(n.protein)} g proteína</span></div></div><button class="btn small" onclick="openRecipe('${r.id}')">Ver receta</button></div><ul class="meal-items">${(r.items||[]).map(x=>`<li><b>${x[1]} ${x[2]}</b> ${x[0]}<small>${x[3]||'tal como se consume'}</small></li>`).join('')}</ul><div class="btn-row"><button class="btn small secondary" onclick="smartIngredientSwap('${type}')">Cambiar ingrediente</button><button class="btn small secondary" onclick="openChangeReason('${type}')">Cambiar comida</button></div><label class="check" style="margin-top:12px"><input type="checkbox" ${log?.done?'checked':''} onchange="toggleMeal('${type}',this.checked)"> Comida realizada</label><div class="rating-row"><span>Puntuación:</span>${[1,2,3,4,5,6,7,8,9,10].map(v=>`<button class="score-btn ${score===v?'active':''}" onclick="rateMeal('${r.id}',${v});renderNutrition()">${v}</button>`).join('')}</div></div>`}
-function renderNutritionV7(){$('#nutricion').innerHTML=`${nutritionDashboardV72()}${hydrationMarkup()}${trainingNutritionMarkup()}${expiryMarkup()}${socialAdviceV71()}${latestEducationMarkup()}<div class="tabs"><button class="tab-btn active" onclick="nvTab('today',this)">Hoy</button><button class="tab-btn" onclick="nvTab('week',this)">Semana</button><button class="tab-btn" onclick="nvTab('recipes',this)">Recetas</button><button class="tab-btn" onclick="nvTab('shopping',this)">Compra</button><button class="tab-btn" onclick="nvTab('pantry',this)">Despensa</button><button class="tab-btn" onclick="nvTab('batch',this)">Preparación</button><button class="tab-btn" onclick="nvTab('learning',this)">Aprendizaje</button></div><div id="nvToday">${Object.keys(mealLabels).map(proMealCard).join('')}${nutritionCheckinMarkup()}</div><div id="nvWeek" class="hidden">${weeklyMenuMarkup()}<div class="card"><button class="btn primary" onclick="openNutritionWeeklyReport()">Generar resumen semanal</button></div>${adaptationMarkup()}</div><div id="nvRecipes" class="hidden"><div class="card"><button class="btn primary" onclick="addCustomRecipe()">+ Añadir receta propia</button></div><div class="recipe-library">${completeRecipeList().map(recipeCardV7).join('')}</div></div><div id="nvShopping" class="hidden"><div class="card">${shoppingMarkup()}</div></div><div id="nvPantry" class="hidden"><div class="card"><div class="form-grid"><label>Producto<input id="pantryName"></label><label>Cantidad<input id="pantryQty" type="number"></label><label>Unidad<select id="pantryUnit"><option>g</option><option>kg</option><option>unidad</option><option>lata</option></select></label><label>Caducidad<input id="pantryExpiry" type="date"></label></div><button class="btn primary" onclick="addPantryV7()">Guardar</button>${store('pantry').map((x,i)=>`<div class="pantry-row"><span>•</span><div><b>${x.name}</b><small>${x.qty} ${x.unit||'g'} ${x.expiry?'· '+x.expiry:''}</small></div><button class="btn small danger" onclick="let p=store('pantry');p.splice(${i},1);save('pantry',p);renderNutrition()">Quitar</button></div>`).join('')}</div></div><div id="nvBatch" class="hidden">${batchMarkup()}</div><div id="nvLearning" class="hidden">${learningMarkup()}${nutritionHistoryMarkup()}${nutritionSafetyMarkup()}</div>`}
+function renderNutritionV7(){$('#nutricion').innerHTML=`${nutritionDashboardV72()}${hydrationMarkup()}${trainingNutritionMarkup()}${endocrineReferenceMarkup()}${expiryMarkup()}${socialAdviceV71()}${latestEducationMarkup()}<div class="tabs"><button class="tab-btn active" onclick="nvTab('today',this)">Hoy</button><button class="tab-btn" onclick="nvTab('week',this)">Semana</button><button class="tab-btn" onclick="nvTab('recipes',this)">Recetas</button><button class="tab-btn" onclick="nvTab('shopping',this)">Compra</button><button class="tab-btn" onclick="nvTab('pantry',this)">Despensa</button><button class="tab-btn" onclick="nvTab('batch',this)">Preparación</button><button class="tab-btn" onclick="nvTab('learning',this)">Aprendizaje</button></div><div id="nvToday">${Object.keys(mealLabels).map(proMealCard).join('')}${nutritionCheckinMarkup()}</div><div id="nvWeek" class="hidden">${weeklyMenuMarkup()}<div class="card"><button class="btn primary" onclick="openNutritionWeeklyReport()">Generar resumen semanal</button></div>${adaptationMarkup()}</div><div id="nvRecipes" class="hidden"><div class="card"><button class="btn primary" onclick="addCustomRecipe()">+ Añadir receta propia</button></div><div class="recipe-library">${completeRecipeList().map(recipeCardV7).join('')}</div></div><div id="nvShopping" class="hidden"><div class="card">${shoppingMarkup()}</div></div><div id="nvPantry" class="hidden"><div class="card"><div class="form-grid"><label>Producto<input id="pantryName"></label><label>Cantidad<input id="pantryQty" type="number"></label><label>Unidad<select id="pantryUnit"><option>g</option><option>kg</option><option>unidad</option><option>lata</option></select></label><label>Caducidad<input id="pantryExpiry" type="date"></label></div><button class="btn primary" onclick="addPantryV7()">Guardar</button>${store('pantry').map((x,i)=>`<div class="pantry-row"><span>•</span><div><b>${x.name}</b><small>${x.qty} ${x.unit||'g'} ${x.expiry?'· '+x.expiry:''}</small></div><button class="btn small danger" onclick="let p=store('pantry');p.splice(${i},1);save('pantry',p);renderNutrition()">Quitar</button></div>`).join('')}</div></div><div id="nvBatch" class="hidden">${batchMarkup()}</div><div id="nvLearning" class="hidden">${learningMarkup()}${nutritionHistoryMarkup()}${nutritionSafetyMarkup()}</div>`}
+
+
+// ==========================
+// V7.3 · Biblioteca ampliada
+// ==========================
+const V73_RECIPES=[
+{id:'v73_arroz_pollo',name:'Arroz integral con pollo y verduras',meal:'lunch',flavor:'Mediterráneo',time:30,items:[['Arroz integral',60,'g','en crudo'],['Pechuga de pollo',180,'g','en crudo'],['Verduras variadas',300,'g','en crudo'],['Aceite de oliva',10,'g','medido']],steps:['Cuece el arroz.','Cocina el pollo.','Saltea las verduras.','Mezcla y sirve.'],nutrition:{protein:48,carbs:55,fat:15,fiber:10}},
+{id:'v73_paella',name:'Paella sencilla de pollo y verduras',meal:'lunch',flavor:'Español',time:35,items:[['Arroz',60,'g','en crudo'],['Pollo',160,'g','en crudo'],['Verduras',250,'g','en crudo'],['Aceite de oliva',10,'g','medido']],steps:['Sofríe verduras.','Añade pollo.','Incorpora arroz y caldo.','Cocina hasta el punto deseado.'],nutrition:{protein:43,carbs:55,fat:16,fiber:8}},
+{id:'v73_lentejas',name:'Lentejas con verduras y proteína magra',meal:'lunch',flavor:'Tradicional',time:35,items:[['Lentejas',200,'g','cocidas'],['Verduras variadas',250,'g','cocinadas'],['Pavo o pollo',120,'g','en crudo'],['Aceite de oliva',10,'g','medido']],steps:['Cuece o calienta las lentejas.','Añade verduras.','Incorpora proteína magra.'],nutrition:{protein:40,carbs:50,fat:15,fiber:17}},
+{id:'v73_alubias',name:'Alubias con verduras y atún',meal:'lunch',flavor:'Mediterráneo',time:15,items:[['Alubias',200,'g','cocidas'],['Atún al natural',120,'g','escurrido'],['Tomate y pimiento',250,'g','tal como se consume'],['Aceite de oliva',10,'g','medido']],steps:['Aclara las alubias.','Añade atún y verduras.','Aliña al final.'],nutrition:{protein:39,carbs:42,fat:15,fiber:15}},
+{id:'v73_garbanzos_espinacas',name:'Garbanzos con espinacas',meal:'lunch',flavor:'Andaluz',time:20,items:[['Garbanzos',200,'g','cocidos'],['Espinacas',250,'g','cocinadas'],['Proteína magra',120,'g','cocinada'],['Aceite de oliva',10,'g','medido']],steps:['Saltea espinacas.','Añade garbanzos.','Incorpora proteína.'],nutrition:{protein:40,carbs:48,fat:16,fiber:18}},
+{id:'v73_pasta_atun',name:'Pasta integral con atún y tomate',meal:'lunch',flavor:'Italiano',time:20,items:[['Pasta integral',70,'g','en crudo'],['Atún al natural',140,'g','escurrido'],['Tomate',200,'g','cocinado'],['Verduras',150,'g','en crudo']],steps:['Cuece la pasta.','Calienta tomate y verduras.','Añade atún y mezcla.'],nutrition:{protein:42,carbs:62,fat:10,fiber:10}},
+{id:'v73_pavo_patata',name:'Pavo a la plancha con patata y ensalada',meal:'lunch',flavor:'Simple',time:20,items:[['Pavo',180,'g','en crudo'],['Patata',250,'g','cocida'],['Ensalada completa',300,'g','tal como se consume'],['Aceite de oliva',10,'g','medido']],steps:['Cocina el pavo.','Cuece o asa la patata.','Sirve con ensalada.'],nutrition:{protein:43,carbs:45,fat:14,fiber:9}},
+{id:'v73_ternera_patata',name:'Ternera magra con patata y pimientos',meal:'lunch',flavor:'Español',time:25,items:[['Ternera magra',180,'g','en crudo'],['Patata',220,'g','cocida'],['Pimientos asados',250,'g','cocinados']],steps:['Cocina la ternera.','Acompaña con patata y pimientos.'],nutrition:{protein:40,carbs:40,fat:17,fiber:7}},
+{id:'v73_conejo',name:'Conejo con arroz y verduras',meal:'lunch',flavor:'Tradicional',time:35,items:[['Conejo',200,'g','en crudo'],['Arroz',60,'g','en crudo'],['Verduras variadas',250,'g','en crudo']],steps:['Dora el conejo.','Añade verduras.','Acompaña con arroz.'],nutrition:{protein:45,carbs:54,fat:14,fiber:8}},
+{id:'v73_merluza_patata',name:'Merluza con patata y ensalada',meal:'dinner',flavor:'Ligero',time:20,items:[['Merluza',200,'g','en crudo'],['Patata',200,'g','cocida'],['Ensalada completa',300,'g','tal como se consume'],['Aceite de oliva',10,'g','medido']],steps:['Cocina la merluza.','Acompaña con patata y ensalada.'],nutrition:{protein:38,carbs:38,fat:14,fiber:8}},
+{id:'v73_bacalao_verduras',name:'Bacalao con verduras y arroz',meal:'dinner',flavor:'Mediterráneo',time:25,items:[['Bacalao',200,'g','en crudo'],['Arroz integral',50,'g','en crudo'],['Verduras',300,'g','en crudo']],steps:['Cocina el bacalao.','Cuece el arroz.','Sirve con verduras.'],nutrition:{protein:42,carbs:45,fat:10,fiber:8}},
+{id:'v73_sardinas',name:'Sardinas con ensalada y pan integral',meal:'dinner',flavor:'Mediterráneo',time:15,items:[['Sardinas',180,'g','cocinadas'],['Ensalada completa',300,'g','tal como se consume'],['Pan integral',60,'g','tal como se consume']],steps:['Cocina o sirve las sardinas.','Acompaña con ensalada y pan.'],nutrition:{protein:38,carbs:32,fat:20,fiber:8}},
+{id:'v73_atun_tomate',name:'Atún con tomate, aguacate y pan integral',meal:'dinner',flavor:'Rápido',time:10,items:[['Atún al natural',160,'g','escurrido'],['Tomate',250,'g','tal como se consume'],['Aguacate',50,'g','tal como se consume'],['Pan integral',60,'g','tal como se consume']],steps:['Escurre el atún.','Corta tomate y aguacate.','Sirve con pan.'],nutrition:{protein:42,carbs:38,fat:16,fiber:10}},
+{id:'v73_salmon_esparragos',name:'Salmón con espárragos y patata',meal:'dinner',flavor:'Mediterráneo',time:20,items:[['Salmón',180,'g','en crudo'],['Espárragos',250,'g','cocinados'],['Patata',180,'g','cocida']],steps:['Cocina el salmón.','Saltea espárragos.','Acompaña con patata.'],nutrition:{protein:38,carbs:34,fat:23,fiber:7}},
+{id:'v73_pollo_calabacin',name:'Pollo con calabacín mediterráneo y arroz',meal:'dinner',flavor:'Mediterráneo',time:20,items:[['Pechuga de pollo',180,'g','en crudo'],['Calabacín',300,'g','cocinado'],['Arroz',50,'g','en crudo']],steps:['Cocina el pollo.','Saltea calabacín.','Acompaña con arroz.'],nutrition:{protein:45,carbs:44,fat:10,fiber:7}},
+{id:'v73_lomo_ensalada',name:'Lomo magro con ensalada y patata',meal:'dinner',flavor:'Español',time:20,items:[['Lomo de cerdo magro',180,'g','en crudo'],['Ensalada completa',300,'g','tal como se consume'],['Patata',180,'g','cocida']],steps:['Cocina el lomo.','Sirve con ensalada y patata.'],nutrition:{protein:40,carbs:35,fat:15,fiber:8}},
+{id:'v73_desayuno_pavo',name:'Tostada integral con pavo, fruta y café',meal:'breakfast',flavor:'Habitual',time:7,items:[['Pan integral',40,'g','tal como se consume'],['Pavo',70,'g','tal como se consume'],['Fruta',1,'pieza','entera'],['Café con leche desnatada',1,'taza','preparado']],steps:['Tuesta el pan.','Añade pavo.','Acompaña con fruta y café.'],nutrition:{protein:24,carbs:44,fat:6,fiber:7}},
+{id:'v73_desayuno_qf',name:'Pan integral con queso fresco, fruta y café',meal:'breakfast',flavor:'Alternativo',time:7,items:[['Pan integral',40,'g','tal como se consume'],['Queso fresco sin sal',80,'g','tal como se consume'],['Fruta',1,'pieza','entera'],['Café con leche desnatada',1,'taza','preparado']],steps:['Tuesta el pan.','Añade queso fresco.','Acompaña con fruta y café.'],nutrition:{protein:20,carbs:45,fat:8,fiber:7}},
+{id:'v73_media_yogur',name:'Yogur natural con fruta',meal:'midmorning',flavor:'Oficina',time:2,items:[['Yogur natural',1,'unidad','listo'],['Fruta',1,'pieza','entera']],steps:['Servir y consumir.'],nutrition:{protein:9,carbs:28,fat:4,fiber:4}},
+{id:'v73_media_pavo',name:'Pavo con pequeña tostada integral',meal:'midmorning',flavor:'Salado',time:3,items:[['Pavo',60,'g','tal como se consume'],['Pan integral',30,'g','tal como se consume']],steps:['Preparar y consumir.'],nutrition:{protein:17,carbs:20,fat:3,fiber:3}},
+{id:'v73_media_queso',name:'Queso fresco con fruta',meal:'midmorning',flavor:'Oficina',time:3,items:[['Queso fresco sin sal',80,'g','tal como se consume'],['Fruta',1,'pieza','entera']],steps:['Preparar y consumir.'],nutrition:{protein:14,carbs:24,fat:5,fiber:4}},
+{id:'v73_merienda_yogur',name:'Yogur natural con fruta',meal:'snack',flavor:'Simple',time:2,items:[['Yogur natural',1,'unidad','listo'],['Fruta',1,'pieza','entera']],steps:['Servir y consumir.'],nutrition:{protein:9,carbs:28,fat:4,fiber:4}},
+{id:'v73_merienda_qf',name:'Queso fresco sin sal con fruta',meal:'snack',flavor:'Simple',time:3,items:[['Queso fresco sin sal',80,'g','tal como se consume'],['Fruta',1,'pieza','entera']],steps:['Servir y consumir.'],nutrition:{protein:14,carbs:24,fat:5,fiber:4}},
+{id:'v73_merienda_pavo',name:'Pavo con tostada integral',meal:'snack',flavor:'Salado',time:3,items:[['Pavo',60,'g','tal como se consume'],['Pan integral',30,'g','tal como se consume']],steps:['Preparar y consumir.'],nutrition:{protein:17,carbs:20,fat:3,fiber:3}}
+];
+
+function ensureV73Recipes(){
+ const custom=store('customRecipes'),ids=new Set(custom.map(r=>r.id));
+ V73_RECIPES.forEach(r=>{if(!ids.has(r.id))custom.push(r)});
+ save('customRecipes',custom);
+}
+
+
+function currentMenuOrGenerate(){
+ let m=currentWeeklyMenu();
+ if(!m){
+   buildWeeklyMenu();
+   m=currentWeeklyMenu();
+ }
+ return m;
+}
+function generateV7Shopping(){
+ const menu=currentMenuOrGenerate();
+ if(!menu)return toast('No se ha podido generar el menú');
+ const need={};
+ Object.values(menu.days||{}).forEach(meals=>Object.values(meals||{}).forEach(id=>{
+  const r=recipeByAnyId(id);if(!r)return;
+  (r.items||[]).forEach(i=>{
+    const name=String(i[0]),qty=finite(i[1],0),unit=i[2]||'unidad';
+    if(!need[name])need[name]={name,qty:0,unit,category:shoppingCategory(name)};
+    need[name].qty+=qty;
+  });
+ }));
+ const pantry=store('pantry');
+ const list=Object.values(need).map(x=>{
+   const have=pantry.find(p=>p.name.toLowerCase()===x.name.toLowerCase());
+   const haveQty=finite(have?.qty,0);
+   return {...x,have:haveQty,buy:Math.max(0,x.qty-haveQty),owned:haveQty>0,bought:false};
+ }).filter(x=>x.buy>0 || !x.owned);
+ save('shopping',list);
+ toast(`Lista generada: ${list.length} productos`);
+ renderNutrition();
+ setTimeout(()=>{const tab=[...document.querySelectorAll('.tab-btn')].find(b=>b.textContent.trim()==='Compra');if(tab)nvTab('shopping',tab)},0);
+}
+function shoppingMarkup(){
+ const list=store('shopping');
+ if(!list.length)return `<div class="empty-state"><h3>Lista vacía</h3><p>Genera la compra desde el menú semanal.</p><button class="btn primary" onclick="generateV7Shopping()">Generar ahora</button></div>`;
+ const groups={};
+ list.forEach((x,i)=>{if(!groups[x.category])groups[x.category]=[];groups[x.category].push({...x,index:i})});
+ return `<div class="section-title"><div><span class="eyebrow">COMPRA SEMANAL</span><h2>${list.filter(x=>!x.bought).length} pendientes</h2></div><button class="btn small" onclick="generateV7Shopping()">Recalcular</button></div>
+ ${Object.entries(groups).map(([cat,items])=>`<div class="shopping-category"><h3>${cat}</h3>${items.map(x=>`<div class="shopping-row"><input type="checkbox" ${x.bought?'checked':''} onchange="shopUpdate(${x.index},'bought',this.checked)"><div><b>${x.name}</b><small>Comprar ${Math.ceil(x.buy)} ${x.unit}${x.have?` · tienes ${x.have} ${x.unit}`:''}</small></div><button class="btn small ${x.owned?'primary':''}" onclick="shopUpdate(${x.index},'owned',!${x.owned})">${x.owned?'En casa':'Tengo'}</button></div>`).join('')}</div>`).join('')}`;
+}
+
+
+function weeklyMenuMarkup(){
+ const m=currentWeeklyMenu();
+ if(!m)return `<div class="card empty-state"><h3>No hay menú semanal</h3><p>Genera los 7 días completos con un toque.</p><button class="btn primary" onclick="buildWeeklyMenu()">Generar semana</button></div>`;
+ const order=['breakfast','midmorning','lunch','snack','dinner'];
+ return `<div class="card"><div class="section-title"><div><span class="eyebrow">MENÚ COMPLETO</span><h2>Los 7 días de la semana</h2></div><button class="btn small" onclick="buildWeeklyMenu()">Regenerar</button></div>${weeklyCoverageMarkupV71()}</div>
+ ${Object.entries(m.days).map(([day,meals])=>`<div class="week-day-card"><div class="week-day-title"><h3>${day}</h3></div>${order.map(type=>{const r=recipeByAnyId(meals[type]);return`<div class="week-meal"><span>${mealLabels[type]}</span><div><b>${r?.name||'Sin asignar'}</b>${r?`<small>${(r.items||[]).slice(0,3).map(i=>`${i[1]} ${i[2]} ${i[0]}`).join(' · ')}</small>`:''}</div><button class="guide-btn" onclick="${r?`openRecipe('${r.id}')`:'void 0'}">Ver</button></div>`}).join('')}</div>`).join('')}`;
+}
+
+
+function buildWeeklyMenu(){
+ const days=['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+ const menu={id:uid(),createdAt:new Date().toISOString(),days:{}};
+ const used={breakfast:[],midmorning:[],lunch:[],snack:[],dinner:[]};
+ const choose=(type,dayIndex)=>{
+  let pool=smartRecipeList(type).filter(r=>!used[type].slice(-2).includes(r.id));
+  if(!pool.length)pool=smartRecipeList(type);
+  if(type==='lunch' && dayIndex===2){
+    const leg=pool.find(r=>(r.name||'').toLowerCase().match(/lenteja|garbanzo|alubia/));if(leg)return leg;
+  }
+  if(type==='lunch' && dayIndex===5){
+    const leg=pool.find(r=>(r.name||'').toLowerCase().match(/garbanzo|lenteja|alubia/));if(leg)return leg;
+  }
+  if(type==='dinner' && [1,3,6].includes(dayIndex)){
+    const fish=pool.find(r=>(r.name||'').toLowerCase().match(/salmón|merluza|bacalao|sardina|atún|pescado|salpicón/));if(fish)return fish;
+  }
+  return pool[dayIndex%Math.max(1,pool.length)]||pool[0];
+ };
+ days.forEach((day,di)=>{
+  menu.days[day]={};
+  Object.keys(mealLabels).forEach(type=>{
+    const r=choose(type,di);menu.days[day][type]=r?.id;if(r)used[type].push(r.id);
+  });
+ });
+ const a=store('weeklyMenus');a.unshift(menu);save('weeklyMenus',a);toast('Menú de 7 días generado');renderNutrition();
+}
+
+
+function endocrineReferenceMarkup(){
+ return `<div class="card reference-card"><span class="eyebrow">BASE PROFESIONAL</span><h3>Raciones y equivalencias</h3><p>La estructura de alimentos y sustituciones utiliza como referencia las pautas y tablas del endocrino aportadas, adaptadas al funcionamiento de Proyecto85. No convierte automáticamente una pauta antigua de 1.200 kcal en objetivo diario.</p></div>`;
+}
 
 function saveHealth(){const o={date:todayISO(),steps:finite($('#h_steps').value),sleep:finite($('#h_sleep').value),restHr:finite($('#h_hr').value),water:finite($('#h_water').value),energy:finite($('#h_energy').value),stress:finite($('#h_stress').value),pain:finite($('#h_pain').value)};let a=store('health'),i=a.findIndex(x=>x.date===o.date);if(i>=0)a[i]=o;else a.unshift(o);save('health',a);toast('Salud guardada')}
 function addAnalytic(){const o={id:uid(),date:$('#a_date').value||todayISO(),name:$('#a_name').value.trim(),value:$('#a_value').value,unit:$('#a_unit').value,reference:$('#a_ref').value};if(!o.name)return;const a=store('analytics');a.unshift(o);save('analytics',a);renderMore()}
@@ -1124,5 +1244,5 @@ function moreTab(id,b){$$('.tab-btn').forEach(x=>x.classList.remove('active'));b
 
 async function forceUpdate(){await hardRefresh();}
 $('#refreshBtn').onclick=forceUpdate;
-migrate();runMigrationAndNotify();updateAppShell();renderHome();startAutomaticUpdateChecks();
-if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js?v=7.2.0');
+migrate();runMigrationAndNotify();ensureV73Recipes();updateAppShell();renderHome();startAutomaticUpdateChecks();
+if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js?v=7.3.0');

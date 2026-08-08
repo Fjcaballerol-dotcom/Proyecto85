@@ -1,3 +1,9 @@
-# Proyecto85 V7.2 — Nutrición Definitiva
+# Proyecto85 V7.3 — Cierre real del Módulo 1
 
-Cierra funcionalmente el Módulo 1: dashboard diario, hidratación, cambio de comida por motivo, plan B fuera de casa, equivalencias educativas, entrenamiento↔nutrición, resumen semanal, adaptación progresiva, recetas, compra, despensa, batch cooking y aprendizaje.
+Correcciones:
+- Compra funciona y genera lista automáticamente.
+- Menú semanal muestra los 7 días completos.
+- Biblioteca ampliada con más de 20 recetas nuevas.
+- Más variedad de carnes, pescados, legumbres, arroz, pasta y cenas rápidas.
+- Inclusión explícita de referencia a pautas/endocrino para raciones y equivalencias.
+- Mantiene sustituciones, despensa, batch cooking, aprendizaje, hidratación, comidas sociales y resumen semanal.

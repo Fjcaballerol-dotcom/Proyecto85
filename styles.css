@@ -67,3 +67,9 @@ main{max-width:780px;margin:auto;padding:14px}.view{display:none}.view.active{di
 .tabs{scrollbar-width:none}.tabs::-webkit-scrollbar{display:none}
 
 .nutrition-hero{border-color:#47735b;background:radial-gradient(circle at 90% 0,rgba(73,211,131,.18),transparent 40%),linear-gradient(145deg,var(--panel),var(--panel2))}.quality-ring{width:58px;height:58px;border-radius:50%;border:5px solid var(--green);display:grid;place-items:center;font-weight:900}.dashboard-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:12px 0}.dashboard-grid>div{background:#081811;border:1px solid var(--line);border-radius:13px;padding:12px}.dashboard-grid span,.dashboard-grid small{display:block;color:var(--muted);font-size:.72rem}.dashboard-grid b{display:block;margin:5px 0}.hydration-card,.training-nutrition,.education-card,.safety-card{border-color:#355b49}.education-card{background:#0d2119}.safety-card p{margin:8px 0;color:var(--muted)}
+
+.empty-state{text-align:center;padding:24px}.empty-state p{color:var(--muted)}
+.week-day-title{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);margin-bottom:4px}
+.week-meal{grid-template-columns:95px 1fr auto!important;align-items:center}
+.week-meal small{display:block;color:var(--muted);font-size:.7rem;margin-top:4px}
+.reference-card{border-color:#486a58}

@@ -1,6 +1,6 @@
 {
-  "version": "7.2.0",
-  "build": "2026-08-08-v7.2-nutrition-final",
+  "version": "7.3.0",
+  "build": "2026-08-08-v7.3-real-close",
   "channel": "stable",
-  "notes": "Cierre definitivo del Módulo 1: dashboard, hidratación, plan B, motivos de sustitución, educación nutricional, resumen semanal y adaptación progresiva."
+  "notes": "Corrige Compra, muestra menú completo de 7 días y amplía la biblioteca con más de 20 recetas adicionales basadas en la estructura de las pautas del endocrino."
 }
