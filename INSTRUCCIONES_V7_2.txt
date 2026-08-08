@@ -1,0 +1,5 @@
+1. Sustituye todos los archivos en GitHub, incluido version.json.
+2. Espera al despliegue.
+3. Pulsa Buscar actualización / ↻.
+4. Comprueba V7.2.
+5. Prueba hidratación, Cambiar comida, Plan B y resumen semanal.

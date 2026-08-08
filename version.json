@@ -1,6 +1,6 @@
 {
-  "version": "7.1.0",
-  "build": "2026-08-07-v7.1-nutrition-complete",
+  "version": "7.2.0",
+  "build": "2026-08-08-v7.2-nutrition-final",
   "channel": "stable",
-  "notes": "Módulo 1 Nutrición cerrado: variedad, aprendizaje, recetas propias, batch cooking, caducidades, sensaciones y sustituciones ampliadas."
+  "notes": "Cierre definitivo del Módulo 1: dashboard, hidratación, plan B, motivos de sustitución, educación nutricional, resumen semanal y adaptación progresiva."
 }

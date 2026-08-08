@@ -1,8 +1,8 @@
 {
-  "name": "Proyecto 85 V7.1",
+  "name": "Proyecto 85 V7.2",
   "short_name": "Proyecto85",
-  "description": "Módulo 1 de Nutrición Inteligente completo.",
-  "start_url": "./index.html?v=7.1.0",
+  "description": "Módulo 1 Nutrición Definitiva.",
+  "start_url": "./index.html?v=7.2.0",
   "scope": "./",
   "display": "standalone",
   "background_color": "#07130f",
