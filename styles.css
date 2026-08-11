@@ -73,3 +73,7 @@ main{max-width:780px;margin:auto;padding:14px}.view{display:none}.view.active{di
 .week-meal{grid-template-columns:95px 1fr auto!important;align-items:center}
 .week-meal small{display:block;color:var(--muted);font-size:.7rem;margin-top:4px}
 .reference-card{border-color:#486a58}
+
+.lock-card{border-color:#3e7658;background:#0c2118}
+.week-meal{grid-template-columns:95px 1fr auto!important;align-items:center}
+.week-meal small{display:block;color:var(--muted);font-size:.7rem;margin-top:4px}

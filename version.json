@@ -1,6 +1,6 @@
 {
-  "version": "7.3.0",
-  "build": "2026-08-08-v7.3-real-close",
+  "version": "8.0.0",
+  "build": "2026-08-11-module1-final",
   "channel": "stable",
-  "notes": "Corrige Compra, muestra menú completo de 7 días y amplía la biblioteca con más de 20 recetas adicionales basadas en la estructura de las pautas del endocrino."
+  "notes": "Menú semanal bloqueado, Hoy sincronizado, compra estable, preparación completa y control de coherencia corporal."
 }

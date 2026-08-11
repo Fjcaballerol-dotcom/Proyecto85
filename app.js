@@ -1,5 +1,5 @@
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
-const APP_VERSION='7.3.0',PREFIX='p85_';
+const APP_VERSION='8.0.0',PREFIX='p85_';
 const todayISO=()=>new Date().toISOString().slice(0,10);
 const uid=()=>crypto.randomUUID?crypto.randomUUID():Date.now()+'-'+Math.random().toString(16).slice(2);
 const finite=(v,f=0)=>Number.isFinite(Number(v))?Number(v):f;
@@ -41,6 +41,10 @@ INITIAL.nutritionWeeklyReports = INITIAL.nutritionWeeklyReports || [];
 INITIAL.nutritionEducationSeen = INITIAL.nutritionEducationSeen || [];
 INITIAL.nutritionPlanRules = INITIAL.nutritionPlanRules || {avoidAggressiveCuts:true,useMultiweekTrend:true};
 
+
+INITIAL.lockedWeeklyMenu = INITIAL.lockedWeeklyMenu || null;
+INITIAL.bodyDataWarnings = INITIAL.bodyDataWarnings || [];
+
 function migrate(){
  const oldSettings=get('settings',{});
  const profile={...INITIAL.profile,...oldSettings,...get('profile',{})};
@@ -66,7 +70,7 @@ function closeModal(){$('#modal').classList.remove('open');$('#modal').setAttrib
 $('#modalClose').onclick=closeModal;$('#modal').onclick=e=>{if(e.target===$('#modal'))closeModal()};
 
 
-const MIGRATION_TARGET='7.3.0';
+const MIGRATION_TARGET='8.0.0';
 const LEGACY_KEYS=[
  'settings','profile','sessions','health','measures','pantry','shopping','analytics',
  'reminders','nutritionLog','workoutQueue','workoutDraft','exercisePreferences',
@@ -494,7 +498,7 @@ function showAlternatives(type){const r=activeRecipe(type);openModal(`<span clas
 function swapMeal(type,i){const r=activeRecipe(type),a=r.alts[i],sw=store('mealSwaps').filter(x=>!(x.date===todayISO()&&x.type===type));sw.unshift({date:todayISO(),type,original:r.name,custom:{id:'custom-'+uid(),name:a[0],flavor:'Sustitución',items:[[a[1],1,'ración','según equivalencia']],alts:r.alts}});save('mealSwaps',sw);closeModal();toast('Comida cambiada');renderNutrition()}
 function toggleMeal(type,done){let l=store('nutritionLog'),i=l.findIndex(x=>x.date===todayISO()&&x.type===type);const e={date:todayISO(),type,done};if(i>=0)l[i]=e;else l.push(e);save('nutritionLog',l)}
 function rateMeal(id,score){let r=store('mealRatings').filter(x=>!(x.date===todayISO()&&x.mealId===id));r.unshift({date:todayISO(),mealId:id,score});save('mealRatings',r);toast(score>=9?'Añadido a favoritos':'Puntuación guardada')}
-function generateShopping(){
+function generateV8Shopping(){
  const needed={};Object.keys(WEEK_MENU).forEach(day=>Object.entries(WEEK_MENU[day]).forEach(([type,id])=>recipeById(type,id).items.forEach(x=>{const k=x[0];if(!needed[k])needed[k]={name:k,qty:0,unit:x[2],category:type};needed[k].qty+=finite(x[1])})));
  const pantry=store('pantry');const list=Object.values(needed).map(x=>{const have=pantry.find(p=>p.name===x.name);return{...x,have:finite(have?.qty),buy:Math.max(0,x.qty-finite(have?.qty)),owned:false,bought:false}});
  save('shopping',list);renderShopping()
@@ -726,7 +730,7 @@ function applyIngredientSwap(type,index){const r=activeProRecipe(type),map={'Arr
 function buildWeeklyMenu(){const days=['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'],menu={id:uid(),createdAt:new Date().toISOString(),days:{}};days.forEach((d,i)=>{menu.days[d]={breakfast:'r_desayuno',midmorning:'r_media',snack:'r_merienda',lunch:smartRecipeList('lunch')[i%smartRecipeList('lunch').length]?.id,dinner:smartRecipeList('dinner')[i%smartRecipeList('dinner').length]?.id}});const a=store('weeklyMenus');a.unshift(menu);save('weeklyMenus',a);renderNutrition()}
 function currentWeeklyMenu(){return store('weeklyMenus')[0]}
 function weeklyMenuMarkup(){const m=currentWeeklyMenu();return m?Object.entries(m.days).map(([d,ms])=>`<div class="week-day-card"><h3>${d}</h3>${Object.entries(ms).map(([t,id])=>`<div class="week-meal"><span>${mealLabels[t]}</span><b>${PRO_RECIPES.find(r=>r.id===id)?.name||'-'}</b></div>`).join('')}</div>`).join(''):'<p class="muted">Genera el menú semanal.</p>'}
-function generateV7Shopping(){const m=currentWeeklyMenu();if(!m)return toast('Genera primero el menú');const need={};Object.values(m.days).forEach(ms=>Object.values(ms).forEach(id=>{const r=PRO_RECIPES.find(x=>x.id===id);r?.items.forEach(x=>{if(!need[x[0]])need[x[0]]={name:x[0],qty:0,unit:x[2],category:shoppingCategory(x[0])};need[x[0]].qty+=finite(x[1])})}));const pantry=store('pantry');save('shopping',Object.values(need).map(x=>{const h=pantry.find(p=>p.name.toLowerCase()===x.name.toLowerCase());return{...x,have:finite(h?.qty),buy:Math.max(0,x.qty-finite(h?.qty)),owned:!!h,bought:false}}));renderNutrition()}
+function generateV8Shopping(){const m=currentWeeklyMenu();if(!m)return toast('Genera primero el menú');const need={};Object.values(m.days).forEach(ms=>Object.values(ms).forEach(id=>{const r=PRO_RECIPES.find(x=>x.id===id);r?.items.forEach(x=>{if(!need[x[0]])need[x[0]]={name:x[0],qty:0,unit:x[2],category:shoppingCategory(x[0])};need[x[0]].qty+=finite(x[1])})}));const pantry=store('pantry');save('shopping',Object.values(need).map(x=>{const h=pantry.find(p=>p.name.toLowerCase()===x.name.toLowerCase());return{...x,have:finite(h?.qty),buy:Math.max(0,x.qty-finite(h?.qty)),owned:!!h,bought:false}}));renderNutrition()}
 function shoppingCategory(n){n=n.toLowerCase();if(/pollo|pavo|lomo|ternera|churrasco/.test(n))return'Carnicería';if(/salmón|merluza|atún/.test(n))return'Pescadería';if(/verdura|ensalada|espinaca|pimiento|tomate|fruta|aguacate|patata/.test(n))return'Fruta y verdura';if(/yogur|queso|leche/.test(n))return'Lácteos';if(/arroz|pasta|pan|garbanzo/.test(n))return'Alimentación seca';return'Otros'}
 function shoppingMarkup(){const g={};store('shopping').forEach((x,i)=>{if(!g[x.category])g[x.category]=[];g[x.category].push({...x,index:i})});return Object.entries(g).map(([c,it])=>`<div class="shopping-category"><h3>${c}</h3>${it.map(x=>`<div class="shopping-row"><input type="checkbox" ${x.bought?'checked':''} onchange="shopUpdate(${x.index},'bought',this.checked)"><div><b>${x.name}</b><small>Comprar ${Math.round(x.buy)} ${x.unit} · tienes ${x.have}</small></div><button class="btn small ${x.owned?'primary':''}" onclick="shopUpdate(${x.index},'owned',!${x.owned})">${x.owned?'En casa':'Ya tengo'}</button></div>`).join('')}</div>`).join('')||'<p class="muted">Genera la lista.</p>'}
 function addPantryV7(){const name=$('#pantryName').value.trim(),qty=finite($('#pantryQty').value),unit=$('#pantryUnit').value,expiry=$('#pantryExpiry').value;if(!name)return;const p=store('pantry'),i=p.findIndex(x=>x.name.toLowerCase()===name.toLowerCase()),row={name,qty,unit,expiry};if(i>=0)p[i]=row;else p.push(row);save('pantry',p);renderNutrition()}
@@ -736,7 +740,7 @@ function restaurantMode(){openModal(`<span class="eyebrow">MODO RESTAURANTE</spa
 function showRestaurantAdvice(){const t=$('#restaurantType').value,m={'Bar de tapas':['Ensalada o aliño','Carne o pescado a la plancha','Una sola ración de pan o patata'],'Italiano':['Pasta con tomate, verduras y proteína','Pizza fina con verduras','No acumular pan, entrante y postre'],'Japonés':['Sashimi o nigiri','Arroz moderado','Evitar exceso de fritos'],'Hamburguesería':['Hamburguesa sencilla','Ensalada o patata pequeña','Evitar dobles y salsas'],'Asador':['Carne o pescado','Verduras','Patata controlada']};$('#restaurantAdvice').innerHTML=`<div class="assistant-item"><ul>${m[t].map(x=>`<li>${x}</li>`).join('')}</ul></div>`}
 function proMealCard(type){const r=activeProRecipe(type),n=r.nutrition,log=store('nutritionLog').find(x=>x.date===todayISO()&&x.type===type),score=recipeScore(r.id);return`<div class="meal-card"><div class="meal-head"><div><span class="eyebrow">${mealLabels[type]}</span><h3>${r.name}</h3><div class="recipe-meta"><span>${r.flavor}</span><span>${r.time} min</span><span>${n.protein} g proteína</span></div></div><button class="btn small" onclick="openRecipe('${r.id}')">Ver receta</button></div><ul class="meal-items">${r.items.map(x=>`<li><b>${x[1]} ${x[2]}</b> ${x[0]}<small>${x[3]}</small></li>`).join('')}</ul><div class="btn-row"><button class="btn small secondary" onclick="smartIngredientSwap('${type}')">Cambiar ingrediente</button><button class="btn small secondary" onclick="showRecipeAlternatives('${type}')">Cambiar plato</button></div><label class="check"><input type="checkbox" ${log?.done?'checked':''} onchange="toggleMeal('${type}',this.checked)"> Comida realizada</label><div class="rating-row"><span>Valorar:</span>${[1,2,3,4,5,6,7,8,9,10].map(v=>`<button class="score-btn ${score===v?'active':''}" onclick="rateMeal('${r.id}',${v});renderNutrition()">${v}</button>`).join('')}</div></div>`}
 function recipeCardV7(r){return`<button class="recipe-card" onclick="openRecipe('${r.id}')"><div><span class="eyebrow">${mealLabels[r.meal]}</span><h3>${r.name}</h3><p>${r.flavor} · ${r.time} min</p></div><div class="recipe-score"><b>${recipeScore(r.id)}</b><small>/10</small></div><div class="recipe-macros"><span>${r.nutrition.kcal} kcal</span><span>${r.nutrition.protein} g prot.</span><span>${recipeAvailability(r).pct}% despensa</span></div></button>`}
-function renderNutritionV7(){$('#nutricion').innerHTML=`<div class="card nutrition-dashboard"><div class="section-title"><div><span class="eyebrow">NUTRICIÓN INTELIGENTE</span><h2>Planificar, comprar y aprender</h2></div><span class="pill green">V7</span></div><div class="btn-row"><button class="btn primary" onclick="buildWeeklyMenu()">Generar menú semanal</button><button class="btn" onclick="generateV7Shopping()">Generar compra</button></div><div class="btn-row" style="margin-top:8px"><button class="btn secondary" onclick="openSocialMeal()">Comida social</button><button class="btn secondary" onclick="restaurantMode()">Modo restaurante</button></div></div><div class="tabs"><button class="tab-btn active" onclick="nvTab('today',this)">Hoy</button><button class="tab-btn" onclick="nvTab('week',this)">Semana</button><button class="tab-btn" onclick="nvTab('recipes',this)">Recetas</button><button class="tab-btn" onclick="nvTab('shopping',this)">Compra</button><button class="tab-btn" onclick="nvTab('pantry',this)">Despensa</button></div><div id="nvToday">${Object.keys(mealLabels).map(proMealCard).join('')}</div><div id="nvWeek" class="hidden">${weeklyMenuMarkup()}</div><div id="nvRecipes" class="hidden"><div class="recipe-library">${PRO_RECIPES.map(recipeCardV7).join('')}</div></div><div id="nvShopping" class="hidden"><div class="card">${shoppingMarkup()}</div></div><div id="nvPantry" class="hidden"><div class="card"><div class="form-grid"><label>Producto<input id="pantryName"></label><label>Cantidad<input id="pantryQty" type="number"></label><label>Unidad<select id="pantryUnit"><option>g</option><option>kg</option><option>unidad</option><option>lata</option></select></label><label>Caducidad<input id="pantryExpiry" type="date"></label></div><button class="btn primary" onclick="addPantryV7()">Guardar</button>${store('pantry').map((x,i)=>`<div class="pantry-row"><span>•</span><div><b>${x.name}</b><small>${x.qty} ${x.unit||'g'} ${x.expiry?'· '+x.expiry:''}</small></div><button class="btn small danger" onclick="let p=store('pantry');p.splice(${i},1);save('pantry',p);renderNutrition()">Quitar</button></div>`).join('')}</div></div>`}
+function renderNutritionV7(){$('#nutricion').innerHTML=`<div class="card nutrition-dashboard"><div class="section-title"><div><span class="eyebrow">NUTRICIÓN INTELIGENTE</span><h2>Planificar, comprar y aprender</h2></div><span class="pill green">V7</span></div><div class="btn-row"><button class="btn primary" onclick="buildWeeklyMenu()">Generar menú semanal</button><button class="btn" onclick="generateV8Shopping()">Generar compra</button></div><div class="btn-row" style="margin-top:8px"><button class="btn secondary" onclick="openSocialMeal()">Comida social</button><button class="btn secondary" onclick="restaurantMode()">Modo restaurante</button></div></div><div class="tabs"><button class="tab-btn active" onclick="nvTab('today',this)">Hoy</button><button class="tab-btn" onclick="nvTab('week',this)">Semana</button><button class="tab-btn" onclick="nvTab('recipes',this)">Recetas</button><button class="tab-btn" onclick="nvTab('shopping',this)">Compra</button><button class="tab-btn" onclick="nvTab('pantry',this)">Despensa</button></div><div id="nvToday">${Object.keys(mealLabels).map(proMealCard).join('')}</div><div id="nvWeek" class="hidden">${weeklyMenuMarkup()}</div><div id="nvRecipes" class="hidden"><div class="recipe-library">${PRO_RECIPES.map(recipeCardV7).join('')}</div></div><div id="nvShopping" class="hidden"><div class="card">${shoppingMarkup()}</div></div><div id="nvPantry" class="hidden"><div class="card"><div class="form-grid"><label>Producto<input id="pantryName"></label><label>Cantidad<input id="pantryQty" type="number"></label><label>Unidad<select id="pantryUnit"><option>g</option><option>kg</option><option>unidad</option><option>lata</option></select></label><label>Caducidad<input id="pantryExpiry" type="date"></label></div><button class="btn primary" onclick="addPantryV7()">Guardar</button>${store('pantry').map((x,i)=>`<div class="pantry-row"><span>•</span><div><b>${x.name}</b><small>${x.qty} ${x.unit||'g'} ${x.expiry?'· '+x.expiry:''}</small></div><button class="btn small danger" onclick="let p=store('pantry');p.splice(${i},1);save('pantry',p);renderNutrition()">Quitar</button></div>`).join('')}</div></div>`}
 function nvTab(id,b){$$('.tab-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');['Today','Week','Recipes','Shopping','Pantry'].forEach(x=>$('#nv'+x).classList.toggle('hidden',x.toLowerCase()!==id.toLowerCase()))}
 
 
@@ -1041,7 +1045,7 @@ function recipeCardV7(r){
 
 function renderNutritionV7(){
  $('#nutricion').innerHTML=`<div class="card nutrition-dashboard"><div class="section-title"><div><span class="eyebrow">NUTRICIÓN INTELIGENTE</span><h2>Aprender a comer con variedad</h2></div><span class="pill green">V7.1 COMPLETO</span></div>
- <div class="btn-row"><button class="btn primary" onclick="buildWeeklyMenu()">Generar menú semanal</button><button class="btn" onclick="generateV7Shopping()">Generar compra</button></div>
+ <div class="btn-row"><button class="btn primary" onclick="buildWeeklyMenu()">Generar menú semanal</button><button class="btn" onclick="generateV8Shopping()">Generar compra</button></div>
  <div class="btn-row" style="margin-top:8px"><button class="btn secondary" onclick="openSocialMeal()">Comida social</button><button class="btn secondary" onclick="restaurantMode()">Modo restaurante</button></div>
  </div>
  ${expiryMarkup()}${socialAdviceV71()}${dailyBalanceMarkup()}
@@ -1130,7 +1134,7 @@ function currentMenuOrGenerate(){
  }
  return m;
 }
-function generateV7Shopping(){
+function generateV8Shopping(){
  const menu=currentMenuOrGenerate();
  if(!menu)return toast('No se ha podido generar el menú');
  const need={};
@@ -1155,10 +1159,10 @@ function generateV7Shopping(){
 }
 function shoppingMarkup(){
  const list=store('shopping');
- if(!list.length)return `<div class="empty-state"><h3>Lista vacía</h3><p>Genera la compra desde el menú semanal.</p><button class="btn primary" onclick="generateV7Shopping()">Generar ahora</button></div>`;
+ if(!list.length)return `<div class="empty-state"><h3>Lista vacía</h3><p>Genera la compra desde el menú semanal.</p><button class="btn primary" onclick="generateV8Shopping()">Generar ahora</button></div>`;
  const groups={};
  list.forEach((x,i)=>{if(!groups[x.category])groups[x.category]=[];groups[x.category].push({...x,index:i})});
- return `<div class="section-title"><div><span class="eyebrow">COMPRA SEMANAL</span><h2>${list.filter(x=>!x.bought).length} pendientes</h2></div><button class="btn small" onclick="generateV7Shopping()">Recalcular</button></div>
+ return `<div class="section-title"><div><span class="eyebrow">COMPRA SEMANAL</span><h2>${list.filter(x=>!x.bought).length} pendientes</h2></div><button class="btn small" onclick="generateV8Shopping()">Recalcular</button></div>
  ${Object.entries(groups).map(([cat,items])=>`<div class="shopping-category"><h3>${cat}</h3>${items.map(x=>`<div class="shopping-row"><input type="checkbox" ${x.bought?'checked':''} onchange="shopUpdate(${x.index},'bought',this.checked)"><div><b>${x.name}</b><small>Comprar ${Math.ceil(x.buy)} ${x.unit}${x.have?` · tienes ${x.have} ${x.unit}`:''}</small></div><button class="btn small ${x.owned?'primary':''}" onclick="shopUpdate(${x.index},'owned',!${x.owned})">${x.owned?'En casa':'Tengo'}</button></div>`).join('')}</div>`).join('')}`;
 }
 
@@ -1204,6 +1208,140 @@ function endocrineReferenceMarkup(){
  return `<div class="card reference-card"><span class="eyebrow">BASE PROFESIONAL</span><h3>Raciones y equivalencias</h3><p>La estructura de alimentos y sustituciones utiliza como referencia las pautas y tablas del endocrino aportadas, adaptadas al funcionamiento de Proyecto85. No convierte automáticamente una pauta antigua de 1.200 kcal en objetivo diario.</p></div>`;
 }
 
+
+// ===== V8.0 MÓDULO 1 DEFINITIVO =====
+function weekStartISO(date=new Date()){
+ const d=new Date(date),day=d.getDay(),diff=(day===0?-6:1-day);
+ d.setDate(d.getDate()+diff);d.setHours(0,0,0,0);return d.toISOString().slice(0,10);
+}
+function weekEndISO(start){
+ const d=new Date(start+'T00:00:00');d.setDate(d.getDate()+6);return d.toISOString().slice(0,10);
+}
+function officialWeeklyMenu(){
+ const m=store('lockedWeeklyMenu'),start=weekStartISO();
+ return m&&m.weekStart===start?m:null;
+}
+function lockCurrentWeeklyMenu(){
+ const m=store('weeklyMenus')[0];if(!m)return toast('Genera primero el menú semanal');
+ const locked=JSON.parse(JSON.stringify(m)),start=weekStartISO();
+ locked.weekStart=start;locked.weekEnd=weekEndISO(start);locked.locked=true;locked.lockedAt=new Date().toISOString();
+ save('lockedWeeklyMenu',locked);toast('Semana bloqueada');renderNutrition();
+}
+function unlockWeeklyMenu(){
+ if(!officialWeeklyMenu())return;
+ if(!confirm('¿Desbloquear el menú semanal?'))return;
+ save('lockedWeeklyMenu',null);toast('Semana desbloqueada');renderNutrition();
+}
+function regenerateOfficialWeek(){
+ if(officialWeeklyMenu()&&!confirm('El menú está bloqueado. ¿Regenerar toda la semana?'))return;
+ save('lockedWeeklyMenu',null);buildWeeklyMenu();
+}
+function currentWeeklyMenu(){
+ return officialWeeklyMenu()||store('weeklyMenus')[0]||null;
+}
+function currentDayName(){
+ return ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'][new Date().getDay()];
+}
+function activeProRecipe(type){
+ const swap=store('mealSwaps').find(x=>x.date===todayISO()&&x.type===type);
+ if(swap?.custom)return swap.custom;
+ const manual=store('mealSelections')?.[todayISO()]?.[type];
+ if(manual)return recipeByAnyId(manual);
+ const official=officialWeeklyMenu();
+ if(official){
+   const id=official.days?.[currentDayName()]?.[type];
+   if(id)return recipeByAnyId(id);
+ }
+ return smartRecipeList(type)[0];
+}
+function buildWeeklyMenu(){
+ const days=['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+ const menu={id:uid(),createdAt:new Date().toISOString(),weekStart:weekStartISO(),weekEnd:weekEndISO(weekStartISO()),days:{}};
+ const used={breakfast:[],midmorning:[],lunch:[],snack:[],dinner:[]};
+ const choose=(type,di)=>{
+   let pool=smartRecipeList(type).filter(r=>!used[type].slice(-2).includes(r.id));
+   if(!pool.length)pool=smartRecipeList(type);
+   if(type==='lunch'&&[0,4].includes(di)){const r=pool.find(x=>/lenteja|garbanzo|alubia/i.test(x.name));if(r)return r}
+   if(type==='dinner'&&[1,3,5].includes(di)){const r=pool.find(x=>/salmón|merluza|bacalao|sardina|atún|pescado|marisco|salpicón/i.test(x.name));if(r)return r}
+   return pool[di%Math.max(pool.length,1)]||pool[0];
+ };
+ days.forEach((day,di)=>{menu.days[day]={};Object.keys(mealLabels).forEach(type=>{const r=choose(type,di);menu.days[day][type]=r?.id;if(r)used[type].push(r.id)})});
+ const rows=store('weeklyMenus');rows.unshift(menu);save('weeklyMenus',rows);save('lockedWeeklyMenu',null);toast('Semana generada: revísala y bloquéala');renderNutrition();
+}
+function weeklyLockBanner(){
+ const m=officialWeeklyMenu();
+ if(!m)return `<div class="banner warn"><b>Semana sin bloquear</b><p>Revísala y pulsa “Bloquear semana” para que no cambie sola.</p></div>`;
+ return `<div class="card lock-card"><div class="section-title"><div><span class="eyebrow">MENÚ OFICIAL</span><h3>${m.weekStart} → ${m.weekEnd}</h3></div><span class="pill green">🔒 Planificado</span></div><p>La pantalla Hoy siempre lee de este menú.</p><button class="btn small" onclick="unlockWeeklyMenu()">Desbloquear</button></div>`;
+}
+function weeklyMenuMarkup(){
+ const m=currentWeeklyMenu();
+ if(!m)return `<div class="card empty-state"><h3>No hay menú semanal</h3><button class="btn primary" onclick="buildWeeklyMenu()">Generar semana</button></div>`;
+ const order=['breakfast','midmorning','lunch','snack','dinner'];
+ return `${weeklyLockBanner()}<div class="card"><div class="section-title"><div><span class="eyebrow">SEMANA COMPLETA</span><h2>${m.weekStart} → ${m.weekEnd}</h2></div>${officialWeeklyMenu()?'<button class="btn small" onclick="regenerateOfficialWeek()">Regenerar</button>':'<button class="btn primary small" onclick="lockCurrentWeeklyMenu()">Bloquear semana</button>'}</div></div>
+ ${Object.entries(m.days).map(([day,meals])=>`<div class="week-day-card"><h3>${day}</h3>${order.map(type=>{const r=recipeByAnyId(meals[type]);return `<div class="week-meal"><span>${mealLabels[type]}</span><div><b>${r?.name||'Sin asignar'}</b>${r?`<small>${(r.items||[]).slice(0,4).map(i=>`${i[1]} ${i[2]} ${i[0]}`).join(' · ')}</small>`:''}</div><button class="guide-btn" onclick="${r?`openRecipe('${r.id}')`:'void 0'}">Ver</button></div>`}).join('')}</div>`).join('')}`;
+}
+function recipePrepText(r){
+ const t=(r.name+' '+(r.items||[]).map(i=>i[0]).join(' ')).toLowerCase();
+ if(/ensalada|salpicón/.test(t))return 'Preparación en frío';
+ if(/arroz|pasta|lenteja|garbanzo|alubia/.test(t))return 'Cocción + salteado suave';
+ if(/salmón|merluza|bacalao|pollo|pavo|lomo|ternera|conejo/.test(t))return 'Plancha, horno o parrilla';
+ return 'Cocción sencilla';
+}
+function recipeStorageText(r){
+ const n=r.name.toLowerCase();
+ if(/ensalada|aguacate|salpicón/.test(n))return 'Mejor preparar el mismo día.';
+ if(/salmón|merluza|bacalao|sardina|pescado/.test(n))return 'Preferible cocinar cerca del consumo y refrigerar si se adelanta.';
+ return 'Puede prepararse con antelación y guardarse refrigerado en recipiente cerrado.';
+}
+function recipeReheatText(r){
+ return /ensalada|salpicón|aguacate/i.test(r.name)?'No recalentar.':'Recalentar suavemente hasta estar bien caliente, evitando resecar.';
+}
+function openRecipe(id){
+ const r=recipeByAnyId(id);if(!r)return;const n=r.nutrition||{},av=recipeAvailability(r);
+ openModal(`<span class="eyebrow">RECETA COMPLETA</span><h2>${r.name}</h2>`,
+ `<div class="recipe-meta"><span>${r.flavor||'Variado'}</span><span>${r.time||'-'} min</span><span>${av.pct}% despensa</span></div>
+ <h3>Ingredientes y cantidades</h3><ul class="meal-items">${(r.items||[]).map(x=>`<li><b>${x[1]} ${x[2]}</b> ${x[0]}<small>${x[3]||'tal como se consume'}</small></li>`).join('')}</ul>
+ <h3>Modo de preparación</h3><p><b>Técnica:</b> ${recipePrepText(r)}</p><ol class="guide-list">${(r.steps||[]).map(x=>`<li>${x}</li>`).join('')}</ol>
+ <h3>Preparación anticipada</h3><p>${recipeStorageText(r)}</p><h3>Recalentado</h3><p>${recipeReheatText(r)}</p>
+ <h3>Valor nutricional aproximado</h3><div class="nutrition-grid"><div><span>Proteína</span><b>${n.protein||'-'} g</b></div><div><span>Hidratos</span><b>${n.carbs||'-'} g</b></div><div><span>Grasas</span><b>${n.fat||'-'} g</b></div><div><span>Fibra</span><b>${n.fiber||'-'} g</b></div></div>`);
+}
+function generateV8Shopping(){
+ const menu=currentWeeklyMenu();if(!menu)return toast('Genera primero el menú semanal');
+ const need={};
+ Object.values(menu.days||{}).forEach(meals=>Object.values(meals||{}).forEach(id=>{const r=recipeByAnyId(id);if(!r)return;(r.items||[]).forEach(i=>{const name=String(i[0]),qty=finite(i[1],0),unit=i[2]||'unidad';if(!need[name])need[name]={name,qty:0,unit,category:shoppingCategory(name)};need[name].qty+=qty})}));
+ const pantry=store('pantry');
+ const list=Object.values(need).map(x=>{const p=pantry.find(y=>y.name.toLowerCase()===x.name.toLowerCase()),have=finite(p?.qty,0);return {...x,have,buy:Math.max(0,x.qty-have),bought:false}}).filter(x=>x.buy>0);
+ save('shopping',list);toast(`Compra generada: ${list.length} productos`);renderNutrition();
+}
+function shoppingMarkup(){
+ const list=store('shopping');if(!list.length)return `<div class="empty-state"><h3>Sin lista generada</h3><p>Se crea desde el menú semanal y descuenta la despensa.</p><button class="btn primary" onclick="generateV8Shopping()">Generar compra</button></div>`;
+ const groups={};list.forEach((x,i)=>{if(!groups[x.category])groups[x.category]=[];groups[x.category].push({...x,index:i})});
+ return `<div class="section-title"><div><span class="eyebrow">COMPRA SEMANAL</span><h2>${list.filter(x=>!x.bought).length} pendientes</h2></div><button class="btn small" onclick="generateV8Shopping()">Recalcular</button></div>${Object.entries(groups).map(([cat,items])=>`<div class="shopping-category"><h3>${cat}</h3>${items.map(x=>`<div class="shopping-row"><input type="checkbox" ${x.bought?'checked':''} onchange="shopUpdate(${x.index},'bought',this.checked)"><div><b>${x.name}</b><small>Comprar ${Math.ceil(x.buy)} ${x.unit}${x.have?` · tienes ${x.have} ${x.unit}`:''}</small></div></div>`).join('')}</div>`).join('')}`;
+}
+function bodyDataAudit(){
+ const latest=[...store('measures')].sort((a,b)=>b.date.localeCompare(a.date))[0];if(!latest)return[];
+ const w=[];
+ if(finite(latest.bmi)>45||finite(latest.bmi)<15)w.push('Revisar IMC: valor incoherente.');
+ if(finite(latest.bmi)>35&&Math.abs(finite(latest.bmi)-finite(latest.skeletalMuscle))<0.3)w.push('Posible confusión entre IMC y músculo esquelético.');
+ return w;
+}
+function nutritionBodyContextMarkup(){
+ const w=bodyDataAudit();return `<div class="card"><span class="eyebrow">DATOS CORPORALES</span><h3>Control de coherencia</h3>${w.length?w.map(x=>`<div class="banner danger">${x}</div>`).join(''):'<p>Sin incoherencias evidentes.</p>'}<p class="note">Una medición aislada no modifica automáticamente el menú.</p></div>`;
+}
+function batchCookingPlan(){
+ const m=currentWeeklyMenu();if(!m)return toast('Genera primero el menú semanal');
+ const rs=[...new Set(Object.values(m.days).flatMap(x=>Object.values(x)))].map(recipeByAnyId).filter(Boolean),all=rs.flatMap(r=>r.items||[]);
+ const group=keys=>[...new Set(all.filter(i=>keys.some(k=>String(i[0]).toLowerCase().includes(k))).map(i=>i[0]))];
+ const p={id:uid(),date:todayISO(),proteins:group(['pollo','pavo','lomo','ternera','conejo']),carbs:group(['arroz','pasta','patata','garbanzo','lenteja','alubia']),veg:group(['verdura','ensalada','espinaca','pimiento','tomate','calabacín'])};
+ const a=store('batchPlans');a.unshift(p);save('batchPlans',a);renderNutrition();
+}
+function batchMarkup(){
+ const p=store('batchPlans')[0],m=currentWeeklyMenu();
+ if(!m)return `<div class="card empty-state"><h3>Primero genera el menú semanal</h3></div>`;
+ if(!p)return `<div class="card"><h3>Preparación semanal</h3><p>Usaremos el menú oficial para decidir qué adelantar y qué cocinar fresco.</p><button class="btn primary" onclick="batchCookingPlan()">Crear plan</button></div>`;
+ return `<div class="card"><span class="eyebrow">PREPARACIÓN SEMANAL</span><h2>Qué adelantar</h2><ol class="guide-list"><li><b>Proteínas:</b> ${p.proteins.join(', ')||'Preparar según el día'}</li><li><b>Hidratos:</b> ${p.carbs.join(', ')||'Preparar según el día'}</li><li><b>Verduras:</b> ${p.veg.join(', ')||'Lavar y cortar variedad'}</li><li>Separar raciones por día según el menú bloqueado.</li><li>Dejar pescado y ensaladas delicadas para fechas próximas al consumo.</li></ol></div>`;
+}
+
 function saveHealth(){const o={date:todayISO(),steps:finite($('#h_steps').value),sleep:finite($('#h_sleep').value),restHr:finite($('#h_hr').value),water:finite($('#h_water').value),energy:finite($('#h_energy').value),stress:finite($('#h_stress').value),pain:finite($('#h_pain').value)};let a=store('health'),i=a.findIndex(x=>x.date===o.date);if(i>=0)a[i]=o;else a.unshift(o);save('health',a);toast('Salud guardada')}
 function addAnalytic(){const o={id:uid(),date:$('#a_date').value||todayISO(),name:$('#a_name').value.trim(),value:$('#a_value').value,unit:$('#a_unit').value,reference:$('#a_ref').value};if(!o.name)return;const a=store('analytics');a.unshift(o);save('analytics',a);renderMore()}
 function requestNotifications(){if(!('Notification'in window))return toast('No disponible');Notification.requestPermission().then(x=>{const s=store('settings');s.notifications=x==='granted';save('settings',s);toast(x==='granted'?'Notificaciones permitidas':'Permiso no concedido')})}
@@ -1245,4 +1383,4 @@ function moreTab(id,b){$$('.tab-btn').forEach(x=>x.classList.remove('active'));b
 async function forceUpdate(){await hardRefresh();}
 $('#refreshBtn').onclick=forceUpdate;
 migrate();runMigrationAndNotify();ensureV73Recipes();updateAppShell();renderHome();startAutomaticUpdateChecks();
-if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js?v=7.3.0');
+if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js?v=8.0.0');
