@@ -1,5 +1,5 @@
-const CACHE='proyecto85-v8.0.0';
-const ASSETS=['./','./index.html','./styles.css?v=8.0.0','./app.js?v=8.0.0','./manifest.json','./version.json','./icon-192.png','./icon-512.png'];
+const CACHE='proyecto85-pro-v10.0.0';
+const ASSETS=['./','./index.html','./styles.css?v=10.0.0','./app.js?v=10.0.0','./manifest.json','./version.json','./icon-192.png','./icon-512.png'];
 
 self.addEventListener('install',event=>{
  event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS)).then(()=>self.skipWaiting()));

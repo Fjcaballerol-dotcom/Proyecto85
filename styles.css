@@ -77,3 +77,6 @@ main{max-width:780px;margin:auto;padding:14px}.view{display:none}.view.active{di
 .lock-card{border-color:#3e7658;background:#0c2118}
 .week-meal{grid-template-columns:95px 1fr auto!important;align-items:center}
 .week-meal small{display:block;color:var(--muted);font-size:.7rem;margin-top:4px}
+
+.planner-nav{display:flex;gap:8px;overflow:auto;margin-bottom:12px}.planner-summary{border-color:#47735b}.week-actions{display:flex;gap:5px}.filter-row{display:grid;grid-template-columns:1fr 140px;gap:8px}.recipe-filter-card.hidden{display:none}.pro-title{background:linear-gradient(145deg,var(--panel),var(--panel2));border-color:#47735b}.week-day-card{margin-bottom:12px}.week-meal{grid-template-columns:90px 1fr auto!important}
+@media(max-width:560px){.filter-row{grid-template-columns:1fr}.week-meal{grid-template-columns:78px 1fr!important}.week-actions{grid-column:2;justify-content:flex-start}}

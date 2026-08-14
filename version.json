@@ -1,6 +1,7 @@
 {
-  "version": "8.0.0",
-  "build": "2026-08-11-module1-final",
+  "version": "10.0.0",
+  "name": "Proyecto85 Pro",
   "channel": "stable",
-  "notes": "Menú semanal bloqueado, Hoy sincronizado, compra estable, preparación completa y control de coherencia corporal."
+  "build": "2026-08-14-module1-professional",
+  "notes": "Reconstrucción del Módulo 1: semana actual/siguiente/historial, planificador editable, variedad, confirmación, compra y preparación automáticas, biblioteca filtrable."
 }

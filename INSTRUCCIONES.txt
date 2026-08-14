@@ -1,0 +1,7 @@
+PROYECTO85 PRO
+
+1. Sube todos los archivos a GitHub.
+2. Espera a que GitHub Pages termine el despliegue.
+3. Actualiza desde la aplicación.
+4. Comprueba que aparece Proyecto85 Pro.
+5. Prueba una sustitución de ingrediente: el nombre del plato debe actualizarse también.
