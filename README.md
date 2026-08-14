@@ -1,11 +1,15 @@
-# Proyecto85 Pro CLEAN 1.1.1
+# Proyecto85 Pro CLEAN 1.2
 
-Corrección de actualización para iPhone/PWA antigua.
+Esta versión añade un mecanismo de recuperación independiente:
 
-Al abrir:
-- desregistra cualquier service worker heredado;
-- borra cachés antiguas;
-- conserva localStorage;
-- recarga una sola vez con URL limpia.
+1. Sube TODOS los archivos a GitHub.
+2. Abre `reset.html` desde Safari.
+3. Pulsa **Limpiar y abrir Clean 1.2**.
+4. Debe aparecer `Proyecto85 Pro · Clean 1.2`.
 
-Después de esa primera apertura, la app funciona sin service worker.
+El reset desregistra service workers y borra cachés, pero no borra localStorage.
+Además, los archivos principales ahora tienen nombres nuevos:
+- app-clean-1-2.js
+- styles-clean-1-2.css
+
+Esto evita reutilizar los assets antiguos cacheados.

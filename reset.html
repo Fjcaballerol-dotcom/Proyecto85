@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta name="theme-color" content="#06130e">
+<title>Reiniciar Proyecto85 Pro</title>
+<style>
+body{margin:0;background:#06130e;color:#f2f7f4;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;display:grid;min-height:100vh;place-items:center;padding:24px}
+.box{max-width:560px;background:#0b2118;border:1px solid #234737;border-radius:22px;padding:24px}
+h1{margin-top:0}p{color:#a8b8b0;line-height:1.5}
+button{width:100%;padding:15px;border:0;border-radius:14px;background:#48d489;color:#052014;font-weight:900;font-size:1rem}
+#status{margin-top:14px;color:#48d489;font-weight:800}
+</style>
+</head>
+<body>
+<div class="box">
+<h1>Proyecto85 Pro · Reinicio limpio</h1>
+<p>Esta página elimina el service worker y las cachés antiguas de Proyecto85. No borra tus datos guardados en localStorage.</p>
+<button id="go">Limpiar y abrir Clean 1.2</button>
+<div id="status"></div>
+</div>
+<script>
+async function clean(){
+ const s=document.getElementById('status');
+ s.textContent='Limpiando versión antigua…';
+ try{
+   if('serviceWorker' in navigator){
+     const regs=await navigator.serviceWorker.getRegistrations();
+     for(const r of regs){ try{await r.unregister()}catch(e){} }
+   }
+   if('caches' in window){
+     const keys=await caches.keys();
+     await Promise.all(keys.map(k=>caches.delete(k)));
+   }
+   s.textContent='Limpieza terminada. Abriendo Clean 1.2…';
+   const base=location.href.replace(/reset\.html.*$/,'');
+   location.replace(base+'index.html?clean=120&ts='+Date.now());
+ }catch(e){
+   s.textContent='Abriendo versión nueva…';
+   location.href='./index.html?clean=120&ts='+Date.now();
+ }
+}
+document.getElementById('go').addEventListener('click',clean);
+</script>
+</body>
+</html>
