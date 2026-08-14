@@ -1,0 +1,259 @@
+
+const VERSION="1.4.0",PREFIX="p85proclean_";
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const uid=()=>crypto.randomUUID?crypto.randomUUID():String(Date.now()+Math.random());
+const get=(k,d)=>{try{return JSON.parse(localStorage.getItem(PREFIX+k))??d}catch{return d}};
+const set=(k,v)=>localStorage.setItem(PREFIX+k,JSON.stringify(v));
+const todayISO=()=>new Date().toISOString().slice(0,10);
+const monday=(o=0)=>{const d=new Date(),day=d.getDay(),diff=(day===0?-6:1-day)+o*7;d.setDate(d.getDate()+diff);d.setHours(0,0,0,0);return d.toISOString().slice(0,10)};
+const plus=(iso,n)=>{const d=new Date(iso+"T00:00:00");d.setDate(d.getDate()+n);return d.toISOString().slice(0,10)};
+const dayName=()=>["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"][new Date().getDay()];
+const MEALS={breakfast:"Desayuno",midmorning:"Media mañana",lunch:"Comida",snack:"Merienda",dinner:"Cena"};
+const DAYS=["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado","Domingo"];
+
+const RECIPES=[
+{id:"b1",type:"breakfast",name:"Tostada integral con pavo, tomate y AOVE",cat:"desayuno",protein:"pavo",carb:"pan",time:5,prep:"Al momento",items:[["Pan integral",60,"g","listo"],["Pavo",70,"g","listo"],["Tomate",120,"g","crudo"],["AOVE",5,"g","medido"],["Café",1,"taza","habitual"]],steps:["Tuesta el pan.","Añade tomate y pavo.","Termina con AOVE medido.","Acompaña con el café habitual."],storage:"Sin preparación previa.",reheat:"No aplica."},
+{id:"b2",type:"breakfast",name:"Tostada integral con queso fresco, tomate y fruta",cat:"desayuno",protein:"queso",carb:"pan",time:5,prep:"Al momento",items:[["Pan integral",60,"g","listo"],["Queso fresco",70,"g","listo"],["Tomate",100,"g","crudo"],["Fruta",1,"pieza","entera"],["Café",1,"taza","habitual"]],steps:["Tuesta el pan.","Añade queso y tomate.","Toma la fruta y el café."],storage:"Sin preparación previa.",reheat:"No aplica."},
+{id:"b3",type:"breakfast",name:"Tostada integral con aguacate y pavo",cat:"desayuno",protein:"pavo",carb:"pan",time:5,prep:"Al momento",items:[["Pan integral",60,"g","listo"],["Aguacate",35,"g","listo"],["Pavo",60,"g","listo"],["Café",1,"taza","habitual"]],steps:["Tuesta el pan.","Unta aguacate.","Añade pavo.","Acompaña con café."],storage:"Al momento.",reheat:"No aplica."},
+{id:"b4",type:"breakfast",name:"Tostada integral con queso fresco y pimientos asados",cat:"desayuno",protein:"queso",carb:"pan",time:5,prep:"Al momento",items:[["Pan integral",60,"g","listo"],["Queso fresco",70,"g","listo"],["Pimientos asados",80,"g","cocinados"],["Café",1,"taza","habitual"]],steps:["Tuesta pan.","Añade queso y pimientos.","Acompaña con café."],storage:"Pimientos preparados con antelación.",reheat:"No aplica."},
+
+{id:"m1",type:"midmorning",name:"Fruta y yogur natural",cat:"tentempié",protein:"lácteo",carb:"fruta",time:2,prep:"Directo",items:[["Fruta",1,"pieza","entera"],["Yogur natural",1,"unidad","listo"]],steps:["Tomar directamente."],storage:"Transportable.",reheat:"No."},
+{id:"m2",type:"midmorning",name:"Queso fresco y fruta",cat:"tentempié",protein:"queso",carb:"fruta",time:2,prep:"Directo",items:[["Queso fresco",60,"g","listo"],["Fruta",1,"pieza","entera"]],steps:["Tomar directamente."],storage:"En frío.",reheat:"No."},
+{id:"m3",type:"midmorning",name:"Pavo y pequeña tostada",cat:"tentempié",protein:"pavo",carb:"pan",time:3,prep:"Directo",items:[["Pavo",60,"g","listo"],["Pan integral",30,"g","listo"]],steps:["Preparar y llevar."],storage:"Transportable.",reheat:"No."},
+
+{id:"s1",type:"snack",name:"Yogur natural con kiwi",cat:"tentempié",protein:"lácteo",carb:"fruta",time:2,prep:"Directo",items:[["Yogur natural",1,"unidad","listo"],["Kiwi",1,"pieza","entero"]],steps:["Tomar directamente."],storage:"Transportable.",reheat:"No."},
+{id:"s2",type:"snack",name:"Queso fresco con tomate",cat:"tentempié",protein:"queso",carb:"verdura",time:3,prep:"Directo",items:[["Queso fresco",60,"g","listo"],["Tomate",150,"g","crudo"]],steps:["Cortar y servir."],storage:"En frío.",reheat:"No."},
+{id:"s3",type:"snack",name:"Fruta y café",cat:"tentempié",protein:"otro",carb:"fruta",time:2,prep:"Directo",items:[["Fruta",1,"pieza","entera"],["Café",1,"taza","habitual"]],steps:["Tomar."],storage:"No requiere.",reheat:"No."},
+
+{id:"l1",type:"lunch",name:"Pasta mediterránea con pollo",cat:"pasta",protein:"pollo",carb:"pasta",time:15,prep:"Dejar preparada; solo calentar",items:[["Pasta integral",70,"g","crudo"],["Pollo",180,"g","crudo"],["Tomate",120,"g","cocinado"],["Pimientos",120,"g","cocinados"],["AOVE",10,"g","medido"]],steps:["Cuece pasta.","Cocina pollo.","Añade tomate y pimientos.","Guarda en ración."],storage:"2-3 días en frío.",reheat:"Suave."},
+{id:"l2",type:"lunch",name:"Arroz tres delicias saludable",cat:"arroz",protein:"huevo",carb:"arroz",time:15,prep:"Preparar la noche anterior",items:[["Arroz",65,"g","crudo"],["Huevo",1,"unidad","cocinado"],["Gambas",100,"g","cocinadas"],["Guisantes",60,"g","cocinados"],["Zanahoria",80,"g","cocinada"]],steps:["Cuece arroz.","Saltea verdura.","Añade huevo y gambas.","Mezcla."],storage:"2 días.",reheat:"Una vez."},
+{id:"l3",type:"lunch",name:"Lomo magro con pimientos y arroz",cat:"carne",protein:"cerdo",carb:"arroz",time:12,prep:"Dejar preparado; solo calentar",items:[["Lomo magro",180,"g","crudo"],["Arroz integral",60,"g","crudo"],["Pimientos asados",250,"g","cocinados"]],steps:["Cuece arroz.","Cocina lomo.","Añade pimientos."],storage:"2-3 días.",reheat:"Suave."},
+{id:"l4",type:"lunch",name:"Filete de ternera con patata y verduras",cat:"carne",protein:"ternera",carb:"patata",time:12,prep:"Dejar guarnición lista",items:[["Ternera magra",180,"g","crudo"],["Patata",220,"g","cocida"],["Verduras",250,"g","cocinadas"]],steps:["Deja patata y verduras listas.","Cocina ternera.","Monta la ración."],storage:"2 días.",reheat:"Sin resecar."},
+{id:"l5",type:"lunch",name:"Garbanzos con espinacas y pollo",cat:"legumbre",protein:"pollo",carb:"legumbre",time:12,prep:"Ideal para preparar antes",items:[["Garbanzos",200,"g","cocidos"],["Espinacas",250,"g","cocinadas"],["Pollo",120,"g","crudo"]],steps:["Saltea espinacas.","Añade garbanzos.","Incorpora pollo."],storage:"2-3 días.",reheat:"Suave."},
+{id:"l6",type:"lunch",name:"Lentejas con verduras y pavo",cat:"legumbre",protein:"pavo",carb:"legumbre",time:12,prep:"Preparar la noche anterior",items:[["Lentejas",200,"g","cocidas"],["Pavo",120,"g","crudo"],["Verduras",250,"g","cocinadas"]],steps:["Calienta lentejas.","Añade verduras.","Incorpora pavo."],storage:"2-3 días.",reheat:"Bien caliente."},
+{id:"l7",type:"lunch",name:"Ensaladilla equilibrada con atún",cat:"ensaladilla",protein:"atún",carb:"patata",time:10,prep:"Dejar hecha en frío",items:[["Patata",220,"g","cocida"],["Atún",140,"g","escurrido"],["Zanahoria",80,"g","cocida"],["Guisantes",50,"g","cocidos"],["Yogur natural",40,"g","salsa ligera"]],steps:["Cuece y enfría.","Añade atún.","Liga con yogur."],storage:"1-2 días.",reheat:"No."},
+{id:"l8",type:"lunch",name:"Arroz con langostinos y verduras",cat:"arroz",protein:"langostinos",carb:"arroz",time:14,prep:"Preparar antes; solo calentar",items:[["Arroz",65,"g","crudo"],["Langostinos",160,"g","cocinados"],["Verduras",250,"g","cocinadas"]],steps:["Cuece arroz.","Saltea verduras.","Añade langostinos."],storage:"1-2 días.",reheat:"Una vez."},
+{id:"l9",type:"lunch",name:"Mejillones con arroz y verduras",cat:"marisco",protein:"mejillones",carb:"arroz",time:12,prep:"Arroz y verduras preparados",items:[["Mejillones",180,"g","comestibles"],["Arroz",60,"g","crudo"],["Verduras",250,"g","cocinadas"]],steps:["Prepara arroz y verduras.","Añade mejillones al montar."],storage:"Consumir pronto.",reheat:"Suave."},
+{id:"l10",type:"lunch",name:"Tortilla de patata ligera con ensalada",cat:"huevo",protein:"huevo",carb:"patata",time:15,prep:"Puede dejarse hecha",items:[["Huevos",2,"unidades","cocinados"],["Patata",200,"g","cocida"],["Cebolla",60,"g","cocinada"],["Ensalada",250,"g","cruda"]],steps:["Cocina patata.","Cuaja tortilla.","Acompaña ensalada."],storage:"1-2 días.",reheat:"Opcional."},
+{id:"l11",type:"lunch",name:"Salteado de espárragos, pollo y patata",cat:"verdura",protein:"pollo",carb:"patata",time:12,prep:"Preparar la noche anterior",items:[["Espárragos",250,"g","cocinados"],["Pollo",170,"g","crudo"],["Patata",200,"g","cocida"]],steps:["Saltea espárragos.","Añade pollo.","Acompaña patata."],storage:"2 días.",reheat:"Suave."},
+{id:"l12",type:"lunch",name:"Paella sencilla de pollo y verduras",cat:"arroz",protein:"pollo",carb:"arroz",time:18,prep:"Batch cooking",items:[["Arroz",65,"g","crudo"],["Pollo",160,"g","crudo"],["Verduras",250,"g","cocinadas"]],steps:["Sofríe verduras.","Añade pollo.","Incorpora arroz."],storage:"2 días.",reheat:"Una vez."},
+{id:"l13",type:"lunch",name:"Macarrones con tomate y ternera magra",cat:"pasta",protein:"ternera",carb:"pasta",time:15,prep:"Preparar antes",items:[["Pasta",70,"g","cruda"],["Ternera magra",150,"g","cruda"],["Tomate",150,"g","cocinado"]],steps:["Cuece pasta.","Cocina ternera.","Añade tomate."],storage:"2 días.",reheat:"Suave."},
+{id:"l14",type:"lunch",name:"Sepia con arroz y verduras",cat:"marisco",protein:"sepia",carb:"arroz",time:12,prep:"Arroz listo; sepia preparada",items:[["Sepia",180,"g","cocinada"],["Arroz",60,"g","crudo"],["Verduras",250,"g","cocinadas"]],steps:["Cuece arroz.","Cocina sepia.","Añade verduras."],storage:"1-2 días.",reheat:"Una vez."},
+
+{id:"d1",type:"dinner",name:"Merluza a la plancha con ensalada",cat:"pescado",protein:"merluza",carb:"verdura",time:12,prep:"Cena ligera",items:[["Merluza",200,"g","crudo"],["Ensalada",300,"g","cruda"]],steps:["Cocina merluza.","Monta ensalada."],storage:"Al momento.",reheat:"Evitar."},
+{id:"d2",type:"dinner",name:"Salmón con espárragos",cat:"pescado",protein:"salmón",carb:"verdura",time:12,prep:"Cena ligera",items:[["Salmón",180,"g","crudo"],["Espárragos",250,"g","cocinados"]],steps:["Plancha salmón.","Saltea espárragos."],storage:"Al momento.",reheat:"Evitar."},
+{id:"d3",type:"dinner",name:"Tortilla francesa con tomate y queso fresco",cat:"huevo",protein:"huevo",carb:"verdura",time:8,prep:"Rápida",items:[["Huevos",2,"unidades","cocinados"],["Tomate",200,"g","crudo"],["Queso fresco",50,"g","listo"]],steps:["Cuaja tortilla.","Acompaña tomate y queso."],storage:"Al momento.",reheat:"No."},
+{id:"d4",type:"dinner",name:"Mejillones al vapor con ensalada",cat:"marisco",protein:"mejillones",carb:"verdura",time:10,prep:"Ligera",items:[["Mejillones",200,"g","comestibles"],["Ensalada",300,"g","cruda"]],steps:["Cocina mejillones.","Monta ensalada."],storage:"Al momento.",reheat:"No."},
+{id:"d5",type:"dinner",name:"Langostinos a la plancha con verduras",cat:"marisco",protein:"langostinos",carb:"verdura",time:10,prep:"Ligera",items:[["Langostinos",180,"g","cocinados"],["Verduras",300,"g","cocinadas"]],steps:["Plancha langostinos.","Saltea verduras."],storage:"Al momento.",reheat:"No."},
+{id:"d6",type:"dinner",name:"Atún con tomate, aguacate y queso fresco",cat:"pescado",protein:"atún",carb:"verdura",time:7,prep:"Montar",items:[["Atún",150,"g","escurrido"],["Tomate",220,"g","crudo"],["Aguacate",40,"g","listo"],["Queso fresco",50,"g","listo"]],steps:["Monta los ingredientes."],storage:"Al momento.",reheat:"No."},
+{id:"d7",type:"dinner",name:"Pollo con verduras; reserva para mañana",cat:"pollo",protein:"pollo",carb:"verdura",time:12,prep:"Cena + preparar mañana",items:[["Pollo",300,"g","crudo"],["Verduras",300,"g","cocinadas"]],steps:["Cocina doble ración.","Cena una parte.","Reserva 120-150 g para mañana."],storage:"Reserva en frío.",reheat:"Mañana."},
+{id:"d8",type:"dinner",name:"Salteado de espárragos con huevo y pavo",cat:"huevo",protein:"huevo",carb:"verdura",time:10,prep:"Rápida",items:[["Espárragos",250,"g","cocinados"],["Huevo",1,"unidad","cocinado"],["Pavo",80,"g","listo"]],steps:["Saltea espárragos.","Añade pavo.","Cuaja huevo."],storage:"Al momento.",reheat:"No."},
+{id:"d9",type:"dinner",name:"Ensalada completa con queso fresco y pavo",cat:"ensalada",protein:"queso",carb:"verdura",time:8,prep:"Montar",items:[["Ensalada",300,"g","cruda"],["Queso fresco",70,"g","listo"],["Pavo",80,"g","listo"]],steps:["Monta y aliña."],storage:"Al momento.",reheat:"No."},
+{id:"d10",type:"dinner",name:"Salpicón de marisco equilibrado",cat:"marisco",protein:"marisco",carb:"verdura",time:10,prep:"Fría",items:[["Marisco cocido",180,"g","cocinado"],["Tomate",150,"g","crudo"],["Pimiento",120,"g","crudo"],["Cebolla",40,"g","cruda"]],steps:["Corta.","Mezcla.","Enfría."],storage:"1 día.",reheat:"No."}
+];
+
+
+function customRecipes(){return get("customRecipes",[])}
+function saveCustomRecipes(a){set("customRecipes",a)}
+function allRecipes(){return [...RECIPES,...customRecipes()]}
+function recipe(id){return allRecipes().find(r=>r.id===id)}
+function recipesBy(t){return allRecipes().filter(r=>r.type===t)}
+
+async function fileAsDataURL(file){
+ return await new Promise((resolve,reject)=>{
+   const fr=new FileReader();
+   fr.onload=()=>resolve(fr.result);
+   fr.onerror=reject;
+   fr.readAsDataURL(file);
+ });
+}
+function openCustomRecipeForm(id=""){
+ const r=id?recipe(id):null;
+ const items=(r?.items||[]).map(x=>`${x[0]} | ${x[1]} | ${x[2]} | ${x[3]}`).join("\n");
+ const steps=(r?.steps||[]).join("\n");
+ openModal(id?"Editar receta":"Añadir receta propia",`
+ <div class="form-grid">
+  <label class="wide">Nombre<input id="cr_name" value="${r?.name||""}"></label>
+  <label>Momento<select id="cr_type">${Object.entries(MEALS).map(([k,v])=>`<option value="${k}" ${r?.type===k?"selected":""}>${v}</option>`).join("")}</select></label>
+  <label>Categoría<input id="cr_cat" value="${r?.cat||""}" placeholder="arroz, pescado, marisco..."></label>
+  <label>Proteína principal<input id="cr_protein" value="${r?.protein||""}" placeholder="pollo, huevo, queso..."></label>
+  <label>Hidrato principal<input id="cr_carb" value="${r?.carb||""}" placeholder="arroz, patata, pan..."></label>
+  <label>Tiempo (min)<input id="cr_time" type="number" value="${r?.time||15}"></label>
+  <label>Modo de preparación<input id="cr_prep" value="${r?.prep||""}" placeholder="Preparar la noche anterior"></label>
+  <label class="wide">Ingredientes<textarea id="cr_items" rows="7" placeholder="Uno por línea: Pollo | 180 | g | crudo">${items}</textarea></label>
+  <label class="wide">Preparación<textarea id="cr_steps" rows="6" placeholder="Un paso por línea">${steps}</textarea></label>
+  <label class="wide">Conservación<input id="cr_storage" value="${r?.storage||""}" placeholder="2 días en frío"></label>
+  <label class="wide">Recalentado<input id="cr_reheat" value="${r?.reheat||""}" placeholder="Calentar suavemente"></label>
+  <label class="wide">Foto opcional<input id="cr_photo" type="file" accept="image/*"></label>
+ </div>
+ ${r?.photo?`<img src="${r.photo}" class="recipe-photo" alt="">`:""}
+ <div class="btn-row" style="margin-top:12px">
+  <button class="btn primary" onclick="saveCustomRecipeForm('${id}')">Guardar receta</button>
+  ${id?`<button class="btn danger" onclick="deleteCustomRecipe('${id}')">Eliminar</button>`:""}
+ </div>`);
+}
+async function saveCustomRecipeForm(id=""){
+ const name=$("#cr_name").value.trim();
+ if(!name)return alert("Escribe el nombre de la receta.");
+ const items=$("#cr_items").value.split("\n").map(x=>x.split("|").map(y=>y.trim())).filter(x=>x[0]).map(x=>[x[0],Number(x[1])||x[1]||1,x[2]||"unidad",x[3]||"listo"]);
+ const steps=$("#cr_steps").value.split("\n").map(x=>x.trim()).filter(Boolean);
+ if(!items.length)return alert("Añade al menos un ingrediente.");
+ let photo=id?recipe(id)?.photo:null;
+ const f=$("#cr_photo").files?.[0];
+ if(f)photo=await fileAsDataURL(f);
+ const row={
+   id:id||("user_"+uid()),
+   type:$("#cr_type").value,
+   name,
+   cat:$("#cr_cat").value.trim()||"propia",
+   protein:$("#cr_protein").value.trim()||"otro",
+   carb:$("#cr_carb").value.trim()||"otro",
+   time:Number($("#cr_time").value)||15,
+   prep:$("#cr_prep").value.trim()||"Preparación propia",
+   items,steps,
+   storage:$("#cr_storage").value.trim()||"Según ingredientes.",
+   reheat:$("#cr_reheat").value.trim()||"Según plato.",
+   photo
+ };
+ let a=customRecipes().filter(x=>x.id!==row.id);a.unshift(row);saveCustomRecipes(a);
+ closeModal();
+async function removeLegacyCachesOnce(){
+ const flag=PREFIX+"legacy_cleanup_111";
+ if(localStorage.getItem(flag))return;
+ try{
+   if("serviceWorker" in navigator){
+     const regs=await navigator.serviceWorker.getRegistrations();
+     for(const reg of regs){
+       try{await reg.unregister()}catch(e){}
+     }
+   }
+   if("caches" in window){
+     const keys=await caches.keys();
+     await Promise.all(keys.map(k=>caches.delete(k)));
+   }
+   localStorage.setItem(flag,"1");
+   const u=new URL(location.href);
+   u.searchParams.set("clean","1.1.1");
+   u.searchParams.set("_",Date.now().toString());
+   location.replace(u.toString());
+ }catch(e){
+   console.warn("Legacy cleanup failed",e);
+ }
+}
+
+removeLegacyCachesOnce().then(()=>render());
+}
+function deleteCustomRecipe(id){
+ if(!confirm("¿Eliminar esta receta propia?"))return;
+ saveCustomRecipes(customRecipes().filter(x=>x.id!==id));
+ closeModal();render();
+}
+
+const db=()=>get("db",{plans:[],ratings:{},pantry:[],shopping:[],measurements:[{date:"2026-08-11",weight:103.8,waist:106,hip:105,chest:115,arm:34,thigh:51,calf:39,bodyFat:39.1,visceral:14,water:44,skeletalMuscle:39.3,muscleMass:62.9,protein:16.6,bmr:1735}]});
+const saveDB=x=>set("db",x);
+function score(r,s){let x=100;if(s.ids.includes(r.id))x-=90;if(s.proteins.slice(-1)[0]===r.protein)x-=35;if(s.carbs.slice(-1)[0]===r.carb)x-=25;x+=(db().ratings[r.id]||0)*2;return x}
+function choose(type,state,di){let pool=recipesBy(type);if(type==="lunch"&&[1,5].includes(di)){const q=pool.filter(r=>r.cat==="legumbre");if(q.length)pool=q}if(type==="dinner"&&[0,2,4].includes(di)){const q=pool.filter(r=>["pescado","marisco","huevo"].includes(r.cat));if(q.length)pool=q}return [...pool].sort((a,b)=>score(b,state)-score(a,state))[0]}
+function generatePlan(start){const d=db(),p={weekStart:start,weekEnd:plus(start,6),status:"draft",days:{}};const s={};Object.keys(MEALS).forEach(t=>s[t]={ids:[],proteins:[],carbs:[]});DAYS.forEach((day,di)=>{p.days[day]={};Object.keys(MEALS).forEach(t=>{const r=choose(t,s[t],di);p.days[day][t]=r.id;s[t].ids.push(r.id);s[t].proteins.push(r.protein);s[t].carbs.push(r.carb)})});d.plans=d.plans.filter(x=>x.weekStart!==start);d.plans.unshift(p);saveDB(d);return p}
+function getPlan(start){return db().plans.find(p=>p.weekStart===start)||generatePlan(start)}
+function confirmPlan(start){const d=db(),p=d.plans.find(x=>x.weekStart===start);p.status="confirmed";saveDB(d);buildShopping(p);render()}
+function buildShopping(p){const d=db(),need={};Object.values(p.days).forEach(ms=>Object.values(ms).forEach(id=>recipe(id).items.forEach(([n,q,u])=>{if(!need[n])need[n]={name:n,qty:0,unit:u,bought:false};need[n].qty+=(typeof q==="number"?q:1)})));const pan=Object.fromEntries(d.pantry.map(x=>[x.name.toLowerCase(),x.qty||0]));d.shopping=Object.values(need).map(x=>({...x,buy:Math.max(0,x.qty-(pan[x.name.toLowerCase()]||0))})).filter(x=>x.buy>0);saveDB(d)}
+function currentMeal(t){const p=db().plans.find(x=>x.weekStart===monday(0)&&x.status==="confirmed");return recipe(p?.days?.[dayName()]?.[t])||recipesBy(t)[0]}
+let page="home";
+function render(){const c=page==="home"?home():page==="nutrition"?nutrition():page==="evolution"?evolution():page==="training"?training():more();$("#app").innerHTML=`<div class="shell"><header><div class="brand"><small>ENTRENADOR PERSONAL</small><h1>Proyecto85 Pro <span class="version">Clean 1.4</span></h1></div></header>${c}</div>${nav()}`}
+function nav(){return `<nav class="bottom"><div class="bottom-inner">${[["home","⌂","Inicio"],["training","🏋️","Entreno"],["nutrition","🍽️","Nutrición"],["evolution","↗","Evolución"],["more","•••","Más"]].map(([p,i,l])=>`<button class="nav-btn ${page===p?"active":""}" onclick="page='${p}';render()"><b>${i}</b>${l}</button>`).join("")}</div></nav>`}
+function home(){const d=db(),x=d.measurements[0],p=d.plans.find(x=>x.weekStart===monday(0)&&x.status==="confirmed");return `<div class="card hero"><span class="eyebrow">PROYECTO85 PRO</span><h2>Hoy</h2><div class="grid"><div class="stat"><span>Peso</span><b>${x.weight} kg</b></div><div class="stat"><span>Objetivo</span><b>90 kg</b></div><div class="stat"><span>Semana</span><b>${p?"Confirmada":"Pendiente"}</b></div><div class="stat"><span>Base</span><b>Clean</b></div></div></div>`}
+function training(){return `<div class="card"><span class="eyebrow">ENTRENO</span><h2>Módulo de entrenamiento</h2><p class="muted">Se desarrollará sobre esta base limpia sin tocar Nutrición.</p></div>`}
+function evolution(){const x=db().measurements[0];return `<div class="card"><span class="eyebrow">CONTROL OFICIAL</span><h2>Última medición</h2><div class="grid">${Object.entries({Peso:x.weight+" kg",Cintura:x.waist+" cm",Cadera:x.hip+" cm",Pecho:x.chest+" cm","Grasa":x.bodyFat+" %","Visceral":x.visceral,"Masa muscular":x.muscleMass+" kg"}).map(([k,v])=>`<div class="stat"><span>${k}</span><b>${v}</b></div>`).join("")}</div></div>`}
+function more(){return `<div class="card"><span class="eyebrow">BASE LIMPIA</span><h2>Sin caché interna</h2><p>Esta versión no utiliza service worker. Las actualizaciones dejan de depender del mecanismo que estaba fallando.</p></div>`}
+function nutrition(){return `<div class="card hero"><span class="eyebrow">NUTRICIÓN</span><h2>Planifica → prepara → compra → sigue</h2><p class="muted">Café + tostada como base del desayuno. Comidas preparables. Cenas ligeras.</p></div><div class="tabs"><button class="tab-btn active" onclick="ntab('today',this)">Hoy</button><button class="tab-btn" onclick="ntab('plan',this)">Plan semanal</button><button class="tab-btn" onclick="ntab('recipes',this)">Biblioteca</button><button class="tab-btn" onclick="ntab('shopping',this)">Compra</button><button class="tab-btn" onclick="ntab('pantry',this)">Despensa</button><button class="tab-btn" onclick="ntab('prep',this)">Preparación</button></div><section id="n_today">${Object.keys(MEALS).map(mealCard).join("")}</section><section id="n_plan" class="hidden">${planner()}</section><section id="n_recipes" class="hidden">${library()}</section><section id="n_shopping" class="hidden">${shopping()}</section><section id="n_pantry" class="hidden">${pantry()}</section><section id="n_prep" class="hidden">${prepMarkup()}</section>`}
+function mealCard(t){const r=currentMeal(t),rating=db().ratings[r.id]||0;return `<div class="meal-card"><div class="meal-head"><div><span class="eyebrow">${MEALS[t]}</span><h3>${r.name}</h3><div class="meta"><span>${r.prep}</span><span>${r.time} min</span><span>${r.cat}</span></div></div><button class="btn small" onclick="openRecipe('${r.id}')">Receta</button></div><ul class="meal-items">${r.items.map(x=>`<li><b>${x[1]} ${x[2]}</b> ${x[0]}<small>${x[3]}</small></li>`).join("")}</ul><div class="btn-row"><button class="btn small" onclick="changeToday('${t}')">Cambiar plato</button><button class="btn small" onclick="swapIngredient('${t}')">Cambiar ingrediente</button></div><div class="rating">${[1,2,3,4,5,6,7,8,9,10].map(v=>`<button class="${rating===v?"active":""}" onclick="rate('${r.id}',${v})">${v}</button>`).join("")}</div></div>`}
+function planner(){return `<div class="planner-nav"><button class="tab-btn active" onclick="pview('current',this)">Semana actual</button><button class="tab-btn" onclick="pview('next',this)">Semana siguiente</button><button class="tab-btn" onclick="pview('history',this)">Historial</button></div><div id="p_current">${planMarkup(getPlan(monday(0)))}</div><div id="p_next" class="hidden">${planMarkup(getPlan(monday(1)))}</div><div id="p_history" class="hidden">${historyMarkup()}</div>`}
+function planMarkup(p){return `<div class="card"><div class="section-title"><div><span class="eyebrow">${p.weekStart} → ${p.weekEnd}</span><h2>${p.status==="confirmed"?"Semana confirmada":"Borrador editable"}</h2></div></div><div class="btn-row"><button class="btn" onclick="generatePlan('${p.weekStart}');render()">Otra propuesta</button>${p.status!=="confirmed"?`<button class="btn primary" onclick="confirmPlan('${p.weekStart}')">Confirmar semana</button>`:""}</div></div>${DAYS.map(day=>`<div class="week-card"><h3>${day}</h3>${Object.keys(MEALS).map(t=>{const r=recipe(p.days[day][t]);return `<div class="week-row"><span>${MEALS[t]}</span><div><b>${r.name}</b><small>${r.prep} · ${r.time} min</small></div><div class="actions"><button class="btn small" onclick="openRecipe('${r.id}')">Ver</button><button class="btn small" onclick="changePlanMeal('${p.weekStart}','${day}','${t}')">Cambiar</button></div></div>`}).join("")}</div>`).join("")}`}
+function historyMarkup(){const a=db().plans.filter(p=>p.weekStart<monday(0));return a.length?a.map(p=>`<div class="card"><h3>${p.weekStart} → ${p.weekEnd}</h3><p>${p.status}</p></div>`).join(""):`<div class="card"><p class="muted">Aún no hay semanas anteriores.</p></div>`}
+function library(){const main=allRecipes().filter(r=>["lunch","dinner"].includes(r.type)),oth=allRecipes().filter(r=>!["lunch","dinner"].includes(r.type));return `<div class="card"><div class="section-title"><div><span class="eyebrow">BIBLIOTECA PRINCIPAL</span><h2>${main.length} comidas y cenas</h2></div><button class="btn primary" onclick="openCustomRecipeForm()">+ Añadir receta</button></div><div class="filters"><input id="q" placeholder="Buscar plato o ingrediente" oninput="filterRecipes()"><select id="f" onchange="filterRecipes()"><option value="">Todas</option><option>arroz</option><option>pasta</option><option>legumbre</option><option>carne</option><option>pescado</option><option>marisco</option><option>huevo</option><option>verdura</option><option>ensaladilla</option></select></div></div><div class="recipe-grid">${main.map(tile).join("")}</div><div class="card"><span class="eyebrow">DESAYUNOS Y TENTEMPIÉS</span><h3>${oth.length} opciones</h3></div><div class="recipe-grid">${oth.map(tile).join("")}</div>`}
+function tile(r){const own=String(r.id).startsWith("user_");return `<div class="recipe-card filter-recipe" data-search="${(r.name+" "+r.cat+" "+r.protein+" "+r.items.map(x=>x[0]).join(" ")).toLowerCase()}" data-cat="${r.cat}">${r.photo?`<img src="${r.photo}" class="recipe-photo" alt="">`:""}<span class="eyebrow">${MEALS[r.type]}</span><h3>${r.name}</h3><p>${r.prep} · ${r.time} min</p><div class="btn-row"><button class="btn small" onclick="openRecipe('${r.id}')">Ver receta</button>${own?`<button class="btn small" onclick="openCustomRecipeForm('${r.id}')">Editar</button>`:""}</div></div>`}
+function shopping(){const a=db().shopping;if(!a.length)return `<div class="card"><p>Confirma una semana para generar la compra.</p></div>`;return `<div class="card"><h2>Compra semanal</h2>${a.map((x,i)=>`<div class="shopping-row"><input type="checkbox" ${x.bought?"checked":""} onchange="toggleBought(${i},this.checked)"><div><b>${x.name}</b><small>Comprar ${Math.ceil(x.buy)} ${x.unit}</small></div></div>`).join("")}</div>`}
+function pantry(){const a=db().pantry;return `<div class="card"><h2>Despensa</h2><div class="form-grid"><label>Producto<input id="pn"></label><label>Cantidad<input id="pq" type="number"></label></div><button class="btn primary" onclick="addPantry()">Añadir</button>${a.map((x,i)=>`<div class="pantry-row"><span>•</span><div><b>${x.name}</b><small>${x.qty}</small></div><button class="btn small danger" onclick="removePantry(${i})">Quitar</button></div>`).join("")}</div>`}
+function prepMarkup(){const p=getPlan(monday(1)),l=DAYS.map(day=>recipe(p.days[day].lunch));return `<div class="card"><span class="eyebrow">PREPARACIÓN SEMANAL</span><h2>Qué dejar listo</h2><ol>${l.map((r,i)=>`<li><b>${DAYS[i]}:</b> ${r.name} — ${r.prep}. ${r.storage}</li>`).join("")}</ol><p class="note">Las comidas están diseñadas para llegar al mediodía con el trabajo hecho.</p></div>`}
+function ntab(id,b){["today","plan","recipes","shopping","pantry","prep"].forEach(x=>$("#n_"+x)?.classList.add("hidden"));$("#n_"+id)?.classList.remove("hidden");b.parentElement.querySelectorAll(".tab-btn").forEach(x=>x.classList.remove("active"));b.classList.add("active")}
+function pview(id,b){["current","next","history"].forEach(x=>$("#p_"+x)?.classList.add("hidden"));$("#p_"+id)?.classList.remove("hidden");b.parentElement.querySelectorAll(".tab-btn").forEach(x=>x.classList.remove("active"));b.classList.add("active")}
+function openModal(title,body){document.body.insertAdjacentHTML("beforeend",`<div class="modal-backdrop" onclick="if(event.target===this)closeModal()"><div class="modal"><div class="section-title"><h2>${title}</h2><button class="btn small" onclick="closeModal()">Cerrar</button></div>${body}</div></div>`)}
+function closeModal(){$(".modal-backdrop")?.remove()}
+function openRecipe(id){const r=recipe(id);openModal(r.name,`<div class="meta"><span>${r.prep}</span><span>${r.time} min</span><span>${r.cat}</span></div><h3>Ingredientes</h3><ul class="meal-items">${r.items.map(x=>`<li><b>${x[1]} ${x[2]}</b> ${x[0]}<small>${x[3]}</small></li>`).join("")}</ul><h3>Preparación</h3><ol>${r.steps.map(x=>`<li>${x}</li>`).join("")}</ol><h3>Conservación</h3><p>${r.storage}</p><h3>Recalentado</h3><p>${r.reheat}</p>`)}
+function changeToday(t){const cur=currentMeal(t);openModal("Cambiar "+MEALS[t],recipesBy(t).filter(r=>r.id!==cur.id).map(r=>`<button class="btn" style="display:block;width:100%;margin:6px 0" onclick="setToday('${t}','${r.id}')">${r.name}</button>`).join(""))}
+function setToday(t,id){const d=db(),p=d.plans.find(x=>x.weekStart===monday(0)&&x.status==="confirmed");if(p){p.days[dayName()][t]=id;saveDB(d)}closeModal();render()}
+function changePlanMeal(start,day,t){const cur=recipe(getPlan(start).days[day][t]);openModal(day+" · "+MEALS[t],recipesBy(t).filter(r=>r.id!==cur.id).map(r=>`<button class="btn" style="display:block;width:100%;margin:6px 0" onclick="setPlanMeal('${start}','${day}','${t}','${r.id}')">${r.name}</button>`).join(""))}
+function setPlanMeal(start,day,t,id){const d=db(),p=d.plans.find(x=>x.weekStart===start);p.days[day][t]=id;p.status="draft";saveDB(d);closeModal();render()}
+function swapIngredient(t){const r=currentMeal(t),map={"Pollo":["Pavo","Lomo magro"],"Arroz":["Patata","Pasta integral"],"Merluza":["Bacalao","Salmón"],"Queso fresco":["Pavo","Atún"]};const item=r.items.find(x=>map[x[0]]);if(!item)return alert("Este plato no necesita una sustitución simple");openModal("Cambiar ingrediente",map[item[0]].map(rep=>`<button class="btn" onclick="applySwap('${t}','${item[0]}','${rep}')">${item[0]} → ${rep}</button>`).join(" "))}
+function applySwap(t,oldI,newI){const d=db(),p=d.plans.find(x=>x.weekStart===monday(0)&&x.status==="confirmed");if(!p)return;const base=recipe(p.days[dayName()][t]);const c={...base,id:"custom_"+uid(),name:base.name.replace(new RegExp(oldI,"i"),newI),items:base.items.map(x=>x[0]===oldI?[newI,x[1],x[2],x[3]]:x)};RECIPES.push(c);p.days[dayName()][t]=c.id;saveDB(d);closeModal();render()}
+function rate(id,v){const d=db();d.ratings[id]=v;saveDB(d);render()}
+function filterRecipes(){const q=($("#q")?.value||"").toLowerCase(),f=$("#f")?.value||"";$$(".filter-recipe").forEach(x=>x.classList.toggle("hidden",(q&&!x.dataset.search.includes(q))||(f&&x.dataset.cat!==f)))}
+function toggleBought(i,v){const d=db();d.shopping[i].bought=v;saveDB(d);render()}
+function addPantry(){const n=$("#pn").value.trim(),q=Number($("#pq").value)||0;if(!n)return;const d=db();d.pantry.push({name:n,qty:q});saveDB(d);render()}
+function removePantry(i){const d=db();d.pantry.splice(i,1);saveDB(d);render()}
+render();
+
+
+/* CLEAN 1.3 */
+const P85_SALADS=[
+["Mediterránea","Tomate, pepino, pimiento, cebolla y hojas verdes","AOVE, limón y orégano"],
+["Pimientos asados y atún","Pimientos asados, atún, cebolla y tomate","AOVE y vinagre"],
+["Tomate y queso fresco","Tomate, queso fresco, cebolla y hojas verdes","AOVE y vinagre"],
+["Aguacate y tomate","Aguacate, tomate, pepino y hojas verdes","Limón y AOVE"],
+["Garbanzos mediterráneos","Garbanzos, tomate, pepino, pimiento y cebolla","Limón, comino y AOVE"],
+["Pollo y vegetales","Pollo, hojas verdes, tomate, pepino y zanahoria","Limón, mostaza suave y AOVE"],
+["Pasta fría equilibrada","Pasta, tomate, pepino, pimiento, atún y hojas verdes","AOVE y limón"]
+];
+function p85PlanningPanel(){
+ return `<section class="card"><div class="eyebrow">BATCH COOKING · FIN DE SEMANA</div>
+ <h2>Qué dejar preparado</h2>
+ <p>El objetivo no es cocinar siete días y guardarlo todo en la nevera. Preparamos bases para lunes-miércoles y congelamos o terminamos después lo destinado al final de semana.</p>
+ <ol>
+ <li><b>Verduras:</b> lava y corta verduras resistentes; asa una bandeja de pimientos y verduras. Hojas verdes: lavadas, muy secas y sin aliñar.</li>
+ <li><b>Pollo/lomo:</b> cocina las raciones de los primeros días. Separa y congela las destinadas a días posteriores cuando corresponda.</li>
+ <li><b>Legumbres:</b> prepara lentejas o garbanzos y divide en raciones; congela las que no vayas a utilizar pronto.</li>
+ <li><b>Arroz/pasta:</b> cocina solo lo necesario para los primeros días o congela porciones. Enfría pronto después de cocinar.</li>
+ <li><b>Pescado/marisco:</b> déjalo porcionado; mejor cocinarlo próximo al consumo.</li>
+ <li><b>Ensaladas:</b> componentes separados. Tomate, aguacate, queso, atún y aliño se incorporan el día de consumo.</li>
+ <li><b>Aliños:</b> prepara tres: mediterráneo; vinagreta; limón-mostaza suave.</li>
+ <li><b>Miércoles:</b> reserva 20–30 min para una segunda preparación corta de jueves a domingo.</li>
+ </ol>
+ <h3>Ejemplo: arroz tres delicias saludable</h3>
+ <ol>
+ <li>Cuece el arroz según el tiempo del envase hasta que quede suelto. Enfríalo y resérvalo.</li>
+ <li>Corta zanahoria y las demás verduras en dados pequeños. Cuece los guisantes si lo necesitan y escúrrelos.</li>
+ <li>Calienta una sartén amplia con una pequeña cantidad de AOVE y saltea primero las verduras más duras durante 5–7 minutos.</li>
+ <li>Aparta las verduras a un lado, incorpora el huevo batido y remueve hasta que esté cuajado.</li>
+ <li>Añade las gambas y cocínalas hasta que estén hechas.</li>
+ <li>Incorpora el arroz, mezcla todo y saltea 2–3 minutos hasta calentarlo uniformemente.</li>
+ <li>Termina con ajo, perejil u otras especias. Prueba antes de añadir sal.</li>
+ </ol>
+ <h3>Ensaladas para ir variando</h3>`+
+ P85_SALADS.map(x=>`<p><b>${x[0]}</b><br>${x[1]}<br><small>Aliño: ${x[2]}</small></p>`).join("")+
+ `</section>`;
+}
+document.addEventListener("click",e=>{
+ if(e.target.closest("#p85PrepWeek")){
+   let old=document.querySelector("#p85PlanningPanel"); if(old) old.remove();
+   let d=document.createElement("div"); d.id="p85PlanningPanel"; d.innerHTML=p85PlanningPanel();
+   (document.querySelector("main")||document.body).appendChild(d); d.scrollIntoView({behavior:"smooth"});
+ }
+});
+
+function p85DetailedRecipe(r){
+ const name=r.name||r.title||"Receta";
+ const ing=r.ingredients||r.ingredientes||"Consulta las cantidades indicadas en la ficha.";
+ const base=r.prep||r.preparation||r.preparacion||"Prepara los ingredientes y cocina hasta alcanzar el punto adecuado.";
+ const mins=r.time||r.tiempo||"Según receta";
+ const advance=r.advance||r.weekend||"Deja pesados, lavados y cortados los ingredientes que lo permitan.";
+ const storage=r.storage||r.conservacion||"Enfría pronto si se guarda y conserva en recipiente cerrado en frío.";
+ const reheat=r.reheat||r.recalentado||"Recalienta completamente solo la ración que vayas a consumir cuando proceda.";
+ return `<div class="recipe-detail"><h3>${name}</h3>
+ <p><b>Ingredientes y cantidades</b><br>${ing}</p>
+ <p><b>Antes de empezar</b><br>Pesa las cantidades, lava y corta los ingredientes necesarios y deja todo preparado antes de encender el fuego.</p>
+ <p><b>Preparación paso a paso</b><br>${String(base).replace(/\n/g,"<br>")}</p>
+ <p><b>Tiempo</b><br>${mins}</p>
+ <p><b>Qué puedes adelantar</b><br>${advance}</p>
+ <p><b>Conservación</b><br>${storage}</p>
+ <p><b>Recalentado</b><br>${reheat}</p></div>`;
+}
