@@ -1,5 +1,9 @@
 
-const VERSION="1.5.1",PREFIX="p85proclean_";
+if(typeof window.p85SaladsHTML!=="function"){
+ window.p85SaladsHTML=()=>`<div class="card"><span class="eyebrow">ENSALADAS</span><h3>Opciones variadas</h3><p class="muted">Mediterránea · tomate y queso fresco · pimientos y atún · aguacate y tomate · garbanzos · pollo y vegetales.</p></div>`;
+}
+
+const VERSION="1.5.2",PREFIX="p85proclean_";
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const uid=()=>crypto.randomUUID?crypto.randomUUID():String(Date.now()+Math.random());
 const get=(k,d)=>{try{return JSON.parse(localStorage.getItem(PREFIX+k))??d}catch{return d}};
@@ -159,7 +163,7 @@ function confirmPlan(start){const d=db(),p=d.plans.find(x=>x.weekStart===start);
 function buildShopping(p){const d=db(),need={};Object.values(p.days).forEach(ms=>Object.values(ms).forEach(id=>recipe(id).items.forEach(([n,q,u])=>{if(!need[n])need[n]={name:n,qty:0,unit:u,bought:false};need[n].qty+=(typeof q==="number"?q:1)})));const pan=Object.fromEntries(d.pantry.map(x=>[x.name.toLowerCase(),x.qty||0]));d.shopping=Object.values(need).map(x=>({...x,buy:Math.max(0,x.qty-(pan[x.name.toLowerCase()]||0))})).filter(x=>x.buy>0);saveDB(d)}
 function currentMeal(t){const p=db().plans.find(x=>x.weekStart===monday(0)&&x.status==="confirmed");return recipe(p?.days?.[dayName()]?.[t])||recipesBy(t)[0]}
 let page="home";
-function render(){const c=page==="home"?home():page==="nutrition"?nutrition():page==="evolution"?evolution():page==="training"?training():more();$("#app").innerHTML=`<div class="shell"><header><div class="brand"><small>ENTRENADOR PERSONAL</small><h1>Proyecto85 Pro <span class="version">Clean 1.5.1</span></h1></div></header>${c}</div>${nav()}`}
+function render(){const c=page==="home"?home():page==="nutrition"?nutrition():page==="evolution"?evolution():page==="training"?training():more();$("#app").innerHTML=`<div class="shell"><header><div class="brand"><small>ENTRENADOR PERSONAL</small><h1>Proyecto85 Pro <span class="version">Clean 1.5.2.2</span></h1></div></header>${c}</div>${nav()}`}
 function nav(){return `<nav class="bottom"><div class="bottom-inner">${[["home","⌂","Inicio"],["training","🏋️","Entreno"],["nutrition","🍽️","Nutrición"],["evolution","↗","Evolución"],["more","•••","Más"]].map(([p,i,l])=>`<button class="nav-btn ${page===p?"active":""}" onclick="page='${p}';render()"><b>${i}</b>${l}</button>`).join("")}</div></nav>`}
 function home(){const d=db(),x=d.measurements[0],p=d.plans.find(x=>x.weekStart===monday(0)&&x.status==="confirmed");return `<div class="card hero"><span class="eyebrow">PROYECTO85 PRO</span><h2>Hoy</h2><div class="grid"><div class="stat"><span>Peso</span><b>${x.weight} kg</b></div><div class="stat"><span>Objetivo</span><b>90 kg</b></div><div class="stat"><span>Semana</span><b>${p?"Confirmada":"Pendiente"}</b></div><div class="stat"><span>Base</span><b>Clean</b></div></div></div>`}
 function training(){return `<div class="card"><span class="eyebrow">ENTRENO</span><h2>Módulo de entrenamiento</h2><p class="muted">Se desarrollará sobre esta base limpia sin tocar Nutrición.</p></div>`}
@@ -210,4 +214,30 @@ function p85DetailedRecipe(r){
  <p><b>Qué puedes adelantar</b><br>${advance}</p>
  <p><b>Conservación</b><br>${storage}</p>
  <p><b>Recalentado</b><br>${reheat}</p></div>`;
+}
+
+function p85Boot(){
+ try{
+   if(!document.getElementById("app")){
+     console.error("Proyecto85 Pro: falta #app");
+     return;
+   }
+   render();
+ }catch(err){
+   console.error("Proyecto85 Pro boot error:",err);
+   const host=document.getElementById("app");
+   if(host){
+     host.innerHTML=`<div style="max-width:720px;margin:40px auto;padding:20px;color:#fff;font-family:-apple-system;background:#0b2118;border-radius:20px">
+       <h2>Proyecto85 Pro</h2>
+       <p>Se ha producido un error al iniciar.</p>
+       <pre style="white-space:pre-wrap;color:#ffb3ad">${String(err?.message||err)}</pre>
+       <button onclick="location.reload()" style="padding:12px 16px;border:0;border-radius:12px;background:#48d489;font-weight:800">Reintentar</button>
+     </div>`;
+   }
+ }
+}
+if(document.readyState==="loading"){
+ document.addEventListener("DOMContentLoaded",p85Boot,{once:true});
+}else{
+ p85Boot();
 }

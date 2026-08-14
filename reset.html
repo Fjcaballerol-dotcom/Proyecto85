@@ -3,7 +3,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <title>Reset Proyecto85 Pro</title>
 <style>body{font-family:-apple-system;background:#06130e;color:#fff;padding:28px}.box{max-width:560px;margin:auto;background:#0b2118;padding:22px;border-radius:20px}button{width:100%;padding:15px;border:0;border-radius:12px;background:#48d489;font-weight:900}</style></head>
-<body><div class="box"><h1>Proyecto85 Pro · Reset 1.5.1</h1><p>Elimina cachés antiguas sin borrar tus datos guardados.</p><button onclick="go()">Limpiar y abrir 1.5.1</button><p id="s"></p></div>
+<body><div class="box"><h1>Proyecto85 Pro · Reset 1.5.2</h1><p>Elimina cachés antiguas sin borrar tus datos guardados.</p><button onclick="go()">Limpiar y abrir 1.5.2</button><p id="s"></p></div>
 <script>
 async function go(){
  document.getElementById('s').textContent='Limpiando…';
@@ -11,6 +11,6 @@ async function go(){
   if('serviceWorker' in navigator){for(const r of await navigator.serviceWorker.getRegistrations()){try{await r.unregister()}catch(e){}}}
   if('caches' in window){for(const k of await caches.keys()){try{await caches.delete(k)}catch(e){}}}
  }catch(e){}
- location.replace('./index.html?v=151&ts='+Date.now());
+ location.replace('./index.html?v=152&ts='+Date.now());
 }
 </script></body></html>
