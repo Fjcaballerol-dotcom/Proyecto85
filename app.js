@@ -1,5 +1,5 @@
 
-const VERSION="1.1.0",PREFIX="p85proclean_";
+const VERSION="1.1.1",PREFIX="p85proclean_";
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const uid=()=>crypto.randomUUID?crypto.randomUUID():String(Date.now()+Math.random());
 const get=(k,d)=>{try{return JSON.parse(localStorage.getItem(PREFIX+k))??d}catch{return d}};
@@ -116,7 +116,32 @@ async function saveCustomRecipeForm(id=""){
    photo
  };
  let a=customRecipes().filter(x=>x.id!==row.id);a.unshift(row);saveCustomRecipes(a);
- closeModal();render();
+ closeModal();
+async function removeLegacyCachesOnce(){
+ const flag=PREFIX+"legacy_cleanup_111";
+ if(localStorage.getItem(flag))return;
+ try{
+   if("serviceWorker" in navigator){
+     const regs=await navigator.serviceWorker.getRegistrations();
+     for(const reg of regs){
+       try{await reg.unregister()}catch(e){}
+     }
+   }
+   if("caches" in window){
+     const keys=await caches.keys();
+     await Promise.all(keys.map(k=>caches.delete(k)));
+   }
+   localStorage.setItem(flag,"1");
+   const u=new URL(location.href);
+   u.searchParams.set("clean","1.1.1");
+   u.searchParams.set("_",Date.now().toString());
+   location.replace(u.toString());
+ }catch(e){
+   console.warn("Legacy cleanup failed",e);
+ }
+}
+
+removeLegacyCachesOnce().then(()=>render());
 }
 function deleteCustomRecipe(id){
  if(!confirm("¿Eliminar esta receta propia?"))return;
@@ -134,7 +159,7 @@ function confirmPlan(start){const d=db(),p=d.plans.find(x=>x.weekStart===start);
 function buildShopping(p){const d=db(),need={};Object.values(p.days).forEach(ms=>Object.values(ms).forEach(id=>recipe(id).items.forEach(([n,q,u])=>{if(!need[n])need[n]={name:n,qty:0,unit:u,bought:false};need[n].qty+=(typeof q==="number"?q:1)})));const pan=Object.fromEntries(d.pantry.map(x=>[x.name.toLowerCase(),x.qty||0]));d.shopping=Object.values(need).map(x=>({...x,buy:Math.max(0,x.qty-(pan[x.name.toLowerCase()]||0))})).filter(x=>x.buy>0);saveDB(d)}
 function currentMeal(t){const p=db().plans.find(x=>x.weekStart===monday(0)&&x.status==="confirmed");return recipe(p?.days?.[dayName()]?.[t])||recipesBy(t)[0]}
 let page="home";
-function render(){const c=page==="home"?home():page==="nutrition"?nutrition():page==="evolution"?evolution():page==="training"?training():more();$("#app").innerHTML=`<div class="shell"><header><div class="brand"><small>ENTRENADOR PERSONAL</small><h1>Proyecto85 Pro <span class="version">Clean 1.0</span></h1></div></header>${c}</div>${nav()}`}
+function render(){const c=page==="home"?home():page==="nutrition"?nutrition():page==="evolution"?evolution():page==="training"?training():more();$("#app").innerHTML=`<div class="shell"><header><div class="brand"><small>ENTRENADOR PERSONAL</small><h1>Proyecto85 Pro <span class="version">Clean 1.1.1</span></h1></div></header>${c}</div>${nav()}`}
 function nav(){return `<nav class="bottom"><div class="bottom-inner">${[["home","⌂","Inicio"],["training","🏋️","Entreno"],["nutrition","🍽️","Nutrición"],["evolution","↗","Evolución"],["more","•••","Más"]].map(([p,i,l])=>`<button class="nav-btn ${page===p?"active":""}" onclick="page='${p}';render()"><b>${i}</b>${l}</button>`).join("")}</div></nav>`}
 function home(){const d=db(),x=d.measurements[0],p=d.plans.find(x=>x.weekStart===monday(0)&&x.status==="confirmed");return `<div class="card hero"><span class="eyebrow">PROYECTO85 PRO</span><h2>Hoy</h2><div class="grid"><div class="stat"><span>Peso</span><b>${x.weight} kg</b></div><div class="stat"><span>Objetivo</span><b>90 kg</b></div><div class="stat"><span>Semana</span><b>${p?"Confirmada":"Pendiente"}</b></div><div class="stat"><span>Base</span><b>Clean</b></div></div></div>`}
 function training(){return `<div class="card"><span class="eyebrow">ENTRENO</span><h2>Módulo de entrenamiento</h2><p class="muted">Se desarrollará sobre esta base limpia sin tocar Nutrición.</p></div>`}

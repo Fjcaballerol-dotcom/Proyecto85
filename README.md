@@ -1,13 +1,11 @@
-# Proyecto85 Pro CLEAN 1.1
+# Proyecto85 Pro CLEAN 1.1.1
 
-Añade recetas propias:
-- Crear, editar y eliminar
-- Foto opcional
-- Ingredientes y cantidades
-- Crudo/cocinado
-- Preparación paso a paso
-- Tiempo
-- Conservación
-- Recalentado
+Corrección de actualización para iPhone/PWA antigua.
 
-Las recetas propias aparecen en la biblioteca y participan en el planificador y en los cambios de plato.
+Al abrir:
+- desregistra cualquier service worker heredado;
+- borra cachés antiguas;
+- conserva localStorage;
+- recarga una sola vez con URL limpia.
+
+Después de esa primera apertura, la app funciona sin service worker.
