@@ -1,46 +1,12 @@
 <!doctype html>
 <html lang="es">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#07130f">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Proyecto85">
-  <title>Proyecto85 V5</title>
-  <link rel="manifest" href="manifest.json">
-  <link rel="apple-touch-icon" href="icon-192.png">
-  <link rel="stylesheet" href="styles.css?v=10.0.1">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#06130e">
+<title>Proyecto85 Pro</title>
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="styles.css?v=1.0.0">
 </head>
-<body>
-<header class="topbar">
-  <div><span class="kicker">ENTRENADOR PERSONAL</span><h1>Proyecto85 Pro <small id="versionBadge">Pro</small> <small>Pro</small></h1></div>
-  <button id="refreshBtn" class="icon-btn" aria-label="Actualizar">↻</button>
-</header>
-
-<main>
-  <section id="inicio" class="view active"></section>
-  <section id="entrenamiento" class="view"></section>
-  <section id="nutricion" class="view"></section>
-  <section id="evolucion" class="view"></section>
-  <section id="mas" class="view"></section>
-</main>
-
-<nav class="bottom-nav">
-  <button data-go="inicio" class="active"><span>⌂</span>Inicio</button>
-  <button data-go="entrenamiento"><span>🏋</span>Entreno</button>
-  <button data-go="nutricion"><span>🍽</span>Nutrición</button>
-  <button data-go="evolucion"><span>↗</span>Evolución</button>
-  <button data-go="mas"><span>•••</span>Más</button>
-</nav>
-
-<div id="modal" class="modal-overlay" aria-hidden="true">
-  <div class="modal-card">
-    <div class="modal-head"><div id="modalTitle"></div><button class="icon-btn" id="modalClose">×</button></div>
-    <div id="modalBody"></div>
-  </div>
-</div>
-<div id="toast" class="toast"></div>
-<script src="app.js?v=10.0.1"></script>
-</body>
+<body><div id="app"></div><script src="app.js?v=1.0.0"></script></body>
 </html>
