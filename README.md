@@ -1,13 +1,8 @@
-# Proyecto85 Pro · Módulo 1 profesional
+# Proyecto85 Pro 10.0.1
 
-Nutrición reconstruida sobre la base Proyecto85 Pro:
-- Hoy
-- Semana actual
-- Semana siguiente
-- Historial
-- Planificación editable antes de confirmar
-- Generador con control de variedad
-- Compra y preparación al confirmar
-- Biblioteca con buscador y filtros
-- Cambios de plato e ingrediente
-- Recetas detalladas, despensa, hidratación, comidas sociales y seguimiento
+Corrección específica del sistema de actualización.
+
+- Fuerza la activación del nuevo service worker.
+- Limpia solo las cachés de archivos.
+- Conserva los datos guardados en localStorage.
+- Recarga con parámetro de versión para evitar contenido antiguo.

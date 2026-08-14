@@ -2,7 +2,7 @@
   "name": "Proyecto85 Pro",
   "short_name": "Proyecto85",
   "description": "Proyecto85 Pro: entrenamiento, nutrición, salud y evolución en una sola aplicación.",
-  "start_url": "./index.html?v=10.0.0",
+  "start_url": "./index.html?v=10.0.1",
   "scope": "./",
   "display": "standalone",
   "background_color": "#07130f",

@@ -1,5 +1,5 @@
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
-const APP_VERSION='10.0.0',PREFIX='p85_';
+const APP_VERSION='10.0.1',PREFIX='p85_';
 const todayISO=()=>new Date().toISOString().slice(0,10);
 const uid=()=>crypto.randomUUID?crypto.randomUUID():Date.now()+'-'+Math.random().toString(16).slice(2);
 const finite=(v,f=0)=>Number.isFinite(Number(v))?Number(v):f;
@@ -70,7 +70,7 @@ function closeModal(){$('#modal').classList.remove('open');$('#modal').setAttrib
 $('#modalClose').onclick=closeModal;$('#modal').onclick=e=>{if(e.target===$('#modal'))closeModal()};
 
 
-const MIGRATION_TARGET='10.0.0';
+const MIGRATION_TARGET='10.0.1';
 const LEGACY_KEYS=[
  'settings','profile','sessions','health','measures','pantry','shopping','analytics',
  'reminders','nutritionLog','workoutQueue','workoutDraft','exercisePreferences',
@@ -1555,6 +1555,53 @@ function renderNutritionV7(){
  <div id="nvLearning" class="hidden">${nutritionBodyContextMarkup?nutritionBodyContextMarkup():''}${learningMarkup?learningMarkup():''}${nutritionHistoryMarkup?nutritionHistoryMarkup():''}${nutritionSafetyMarkup?nutritionSafetyMarkup():''}</div>`;
 }
 
+
+// =====================================================
+// V10.0.1 · ACTUALIZACIÓN ROBUSTA
+// =====================================================
+async function hardUpdateNow(){
+ try{
+   toast('Actualizando Proyecto85 Pro…');
+   // Preserve localStorage by design: only caches + service worker are refreshed.
+   if('serviceWorker' in navigator){
+     const regs=await navigator.serviceWorker.getRegistrations();
+     for(const reg of regs){
+       try{ await reg.update(); }catch(e){}
+     }
+   }
+   if('caches' in window){
+     const keys=await caches.keys();
+     await Promise.all(keys.map(k=>caches.delete(k)));
+   }
+   // Bust browser cache and force a fresh navigation
+   const url=new URL(location.href);
+   url.searchParams.set('v','10.0.1');
+   url.searchParams.set('_refresh',Date.now().toString());
+   location.replace(url.toString());
+ }catch(e){
+   console.error(e);
+   location.reload();
+ }
+}
+
+async function checkForUpdate(){
+ try{
+   const r=await fetch('./version.json?_='+Date.now(),{cache:'no-store'});
+   if(!r.ok)return;
+   const remote=await r.json();
+   if(remote.version && remote.version!==APP_VERSION){
+     showUpdateBanner(remote.version);
+   }
+ }catch(e){ console.warn('Update check failed',e); }
+}
+
+function showUpdateBanner(version){
+ let old=document.getElementById('updateBanner');if(old)old.remove();
+ const el=document.createElement('div');el.id='updateBanner';el.className='update-banner';
+ el.innerHTML=`<div><b>Nueva versión ${version} disponible</b><small>Actualiza sin perder tus datos.</small></div><button onclick="hardUpdateNow()">Actualizar ahora</button><button class="close" onclick="this.parentElement.remove()">×</button>`;
+ document.body.appendChild(el);
+}
+
 function saveHealth(){const o={date:todayISO(),steps:finite($('#h_steps').value),sleep:finite($('#h_sleep').value),restHr:finite($('#h_hr').value),water:finite($('#h_water').value),energy:finite($('#h_energy').value),stress:finite($('#h_stress').value),pain:finite($('#h_pain').value)};let a=store('health'),i=a.findIndex(x=>x.date===o.date);if(i>=0)a[i]=o;else a.unshift(o);save('health',a);toast('Salud guardada')}
 function addAnalytic(){const o={id:uid(),date:$('#a_date').value||todayISO(),name:$('#a_name').value.trim(),value:$('#a_value').value,unit:$('#a_unit').value,reference:$('#a_ref').value};if(!o.name)return;const a=store('analytics');a.unshift(o);save('analytics',a);renderMore()}
 function requestNotifications(){if(!('Notification'in window))return toast('No disponible');Notification.requestPermission().then(x=>{const s=store('settings');s.notifications=x==='granted';save('settings',s);toast(x==='granted'?'Notificaciones permitidas':'Permiso no concedido')})}
@@ -1593,7 +1640,7 @@ function renderMore(){
 }
 function moreTab(id,b){$$('.tab-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');['Health','Calendar','Stats','Goals','Library','Achievements','Analytics','Assistant','Settings'].forEach(x=>$('#more'+x).classList.toggle('hidden',x.toLowerCase()!==id.toLowerCase()))}
 
-async function forceUpdate(){await hardRefresh();}
+async function hardUpdateNow(){await hardRefresh();}
 $('#refreshBtn').onclick=forceUpdate;
-migrate();runMigrationAndNotify();ensureV73Recipes();updateAppShell();renderHome();startAutomaticUpdateChecks();
-if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js?v=10.0.0');
+migrate();runMigrationAndNotify();ensureV73Recipes();updateAppShell();renderHome();setTimeout(checkForUpdate,1500);startAutomaticUpdateChecks();
+if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js?v=10.0.1');
