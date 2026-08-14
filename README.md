@@ -1,3 +1,13 @@
-# Proyecto85 Pro CLEAN
+# Proyecto85 Pro CLEAN 1.1
 
-Reconstrucción completa desde cero, sin service worker. Nutrición profesional con semana actual/siguiente, biblioteca principal centrada en comidas y cenas, compra, despensa y preparación semanal.
+Añade recetas propias:
+- Crear, editar y eliminar
+- Foto opcional
+- Ingredientes y cantidades
+- Crudo/cocinado
+- Preparación paso a paso
+- Tiempo
+- Conservación
+- Recalentado
+
+Las recetas propias aparecen en la biblioteca y participan en el planificador y en los cambios de plato.

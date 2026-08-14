@@ -1,5 +1,5 @@
 
-const VERSION="1.0.0",PREFIX="p85proclean_";
+const VERSION="1.1.0",PREFIX="p85proclean_";
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const uid=()=>crypto.randomUUID?crypto.randomUUID():String(Date.now()+Math.random());
 const get=(k,d)=>{try{return JSON.parse(localStorage.getItem(PREFIX+k))??d}catch{return d}};
@@ -52,8 +52,80 @@ const RECIPES=[
 {id:"d10",type:"dinner",name:"Salpicón de marisco equilibrado",cat:"marisco",protein:"marisco",carb:"verdura",time:10,prep:"Fría",items:[["Marisco cocido",180,"g","cocinado"],["Tomate",150,"g","crudo"],["Pimiento",120,"g","crudo"],["Cebolla",40,"g","cruda"]],steps:["Corta.","Mezcla.","Enfría."],storage:"1 día.",reheat:"No."}
 ];
 
+
+function customRecipes(){return get("customRecipes",[])}
+function saveCustomRecipes(a){set("customRecipes",a)}
+function allRecipes(){return [...RECIPES,...customRecipes()]}
+function recipe(id){return allRecipes().find(r=>r.id===id)}
+function recipesBy(t){return allRecipes().filter(r=>r.type===t)}
+
+async function fileAsDataURL(file){
+ return await new Promise((resolve,reject)=>{
+   const fr=new FileReader();
+   fr.onload=()=>resolve(fr.result);
+   fr.onerror=reject;
+   fr.readAsDataURL(file);
+ });
+}
+function openCustomRecipeForm(id=""){
+ const r=id?recipe(id):null;
+ const items=(r?.items||[]).map(x=>`${x[0]} | ${x[1]} | ${x[2]} | ${x[3]}`).join("\n");
+ const steps=(r?.steps||[]).join("\n");
+ openModal(id?"Editar receta":"Añadir receta propia",`
+ <div class="form-grid">
+  <label class="wide">Nombre<input id="cr_name" value="${r?.name||""}"></label>
+  <label>Momento<select id="cr_type">${Object.entries(MEALS).map(([k,v])=>`<option value="${k}" ${r?.type===k?"selected":""}>${v}</option>`).join("")}</select></label>
+  <label>Categoría<input id="cr_cat" value="${r?.cat||""}" placeholder="arroz, pescado, marisco..."></label>
+  <label>Proteína principal<input id="cr_protein" value="${r?.protein||""}" placeholder="pollo, huevo, queso..."></label>
+  <label>Hidrato principal<input id="cr_carb" value="${r?.carb||""}" placeholder="arroz, patata, pan..."></label>
+  <label>Tiempo (min)<input id="cr_time" type="number" value="${r?.time||15}"></label>
+  <label>Modo de preparación<input id="cr_prep" value="${r?.prep||""}" placeholder="Preparar la noche anterior"></label>
+  <label class="wide">Ingredientes<textarea id="cr_items" rows="7" placeholder="Uno por línea: Pollo | 180 | g | crudo">${items}</textarea></label>
+  <label class="wide">Preparación<textarea id="cr_steps" rows="6" placeholder="Un paso por línea">${steps}</textarea></label>
+  <label class="wide">Conservación<input id="cr_storage" value="${r?.storage||""}" placeholder="2 días en frío"></label>
+  <label class="wide">Recalentado<input id="cr_reheat" value="${r?.reheat||""}" placeholder="Calentar suavemente"></label>
+  <label class="wide">Foto opcional<input id="cr_photo" type="file" accept="image/*"></label>
+ </div>
+ ${r?.photo?`<img src="${r.photo}" class="recipe-photo" alt="">`:""}
+ <div class="btn-row" style="margin-top:12px">
+  <button class="btn primary" onclick="saveCustomRecipeForm('${id}')">Guardar receta</button>
+  ${id?`<button class="btn danger" onclick="deleteCustomRecipe('${id}')">Eliminar</button>`:""}
+ </div>`);
+}
+async function saveCustomRecipeForm(id=""){
+ const name=$("#cr_name").value.trim();
+ if(!name)return alert("Escribe el nombre de la receta.");
+ const items=$("#cr_items").value.split("\n").map(x=>x.split("|").map(y=>y.trim())).filter(x=>x[0]).map(x=>[x[0],Number(x[1])||x[1]||1,x[2]||"unidad",x[3]||"listo"]);
+ const steps=$("#cr_steps").value.split("\n").map(x=>x.trim()).filter(Boolean);
+ if(!items.length)return alert("Añade al menos un ingrediente.");
+ let photo=id?recipe(id)?.photo:null;
+ const f=$("#cr_photo").files?.[0];
+ if(f)photo=await fileAsDataURL(f);
+ const row={
+   id:id||("user_"+uid()),
+   type:$("#cr_type").value,
+   name,
+   cat:$("#cr_cat").value.trim()||"propia",
+   protein:$("#cr_protein").value.trim()||"otro",
+   carb:$("#cr_carb").value.trim()||"otro",
+   time:Number($("#cr_time").value)||15,
+   prep:$("#cr_prep").value.trim()||"Preparación propia",
+   items,steps,
+   storage:$("#cr_storage").value.trim()||"Según ingredientes.",
+   reheat:$("#cr_reheat").value.trim()||"Según plato.",
+   photo
+ };
+ let a=customRecipes().filter(x=>x.id!==row.id);a.unshift(row);saveCustomRecipes(a);
+ closeModal();render();
+}
+function deleteCustomRecipe(id){
+ if(!confirm("¿Eliminar esta receta propia?"))return;
+ saveCustomRecipes(customRecipes().filter(x=>x.id!==id));
+ closeModal();render();
+}
+
 const db=()=>get("db",{plans:[],ratings:{},pantry:[],shopping:[],measurements:[{date:"2026-08-11",weight:103.8,waist:106,hip:105,chest:115,arm:34,thigh:51,calf:39,bodyFat:39.1,visceral:14,water:44,skeletalMuscle:39.3,muscleMass:62.9,protein:16.6,bmr:1735}]});
-const saveDB=x=>set("db",x),recipe=id=>RECIPES.find(r=>r.id===id),recipesBy=t=>RECIPES.filter(r=>r.type===t);
+const saveDB=x=>set("db",x);
 function score(r,s){let x=100;if(s.ids.includes(r.id))x-=90;if(s.proteins.slice(-1)[0]===r.protein)x-=35;if(s.carbs.slice(-1)[0]===r.carb)x-=25;x+=(db().ratings[r.id]||0)*2;return x}
 function choose(type,state,di){let pool=recipesBy(type);if(type==="lunch"&&[1,5].includes(di)){const q=pool.filter(r=>r.cat==="legumbre");if(q.length)pool=q}if(type==="dinner"&&[0,2,4].includes(di)){const q=pool.filter(r=>["pescado","marisco","huevo"].includes(r.cat));if(q.length)pool=q}return [...pool].sort((a,b)=>score(b,state)-score(a,state))[0]}
 function generatePlan(start){const d=db(),p={weekStart:start,weekEnd:plus(start,6),status:"draft",days:{}};const s={};Object.keys(MEALS).forEach(t=>s[t]={ids:[],proteins:[],carbs:[]});DAYS.forEach((day,di)=>{p.days[day]={};Object.keys(MEALS).forEach(t=>{const r=choose(t,s[t],di);p.days[day][t]=r.id;s[t].ids.push(r.id);s[t].proteins.push(r.protein);s[t].carbs.push(r.carb)})});d.plans=d.plans.filter(x=>x.weekStart!==start);d.plans.unshift(p);saveDB(d);return p}
@@ -73,8 +145,8 @@ function mealCard(t){const r=currentMeal(t),rating=db().ratings[r.id]||0;return 
 function planner(){return `<div class="planner-nav"><button class="tab-btn active" onclick="pview('current',this)">Semana actual</button><button class="tab-btn" onclick="pview('next',this)">Semana siguiente</button><button class="tab-btn" onclick="pview('history',this)">Historial</button></div><div id="p_current">${planMarkup(getPlan(monday(0)))}</div><div id="p_next" class="hidden">${planMarkup(getPlan(monday(1)))}</div><div id="p_history" class="hidden">${historyMarkup()}</div>`}
 function planMarkup(p){return `<div class="card"><div class="section-title"><div><span class="eyebrow">${p.weekStart} → ${p.weekEnd}</span><h2>${p.status==="confirmed"?"Semana confirmada":"Borrador editable"}</h2></div></div><div class="btn-row"><button class="btn" onclick="generatePlan('${p.weekStart}');render()">Otra propuesta</button>${p.status!=="confirmed"?`<button class="btn primary" onclick="confirmPlan('${p.weekStart}')">Confirmar semana</button>`:""}</div></div>${DAYS.map(day=>`<div class="week-card"><h3>${day}</h3>${Object.keys(MEALS).map(t=>{const r=recipe(p.days[day][t]);return `<div class="week-row"><span>${MEALS[t]}</span><div><b>${r.name}</b><small>${r.prep} · ${r.time} min</small></div><div class="actions"><button class="btn small" onclick="openRecipe('${r.id}')">Ver</button><button class="btn small" onclick="changePlanMeal('${p.weekStart}','${day}','${t}')">Cambiar</button></div></div>`}).join("")}</div>`).join("")}`}
 function historyMarkup(){const a=db().plans.filter(p=>p.weekStart<monday(0));return a.length?a.map(p=>`<div class="card"><h3>${p.weekStart} → ${p.weekEnd}</h3><p>${p.status}</p></div>`).join(""):`<div class="card"><p class="muted">Aún no hay semanas anteriores.</p></div>`}
-function library(){const main=RECIPES.filter(r=>["lunch","dinner"].includes(r.type)),oth=RECIPES.filter(r=>!["lunch","dinner"].includes(r.type));return `<div class="card"><span class="eyebrow">BIBLIOTECA PRINCIPAL</span><h2>${main.length} comidas y cenas</h2><div class="filters"><input id="q" placeholder="Buscar plato o ingrediente" oninput="filterRecipes()"><select id="f" onchange="filterRecipes()"><option value="">Todas</option><option>arroz</option><option>pasta</option><option>legumbre</option><option>carne</option><option>pescado</option><option>marisco</option><option>huevo</option><option>verdura</option><option>ensaladilla</option></select></div></div><div class="recipe-grid">${main.map(tile).join("")}</div><div class="card"><span class="eyebrow">DESAYUNOS Y TENTEMPIÉS</span><h3>${oth.length} opciones</h3></div><div class="recipe-grid">${oth.map(tile).join("")}</div>`}
-function tile(r){return `<div class="recipe-card filter-recipe" data-search="${(r.name+" "+r.cat+" "+r.protein+" "+r.items.map(x=>x[0]).join(" ")).toLowerCase()}" data-cat="${r.cat}"><span class="eyebrow">${MEALS[r.type]}</span><h3>${r.name}</h3><p>${r.prep} · ${r.time} min</p><button class="btn small" onclick="openRecipe('${r.id}')">Ver receta</button></div>`}
+function library(){const main=allRecipes().filter(r=>["lunch","dinner"].includes(r.type)),oth=allRecipes().filter(r=>!["lunch","dinner"].includes(r.type));return `<div class="card"><div class="section-title"><div><span class="eyebrow">BIBLIOTECA PRINCIPAL</span><h2>${main.length} comidas y cenas</h2></div><button class="btn primary" onclick="openCustomRecipeForm()">+ Añadir receta</button></div><div class="filters"><input id="q" placeholder="Buscar plato o ingrediente" oninput="filterRecipes()"><select id="f" onchange="filterRecipes()"><option value="">Todas</option><option>arroz</option><option>pasta</option><option>legumbre</option><option>carne</option><option>pescado</option><option>marisco</option><option>huevo</option><option>verdura</option><option>ensaladilla</option></select></div></div><div class="recipe-grid">${main.map(tile).join("")}</div><div class="card"><span class="eyebrow">DESAYUNOS Y TENTEMPIÉS</span><h3>${oth.length} opciones</h3></div><div class="recipe-grid">${oth.map(tile).join("")}</div>`}
+function tile(r){const own=String(r.id).startsWith("user_");return `<div class="recipe-card filter-recipe" data-search="${(r.name+" "+r.cat+" "+r.protein+" "+r.items.map(x=>x[0]).join(" ")).toLowerCase()}" data-cat="${r.cat}">${r.photo?`<img src="${r.photo}" class="recipe-photo" alt="">`:""}<span class="eyebrow">${MEALS[r.type]}</span><h3>${r.name}</h3><p>${r.prep} · ${r.time} min</p><div class="btn-row"><button class="btn small" onclick="openRecipe('${r.id}')">Ver receta</button>${own?`<button class="btn small" onclick="openCustomRecipeForm('${r.id}')">Editar</button>`:""}</div></div>`}
 function shopping(){const a=db().shopping;if(!a.length)return `<div class="card"><p>Confirma una semana para generar la compra.</p></div>`;return `<div class="card"><h2>Compra semanal</h2>${a.map((x,i)=>`<div class="shopping-row"><input type="checkbox" ${x.bought?"checked":""} onchange="toggleBought(${i},this.checked)"><div><b>${x.name}</b><small>Comprar ${Math.ceil(x.buy)} ${x.unit}</small></div></div>`).join("")}</div>`}
 function pantry(){const a=db().pantry;return `<div class="card"><h2>Despensa</h2><div class="form-grid"><label>Producto<input id="pn"></label><label>Cantidad<input id="pq" type="number"></label></div><button class="btn primary" onclick="addPantry()">Añadir</button>${a.map((x,i)=>`<div class="pantry-row"><span>•</span><div><b>${x.name}</b><small>${x.qty}</small></div><button class="btn small danger" onclick="removePantry(${i})">Quitar</button></div>`).join("")}</div>`}
 function prepMarkup(){const p=getPlan(monday(1)),l=DAYS.map(day=>recipe(p.days[day].lunch));return `<div class="card"><span class="eyebrow">PREPARACIÓN SEMANAL</span><h2>Qué dejar listo</h2><ol>${l.map((r,i)=>`<li><b>${DAYS[i]}:</b> ${r.name} — ${r.prep}. ${r.storage}</li>`).join("")}</ol><p class="note">Las comidas están diseñadas para llegar al mediodía con el trabajo hecho.</p></div>`}
