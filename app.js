@@ -1,5 +1,5 @@
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
-const APP_VERSION='8.0.0',PREFIX='p85_';
+const APP_VERSION='10.0.0',PREFIX='p85_';
 const todayISO=()=>new Date().toISOString().slice(0,10);
 const uid=()=>crypto.randomUUID?crypto.randomUUID():Date.now()+'-'+Math.random().toString(16).slice(2);
 const finite=(v,f=0)=>Number.isFinite(Number(v))?Number(v):f;
@@ -70,7 +70,7 @@ function closeModal(){$('#modal').classList.remove('open');$('#modal').setAttrib
 $('#modalClose').onclick=closeModal;$('#modal').onclick=e=>{if(e.target===$('#modal'))closeModal()};
 
 
-const MIGRATION_TARGET='8.0.0';
+const MIGRATION_TARGET='10.0.0';
 const LEGACY_KEYS=[
  'settings','profile','sessions','health','measures','pantry','shopping','analytics',
  'reminders','nutritionLog','workoutQueue','workoutDraft','exercisePreferences',
@@ -1083,7 +1083,7 @@ function saveOutOfHome(type,index){const opts=['Bocadillo integral de pavo + tom
 function nutritionTrendMultiweek(){const m=[...store('measures')].sort((a,b)=>a.date.localeCompare(b.date)).slice(-4);if(m.length<3)return{status:'insufficient',message:'Aún faltan varias semanas para adaptar el plan.'};const dw=finite(m.at(-1).weight)-finite(m[0].weight),dc=finite(m.at(-1).waist)-finite(m[0].waist);if(dw<-1||dc<-1)return{status:'progress',message:'La tendencia de varias semanas es favorable. No hace falta recortar comida.'};if(Math.abs(dw)<.4&&Math.abs(dc)<.5)return{status:'plateau',message:'La tendencia está estable. Revisa adherencia, hambre, energía y entrenamiento antes de cambiar cantidades.'};return{status:'review',message:'La evolución requiere revisión, sin recortes agresivos automáticos.'}}
 function adaptationMarkup(){const t=nutritionTrendMultiweek();return `<div class="card"><span class="eyebrow">ADAPTACIÓN PROGRESIVA</span><h3>${t.status==='progress'?'Mantener':'Revisar con datos'}</h3><p>${t.message}</p><p class="note">Se usan tendencias de varias semanas, no una sola medición.</p></div>`}
 function nutritionWeeklyReport(){const c=store('nutritionCheckins').slice(0,7),r={id:uid(),date:todayISO(),adherence:weeklyAdherence(),variety:menuVarietyScore(currentWeeklyMenu()),avgHunger:c.length?(c.reduce((a,x)=>a+finite(x.hunger),0)/c.length).toFixed(1):null,avgEnergy:c.length?(c.reduce((a,x)=>a+finite(x.energy),0)/c.length).toFixed(1):null,trend:nutritionTrendMultiweek()};const a=store('nutritionWeeklyReports');a.unshift(r);save('nutritionWeeklyReports',a);return r}
-function openNutritionWeeklyReport(){const r=nutritionWeeklyReport();openModal(`<span class="eyebrow">RESUMEN SEMANAL</span><h2>Nutrición Proyecto85</h2>`,`<div class="nutrition-grid"><div><span>Adherencia</span><b>${r.adherence.total}%</b></div><div><span>Variedad</span><b>${r.variety||0}%</b></div><div><span>Hambre</span><b>${r.avgHunger||'—'}</b></div><div><span>Energía</span><b>${r.avgEnergy||'—'}</b></div></div><h3>Adaptación</h3><p>${r.trend.message}</p>`)}
+function openNutritionWeeklyReport(){const r=nutritionWeeklyReport();openModal(`<span class="eyebrow">RESUMEN SEMANAL</span><h2>Nutrición Proyecto85 Pro</h2>`,`<div class="nutrition-grid"><div><span>Adherencia</span><b>${r.adherence.total}%</b></div><div><span>Variedad</span><b>${r.variety||0}%</b></div><div><span>Hambre</span><b>${r.avgHunger||'—'}</b></div><div><span>Energía</span><b>${r.avgEnergy||'—'}</b></div></div><h3>Adaptación</h3><p>${r.trend.message}</p>`)}
 function nutritionSafetyMarkup(){return `<div class="card safety-card"><span class="eyebrow">REGLAS DEL SISTEMA</span><p>✓ Una mala puntuación no prohíbe un alimento.</p><p>✓ No hay recortes agresivos automáticos.</p><p>✓ La pauta antigua de 1.200 kcal se usa como referencia de raciones/equivalencias, no como objetivo automático.</p><p>✓ Los cambios importantes se apoyan en tendencias de varias semanas.</p></div>`}
 function proMealCard(type){const r=activeProRecipe(type),n=r.nutrition||{},log=store('nutritionLog').find(x=>x.date===todayISO()&&x.type===type),score=recipeScore(r.id);return `<div class="meal-card"><div class="meal-head"><div><span class="eyebrow">${mealLabels[type]}</span><h3>${r.name}</h3><div class="recipe-meta"><span>${r.flavor||'Variado'}</span><span>${r.time||'-'} min</span><span>${finite(n.protein)} g proteína</span></div></div><button class="btn small" onclick="openRecipe('${r.id}')">Ver receta</button></div><ul class="meal-items">${(r.items||[]).map(x=>`<li><b>${x[1]} ${x[2]}</b> ${x[0]}<small>${x[3]||'tal como se consume'}</small></li>`).join('')}</ul><div class="btn-row"><button class="btn small secondary" onclick="smartIngredientSwap('${type}')">Cambiar ingrediente</button><button class="btn small secondary" onclick="openChangeReason('${type}')">Cambiar comida</button></div><label class="check" style="margin-top:12px"><input type="checkbox" ${log?.done?'checked':''} onchange="toggleMeal('${type}',this.checked)"> Comida realizada</label><div class="rating-row"><span>Puntuación:</span>${[1,2,3,4,5,6,7,8,9,10].map(v=>`<button class="score-btn ${score===v?'active':''}" onclick="rateMeal('${r.id}',${v});renderNutrition()">${v}</button>`).join('')}</div></div>`}
 function renderNutritionV7(){$('#nutricion').innerHTML=`${nutritionDashboardV72()}${hydrationMarkup()}${trainingNutritionMarkup()}${endocrineReferenceMarkup()}${expiryMarkup()}${socialAdviceV71()}${latestEducationMarkup()}<div class="tabs"><button class="tab-btn active" onclick="nvTab('today',this)">Hoy</button><button class="tab-btn" onclick="nvTab('week',this)">Semana</button><button class="tab-btn" onclick="nvTab('recipes',this)">Recetas</button><button class="tab-btn" onclick="nvTab('shopping',this)">Compra</button><button class="tab-btn" onclick="nvTab('pantry',this)">Despensa</button><button class="tab-btn" onclick="nvTab('batch',this)">Preparación</button><button class="tab-btn" onclick="nvTab('learning',this)">Aprendizaje</button></div><div id="nvToday">${Object.keys(mealLabels).map(proMealCard).join('')}${nutritionCheckinMarkup()}</div><div id="nvWeek" class="hidden">${weeklyMenuMarkup()}<div class="card"><button class="btn primary" onclick="openNutritionWeeklyReport()">Generar resumen semanal</button></div>${adaptationMarkup()}</div><div id="nvRecipes" class="hidden"><div class="card"><button class="btn primary" onclick="addCustomRecipe()">+ Añadir receta propia</button></div><div class="recipe-library">${completeRecipeList().map(recipeCardV7).join('')}</div></div><div id="nvShopping" class="hidden"><div class="card">${shoppingMarkup()}</div></div><div id="nvPantry" class="hidden"><div class="card"><div class="form-grid"><label>Producto<input id="pantryName"></label><label>Cantidad<input id="pantryQty" type="number"></label><label>Unidad<select id="pantryUnit"><option>g</option><option>kg</option><option>unidad</option><option>lata</option></select></label><label>Caducidad<input id="pantryExpiry" type="date"></label></div><button class="btn primary" onclick="addPantryV7()">Guardar</button>${store('pantry').map((x,i)=>`<div class="pantry-row"><span>•</span><div><b>${x.name}</b><small>${x.qty} ${x.unit||'g'} ${x.expiry?'· '+x.expiry:''}</small></div><button class="btn small danger" onclick="let p=store('pantry');p.splice(${i},1);save('pantry',p);renderNutrition()">Quitar</button></div>`).join('')}</div></div><div id="nvBatch" class="hidden">${batchMarkup()}</div><div id="nvLearning" class="hidden">${learningMarkup()}${nutritionHistoryMarkup()}${nutritionSafetyMarkup()}</div>`}
@@ -1209,7 +1209,7 @@ function endocrineReferenceMarkup(){
 }
 
 
-// ===== V8.0 MÓDULO 1 DEFINITIVO =====
+// ===== PRO MÓDULO 1 DEFINITIVO =====
 function weekStartISO(date=new Date()){
  const d=new Date(date),day=d.getDay(),diff=(day===0?-6:1-day);
  d.setDate(d.getDate()+diff);d.setHours(0,0,0,0);return d.toISOString().slice(0,10);
@@ -1342,6 +1342,219 @@ function batchMarkup(){
  return `<div class="card"><span class="eyebrow">PREPARACIÓN SEMANAL</span><h2>Qué adelantar</h2><ol class="guide-list"><li><b>Proteínas:</b> ${p.proteins.join(', ')||'Preparar según el día'}</li><li><b>Hidratos:</b> ${p.carbs.join(', ')||'Preparar según el día'}</li><li><b>Verduras:</b> ${p.veg.join(', ')||'Lavar y cortar variedad'}</li><li>Separar raciones por día según el menú bloqueado.</li><li>Dejar pescado y ensaladas delicadas para fechas próximas al consumo.</li></ol></div>`;
 }
 
+
+// Proyecto85 Pro · coherencia de nombres en recetas adaptadas
+function adaptedRecipeName(baseName, originalIngredient, replacementIngredient){
+ const clean=String(baseName||'Plato')
+   .replace(/\s*·\s*adaptad[oa]$/i,'')
+   .replace(/\s*\(adaptad[oa]\)$/i,'');
+ if(!replacementIngredient)return clean+' · adaptado';
+ const escaped=String(originalIngredient||'').replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+ if(escaped){
+   const rx=new RegExp(escaped,'i');
+   if(rx.test(clean)) return clean.replace(rx,String(replacementIngredient));
+ }
+ return `${clean} · con ${replacementIngredient}`;
+}
+
+function applyIngredientSwapV71(type,index){
+ const r=activeProRecipe(type),o=window._p85SwapOptions?.[index];if(!o)return;
+ const clone=JSON.parse(JSON.stringify(r));
+ clone.id='swap-'+uid();
+ clone.name=adaptedRecipeName(r.name,o.original,o.alt[0]);
+ clone.items[o.itemIndex]=[o.alt[0],o.alt[1],o.alt[2],o.alt[3]];
+ const sw=store('mealSwaps').filter(a=>!(a.date===todayISO()&&a.type===type));
+ sw.unshift({date:todayISO(),type,original:r.name,custom:clone});
+ save('mealSwaps',sw);
+ closeModal();
+ toast(`Plato actualizado: ${clone.name}`);
+ renderNutrition();
+}
+
+function applyIngredientSwap(type,index){
+ const r=activeProRecipe(type),opt=equivalentOptions(r)[index];if(!opt)return;
+ const clone=JSON.parse(JSON.stringify(r));
+ clone.id='swap-'+uid();
+ clone.name=adaptedRecipeName(r.name,opt.original,opt.replacement);
+ clone.items=clone.items.map(x=>x[0]===opt.original?[opt.replacement,opt.qty,opt.unit,opt.state,opt.group]:x);
+ const swaps=store('mealSwaps').filter(x=>!(x.date===todayISO()&&x.type===type));
+ swaps.unshift({date:todayISO(),type,original:r.name,custom:clone});
+ save('mealSwaps',swaps);
+ closeModal();
+ toast(`Plato actualizado: ${clone.name}`);
+ renderNutrition();
+}
+
+
+// =====================================================
+// PROYECTO85 PRO · MÓDULO 1 NUTRICIÓN COMPLETO
+// Planificación profesional: actual / siguiente / historial
+// =====================================================
+INITIAL.nutritionPlans = INITIAL.nutritionPlans || [];
+INITIAL.nutritionPlannerView = INITIAL.nutritionPlannerView || 'current';
+INITIAL.recipeTags = INITIAL.recipeTags || {};
+
+function isoMonday(offsetWeeks=0){
+ const d=new Date(),day=d.getDay(),diff=(day===0?-6:1-day)+(offsetWeeks*7);
+ d.setDate(d.getDate()+diff);d.setHours(0,0,0,0);return d.toISOString().slice(0,10);
+}
+function isoPlusDays(iso,n){const d=new Date(iso+'T00:00:00');d.setDate(d.getDate()+n);return d.toISOString().slice(0,10)}
+function planForWeek(start){return store('nutritionPlans').find(p=>p.weekStart===start)||null}
+function savePlan(plan){
+ let a=store('nutritionPlans').filter(p=>p.weekStart!==plan.weekStart);a.unshift(plan);a.sort((x,y)=>y.weekStart.localeCompare(x.weekStart));save('nutritionPlans',a);
+}
+function mealDayNames(){return ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo']}
+function plannerStart(mode){return mode==='next'?isoMonday(1):isoMonday(0)}
+
+function recipeFamily(r){
+ const s=(r?.name+' '+(r?.items||[]).map(x=>x[0]).join(' ')).toLowerCase();
+ if(/merluza|bacalao|salmón|sardina|atún|pescado|marisco|gamba/.test(s))return'pescado';
+ if(/lenteja|garbanzo|alubia|legumbre/.test(s))return'legumbre';
+ if(/pollo|pavo/.test(s))return'ave';
+ if(/lomo|cerdo|ternera|conejo/.test(s))return'carne';
+ if(/pasta/.test(s))return'pasta';
+ if(/arroz/.test(s))return'arroz';
+ return'otro';
+}
+function mainCarb(r){
+ const s=(r?.items||[]).map(x=>x[0]).join(' ').toLowerCase();
+ if(/pasta/.test(s))return'pasta';if(/arroz/.test(s))return'arroz';if(/patata/.test(s))return'patata';if(/pan/.test(s))return'pan';if(/garbanzo|lenteja|alubia/.test(s))return'legumbre';return'otro';
+}
+function recipeRank(r,usedIds,recentFamilies,recentCarbs){
+ let score=100;
+ if(usedIds.includes(r.id))score-=80;
+ if(recentFamilies.slice(-1).includes(recipeFamily(r)))score-=35;
+ if(recentCarbs.slice(-1).includes(mainCarb(r)))score-=20;
+ const ratings=nutritionRatingMap();score+=(ratings[r.id]||0)*2;
+ score+=recipeAvailability(r).pct*.08;
+ return score;
+}
+function pickVariedRecipe(type,state,dayIndex){
+ let pool=smartRecipeList(type).slice();
+ if(!pool.length)return null;
+ // enforce structural variety on main meals
+ if(type==='lunch'&&[1,5].includes(dayIndex)){
+   const legs=pool.filter(r=>recipeFamily(r)==='legumbre');if(legs.length)pool=legs;
+ }
+ if(type==='dinner'&&[0,2,4].includes(dayIndex)){
+   const fish=pool.filter(r=>recipeFamily(r)==='pescado');if(fish.length)pool=fish;
+ }
+ pool.sort((a,b)=>recipeRank(b,state.ids,state.families,state.carbs)-recipeRank(a,state.ids,state.families,state.carbs));
+ return pool[0];
+}
+function generateNutritionPlan(start){
+ const days=mealDayNames(),plan={id:uid(),weekStart:start,weekEnd:isoPlusDays(start,6),status:'draft',createdAt:new Date().toISOString(),days:{}};
+ const states={};Object.keys(mealLabels).forEach(t=>states[t]={ids:[],families:[],carbs:[]});
+ days.forEach((day,di)=>{
+   plan.days[day]={};
+   Object.keys(mealLabels).forEach(type=>{
+     const r=pickVariedRecipe(type,states[type],di);
+     plan.days[day][type]=r?.id||null;
+     if(r){states[type].ids.push(r.id);states[type].families.push(recipeFamily(r));states[type].carbs.push(mainCarb(r))}
+   });
+ });
+ plan.variety=planVarietyScore(plan);savePlan(plan);return plan;
+}
+function planVarietyScore(plan){
+ const ids=[],families=[];
+ mealDayNames().forEach(d=>['lunch','dinner'].forEach(t=>{const r=recipeByAnyId(plan.days?.[d]?.[t]);if(r){ids.push(r.id);families.push(recipeFamily(r))}}));
+ if(!ids.length)return 0;
+ const uniqueIds=new Set(ids).size/ids.length*70;
+ const uniqueFam=Math.min(1,new Set(families).size/5)*30;
+ return Math.round(uniqueIds+uniqueFam);
+}
+function ensurePlan(start){return planForWeek(start)||generateNutritionPlan(start)}
+function confirmNutritionPlan(start){
+ const p=planForWeek(start);if(!p)return;
+ p.status='confirmed';p.confirmedAt=new Date().toISOString();p.variety=planVarietyScore(p);savePlan(p);
+ if(start===isoMonday(0)){save('lockedWeeklyMenu',{...p,locked:true,lockedAt:new Date().toISOString()})}
+ generateShoppingFromPlan(p);generateBatchFromPlan(p);toast('Semana confirmada, compra y preparación generadas');renderNutrition();
+}
+function regeneratePlan(start){
+ const p=planForWeek(start);
+ if(p?.status==='confirmed'&&!confirm('Esta semana está confirmada. ¿Quieres sustituirla por una nueva propuesta?'))return;
+ let a=store('nutritionPlans').filter(x=>x.weekStart!==start);save('nutritionPlans',a);generateNutritionPlan(start);toast('Nueva propuesta generada');renderNutrition();
+}
+function changePlannedMeal(start,day,type){
+ const p=planForWeek(start);if(!p)return;
+ const current=recipeByAnyId(p.days[day][type]);
+ const pool=smartRecipeList(type).filter(r=>r.id!==current?.id).sort((a,b)=>recipeRank(b,[],[recipeFamily(current)],[mainCarb(current)])-recipeRank(a,[],[recipeFamily(current)],[mainCarb(current)]));
+ openModal(`<span class="eyebrow">CAMBIAR PLATO</span><h2>${day} · ${mealLabels[type]}</h2>`,
+ `<p class="muted">Elige otra propuesta o entra en la biblioteca.</p><div class="alt-grid">${pool.slice(0,8).map(r=>`<button class="alt-btn" onclick="setPlannedMeal('${start}','${day}','${type}','${r.id}')"><b>${r.name}</b><small>${recipeFamily(r)} · ${r.time||'-'} min</small></button>`).join('')}</div>`);
+}
+function setPlannedMeal(start,day,type,id){
+ const p=planForWeek(start);if(!p)return;p.days[day][type]=id;p.variety=planVarietyScore(p);savePlan(p);closeModal();toast('Plato actualizado');renderNutrition();
+}
+function generateShoppingFromPlan(plan){
+ const need={};
+ Object.values(plan.days||{}).forEach(meals=>Object.values(meals||{}).forEach(id=>{const r=recipeByAnyId(id);if(!r)return;(r.items||[]).forEach(i=>{const name=String(i[0]),qty=finite(i[1],0),unit=i[2]||'unidad';if(!need[name])need[name]={name,qty:0,unit,category:shoppingCategory(name)};need[name].qty+=qty})}));
+ const pantry=store('pantry');
+ const list=Object.values(need).map(x=>{const h=pantry.find(p=>p.name.toLowerCase()===x.name.toLowerCase()),have=finite(h?.qty,0);return{...x,have,buy:Math.max(0,x.qty-have),bought:false}}).filter(x=>x.buy>0);
+ save('shopping',list);
+}
+function generateBatchFromPlan(plan){
+ const rs=[...new Set(Object.values(plan.days).flatMap(x=>Object.values(x)))].map(recipeByAnyId).filter(Boolean);
+ const all=rs.flatMap(r=>r.items||[]);
+ const g=keys=>[...new Set(all.filter(i=>keys.some(k=>String(i[0]).toLowerCase().includes(k))).map(i=>i[0]))];
+ const batch={id:uid(),weekStart:plan.weekStart,date:todayISO(),proteins:g(['pollo','pavo','lomo','ternera','conejo']),carbs:g(['arroz','pasta','patata','garbanzo','lenteja','alubia']),veg:g(['verdura','ensalada','espinaca','pimiento','tomate','calabacín'])};
+ const a=store('batchPlans');a.unshift(batch);save('batchPlans',a);
+}
+function currentOfficialPlan(){
+ const p=planForWeek(isoMonday(0));return p?.status==='confirmed'?p:null;
+}
+function activeProRecipe(type){
+ const swap=store('mealSwaps').find(x=>x.date===todayISO()&&x.type===type);if(swap?.custom)return swap.custom;
+ const manual=store('mealSelections')?.[todayISO()]?.[type];if(manual)return recipeByAnyId(manual);
+ const p=currentOfficialPlan();if(p){const id=p.days?.[currentDayName()]?.[type];if(id)return recipeByAnyId(id)}
+ return smartRecipeList(type)[0];
+}
+function plannerDayCard(start,day,plan){
+ return `<div class="week-day-card"><div class="section-title"><h3>${day}</h3><span class="pill">${plan.status==='confirmed'?'Confirmado':'Editable'}</span></div>${Object.keys(mealLabels).map(type=>{const r=recipeByAnyId(plan.days?.[day]?.[type]);return `<div class="week-meal"><span>${mealLabels[type]}</span><div><b>${r?.name||'Sin plato'}</b><small>${r?(r.items||[]).slice(0,3).map(i=>`${i[1]} ${i[2]} ${i[0]}`).join(' · '):''}</small></div><div class="week-actions"><button class="guide-btn" onclick="${r?`openRecipe('${r.id}')`:'void 0'}">Ver</button><button class="guide-btn" onclick="changePlannedMeal('${start}','${day}','${type}')">Cambiar</button></div></div>`}).join('')}</div>`;
+}
+function plannerWeekMarkup(mode){
+ const start=plannerStart(mode),p=ensurePlan(start);
+ return `<div class="card planner-summary"><div class="section-title"><div><span class="eyebrow">${mode==='next'?'SEMANA SIGUIENTE':'SEMANA ACTUAL'}</span><h2>${p.weekStart} → ${p.weekEnd}</h2></div><span class="quality-ring">${p.variety||planVarietyScore(p)}</span></div><p>Variedad de la propuesta. ${p.status==='confirmed'?'Esta planificación está confirmada.':'Revísala antes de confirmar.'}</p><div class="btn-row"><button class="btn" onclick="regeneratePlan('${start}')">Otra propuesta</button>${p.status!=='confirmed'?`<button class="btn primary" onclick="confirmNutritionPlan('${start}')">Confirmar semana</button>`:''}</div></div>${mealDayNames().map(d=>plannerDayCard(start,d,p)).join('')}`;
+}
+function plannerHistoryMarkup(){
+ const old=store('nutritionPlans').filter(p=>p.weekStart<isoMonday(0));
+ if(!old.length)return `<div class="card empty-state"><h3>Sin semanas anteriores</h3></div>`;
+ return old.map(p=>`<div class="card"><span class="eyebrow">SEMANA</span><h3>${p.weekStart} → ${p.weekEnd}</h3><p>Estado: ${p.status==='confirmed'?'Confirmada':'Borrador'} · Variedad ${p.variety||planVarietyScore(p)}%</p></div>`).join('');
+}
+function nutritionPlannerMarkup(){
+ return `<div class="planner-nav"><button class="tab-btn active" onclick="showPlannerMode('current',this)">Semana actual</button><button class="tab-btn" onclick="showPlannerMode('next',this)">Semana siguiente</button><button class="tab-btn" onclick="showPlannerMode('history',this)">Historial</button></div><div id="plannerCurrent">${plannerWeekMarkup('current')}</div><div id="plannerNext" class="hidden">${plannerWeekMarkup('next')}</div><div id="plannerHistory" class="hidden">${plannerHistoryMarkup()}</div>`;
+}
+function showPlannerMode(mode,btn){
+ ['Current','Next','History'].forEach(x=>$('#planner'+x)?.classList.add('hidden'));
+ const key=mode==='current'?'Current':mode==='next'?'Next':'History';$('#planner'+key)?.classList.remove('hidden');
+ btn.parentElement.querySelectorAll('.tab-btn').forEach(x=>x.classList.remove('active'));btn.classList.add('active');
+}
+function recipeCategoryLabel(r){return `${recipeFamily(r)} · ${mainCarb(r)} · ${r.flavor||'variado'}`}
+function recipeLibraryProfessional(){
+ const recipes=completeRecipeList();
+ return `<div class="card"><div class="section-title"><div><span class="eyebrow">BIBLIOTECA</span><h2>${recipes.length} platos disponibles</h2></div></div><div class="filter-row"><input id="recipeSearch" placeholder="Buscar plato o ingrediente" oninput="filterProfessionalRecipes()"><select id="recipeFilter" onchange="filterProfessionalRecipes()"><option value="">Todas</option><option value="pescado">Pescado</option><option value="legumbre">Legumbres</option><option value="ave">Pollo / pavo</option><option value="carne">Carnes</option><option value="pasta">Pasta</option><option value="arroz">Arroz</option></select></div></div><div id="professionalRecipeGrid" class="recipe-library">${recipes.map(r=>`<div class="recipe-filter-card" data-search="${(r.name+' '+(r.items||[]).map(i=>i[0]).join(' ')+' '+recipeCategoryLabel(r)).toLowerCase()}" data-family="${recipeFamily(r)}">${recipeCardV7(r)}</div>`).join('')}</div>`;
+}
+function filterProfessionalRecipes(){
+ const q=($('#recipeSearch')?.value||'').toLowerCase(),f=$('#recipeFilter')?.value||'';
+ document.querySelectorAll('.recipe-filter-card').forEach(el=>el.classList.toggle('hidden',!!((q&&!el.dataset.search.includes(q))||(f&&el.dataset.family!==f))));
+}
+function proMealCard(type){
+ const r=activeProRecipe(type),n=r.nutrition||{},log=store('nutritionLog').find(x=>x.date===todayISO()&&x.type===type),score=recipeScore(r.id);
+ return `<div class="meal-card"><div class="meal-head"><div><span class="eyebrow">${mealLabels[type]}</span><h3>${r.name}</h3><div class="recipe-meta"><span>${r.flavor||'Variado'}</span><span>${r.time||'-'} min</span><span>${finite(n.protein)} g proteína</span></div></div><button class="btn small" onclick="openRecipe('${r.id}')">Receta</button></div><ul class="meal-items">${(r.items||[]).map(x=>`<li><b>${x[1]} ${x[2]}</b> ${x[0]}<small>${x[3]||'tal como se consume'}</small></li>`).join('')}</ul><div class="btn-row"><button class="btn small secondary" onclick="smartIngredientSwap('${type}')">Cambiar ingrediente</button><button class="btn small secondary" onclick="openChangeReason('${type}')">Cambiar comida</button></div><label class="check"><input type="checkbox" ${log?.done?'checked':''} onchange="toggleMeal('${type}',this.checked)"> Realizada</label><div class="rating-row"><span>Valorar</span>${[1,2,3,4,5,6,7,8,9,10].map(v=>`<button class="score-btn ${score===v?'active':''}" onclick="rateMeal('${r.id}',${v});renderNutrition()">${v}</button>`).join('')}</div></div>`;
+}
+function renderNutritionV7(){
+ $('#nutricion').innerHTML=`
+ <div class="card pro-title"><span class="eyebrow">PROYECTO85 PRO</span><h2>Nutrición</h2><p>Planifica → revisa → confirma → compra → prepara → sigue → aprende.</p></div>
+ ${nutritionDashboardV72?nutritionDashboardV72():''}${hydrationMarkup?hydrationMarkup():''}
+ <div class="tabs"><button class="tab-btn active" onclick="nvTab('today',this)">Hoy</button><button class="tab-btn" onclick="nvTab('week',this)">Plan semanal</button><button class="tab-btn" onclick="nvTab('recipes',this)">Recetas</button><button class="tab-btn" onclick="nvTab('shopping',this)">Compra</button><button class="tab-btn" onclick="nvTab('pantry',this)">Despensa</button><button class="tab-btn" onclick="nvTab('batch',this)">Preparación</button><button class="tab-btn" onclick="nvTab('learning',this)">Seguimiento</button></div>
+ <div id="nvToday">${Object.keys(mealLabels).map(proMealCard).join('')}${nutritionCheckinMarkup?nutritionCheckinMarkup():''}</div>
+ <div id="nvWeek" class="hidden">${nutritionPlannerMarkup()}</div>
+ <div id="nvRecipes" class="hidden">${recipeLibraryProfessional()}</div>
+ <div id="nvShopping" class="hidden"><div class="card">${shoppingMarkup()}</div></div>
+ <div id="nvPantry" class="hidden"><div class="card"><div class="form-grid"><label>Producto<input id="pantryName"></label><label>Cantidad<input id="pantryQty" type="number"></label><label>Unidad<select id="pantryUnit"><option>g</option><option>kg</option><option>unidad</option><option>lata</option></select></label><label>Caducidad<input id="pantryExpiry" type="date"></label></div><button class="btn primary" onclick="addPantryV7()">Guardar</button>${store('pantry').map((x,i)=>`<div class="pantry-row"><span>•</span><div><b>${x.name}</b><small>${x.qty} ${x.unit||'g'} ${x.expiry?'· '+x.expiry:''}</small></div><button class="btn small danger" onclick="let p=store('pantry');p.splice(${i},1);save('pantry',p);renderNutrition()">Quitar</button></div>`).join('')}</div></div>
+ <div id="nvBatch" class="hidden">${batchMarkup()}</div>
+ <div id="nvLearning" class="hidden">${nutritionBodyContextMarkup?nutritionBodyContextMarkup():''}${learningMarkup?learningMarkup():''}${nutritionHistoryMarkup?nutritionHistoryMarkup():''}${nutritionSafetyMarkup?nutritionSafetyMarkup():''}</div>`;
+}
+
 function saveHealth(){const o={date:todayISO(),steps:finite($('#h_steps').value),sleep:finite($('#h_sleep').value),restHr:finite($('#h_hr').value),water:finite($('#h_water').value),energy:finite($('#h_energy').value),stress:finite($('#h_stress').value),pain:finite($('#h_pain').value)};let a=store('health'),i=a.findIndex(x=>x.date===o.date);if(i>=0)a[i]=o;else a.unshift(o);save('health',a);toast('Salud guardada')}
 function addAnalytic(){const o={id:uid(),date:$('#a_date').value||todayISO(),name:$('#a_name').value.trim(),value:$('#a_value').value,unit:$('#a_unit').value,reference:$('#a_ref').value};if(!o.name)return;const a=store('analytics');a.unshift(o);save('analytics',a);renderMore()}
 function requestNotifications(){if(!('Notification'in window))return toast('No disponible');Notification.requestPermission().then(x=>{const s=store('settings');s.notifications=x==='granted';save('settings',s);toast(x==='granted'?'Notificaciones permitidas':'Permiso no concedido')})}
@@ -1383,4 +1596,4 @@ function moreTab(id,b){$$('.tab-btn').forEach(x=>x.classList.remove('active'));b
 async function forceUpdate(){await hardRefresh();}
 $('#refreshBtn').onclick=forceUpdate;
 migrate();runMigrationAndNotify();ensureV73Recipes();updateAppShell();renderHome();startAutomaticUpdateChecks();
-if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js?v=8.0.0');
+if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js?v=10.0.0');
