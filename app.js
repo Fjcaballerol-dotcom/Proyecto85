@@ -1,7 +1,7 @@
 
 "use strict";
 
-const APP_VERSION="4.0.0";
+const APP_VERSION="4.0.2";
 const SCHEMA_VERSION=4;
 const PREFIX="p85pro2_";
 const STATE_KEY=PREFIX+"state";
@@ -135,14 +135,33 @@ function baseState(){
  };
 }
 function readJSON(k,d){try{const v=localStorage.getItem(k);return v===null?d:JSON.parse(v)}catch{return d}}
+
+function safeStorageSet(key,value){
+ try{
+  localStorage.setItem(key,value);
+  return true;
+ }catch(err){
+  console.warn("Proyecto85: no se pudo guardar",key,err);
+  try{localStorage.removeItem(PREFIX+"legacyBackup_v4")}catch(_){}
+  try{
+   localStorage.setItem(key,value);
+   return true;
+  }catch(err2){
+   console.warn("Proyecto85: almacenamiento lleno",err2);
+   toast?.("No se pudo guardar: almacenamiento del navegador lleno");
+   return false;
+  }
+ }
+}
+
 function state(){
  const s=readJSON(STATE_KEY,null);
  if(!s)return baseState();
  return {...baseState(),...s,settings:{...baseState().settings,...(s.settings||{})}};
 }
-function saveState(s){s.schema=SCHEMA_VERSION;localStorage.setItem(STATE_KEY,JSON.stringify(s))}
+function saveState(s){s.schema=SCHEMA_VERSION;return safeStorageSet(STATE_KEY,JSON.stringify(s))}
 function customRecipes(){return readJSON(CUSTOM_RECIPE_KEY,[])}
-function saveCustomRecipes(a){localStorage.setItem(CUSTOM_RECIPE_KEY,JSON.stringify(a))}
+function saveCustomRecipes(a){return safeStorageSet(CUSTOM_RECIPE_KEY,JSON.stringify(a))}
 function allRecipes(){return [...RECIPES,...customRecipes()]}
 function recipe(id){return allRecipes().find(r=>r.id===id)}
 function recipesBy(type){return allRecipes().filter(r=>r.type===type)}
@@ -600,10 +619,13 @@ function render(){
  else if(PAGE==="nutrition")content=renderNutrition();
  else if(PAGE==="evolution")content=renderEvolution();
  else content=moreMarkup();
- host.innerHTML=`<div class="shell"><header><div class="brand"><small>ENTRENADOR PERSONAL</small><h1>Proyecto85 Pro <span class="version">4.0</span></h1></div><span class="header-badge">Entrenador85</span></header>${content}</div>${nav()}`;
+ host.innerHTML=`<div class="shell"><header><div class="brand"><small>ENTRENADOR PERSONAL</small><h1>Proyecto85 Pro <span class="version">4.0.2</span></h1></div><span class="header-badge">Entrenador85</span></header>${content}</div>${nav()}`;
 }
 function boot(){
- try{migrateLegacyOnce();render()}catch(err){
+ try{
+  try{localStorage.removeItem(PREFIX+"legacyBackup_v4")}catch(_){}
+  render()
+ }catch(err){
   console.error(err);
   $("#app").innerHTML=`<div class="error-card"><h2>Proyecto85 Pro</h2><p>Se ha producido un error al iniciar. Tus datos no se han borrado.</p><pre>${esc(err?.stack||err?.message||err)}</pre><button class="btn primary" onclick="location.reload()">Reintentar</button></div>`;
  }
