@@ -5,23 +5,19 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#06130e">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Proyecto85 Pro</title>
-<link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="styles.css?v=301">
+<link rel="manifest" href="manifest.json?v=400">
+<link rel="stylesheet" href="styles.css?v=400">
 </head>
 <body>
-<div id="app"><div style="max-width:720px;margin:40px auto;padding:20px;color:#f3f7f5;font-family:-apple-system;background:#0b2118;border-radius:20px">
-    <h2>Proyecto85 Pro 3.0.1</h2><p style="color:#9fb2a8">Cargando aplicación…</p></div></div>
-<script src="app.js?v=301"></script>
-
-<script>
-window.addEventListener('error',function(e){
-  const h=document.getElementById('app');
-  if(h && (!h.innerText || h.innerText.includes('Cargando aplicación'))){
-    h.innerHTML='<div style="max-width:720px;margin:40px auto;padding:20px;color:#fff;font-family:-apple-system;background:#0b2118;border-radius:20px"><h2>Proyecto85 Pro 3.0.1</h2><p>Se detectó un error al cargar:</p><pre style="white-space:pre-wrap;color:#ffb5ad">'+String(e.message||'Error desconocido')+'</pre></div>';
-  }
-});
-</script>
-
+<div id="app">
+  <div class="boot-card">
+    <h2>Proyecto85 Pro</h2>
+    <p>Cargando Entrenador85…</p>
+  </div>
+</div>
+<script src="app.js?v=400"></script>
 </body>
 </html>

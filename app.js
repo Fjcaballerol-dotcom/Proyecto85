@@ -1,465 +1,681 @@
-const VERSION="3.0.1",PREFIX="p85pro2_";
-const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
-const uid=()=>crypto.randomUUID?crypto.randomUUID():String(Date.now()+Math.random());
-const get=(k,d)=>{try{return JSON.parse(localStorage.getItem(PREFIX+k))??d}catch{return d}};
-const set=(k,v)=>localStorage.setItem(PREFIX+k,JSON.stringify(v));
-const monday=(o=0)=>{const d=new Date(),day=d.getDay(),diff=(day===0?-6:1-day)+o*7;d.setDate(d.getDate()+diff);d.setHours(0,0,0,0);return d.toISOString().slice(0,10)};
-const plus=(iso,n)=>{const d=new Date(iso+"T00:00:00");d.setDate(d.getDate()+n);return d.toISOString().slice(0,10)};
+
+"use strict";
+
+const APP_VERSION="4.0.0";
+const SCHEMA_VERSION=4;
+const PREFIX="p85pro2_";
+const STATE_KEY=PREFIX+"state";
+const CUSTOM_RECIPE_KEY=PREFIX+"customRecipes";
+
+const $=s=>document.querySelector(s);
+const $$=s=>[...document.querySelectorAll(s)];
+const uid=()=>globalThis.crypto?.randomUUID?.()||("id_"+Date.now()+"_"+Math.random().toString(36).slice(2));
 const todayISO=()=>new Date().toISOString().slice(0,10);
+const monday=(offset=0)=>{const d=new Date(),day=d.getDay(),diff=(day===0?-6:1-day)+offset*7;d.setDate(d.getDate()+diff);d.setHours(0,0,0,0);return d.toISOString().slice(0,10)};
+const plusDays=(iso,n)=>{const d=new Date(iso+"T00:00:00");d.setDate(d.getDate()+n);return d.toISOString().slice(0,10)};
 const dayName=()=>["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"][new Date().getDay()];
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+const finite=(x,d=0)=>Number.isFinite(Number(x))?Number(x):d;
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
 const DAYS=["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado","Domingo"];
 const MEALS={breakfast:"Desayuno",midmorning:"Media mañana",lunch:"Comida",snack:"Merienda",dinner:"Cena"};
 
-const DEFAULT_RECIPES=[
- {id:"b1",type:"breakfast",name:"Tostada integral con pavo, tomate y AOVE",cat:"desayuno",protein:"pavo",carb:"pan",time:5,prep:"Al momento",items:[["Pan integral",60,"g","listo"],["Pavo",70,"g","listo"],["Tomate",120,"g","crudo"],["AOVE",5,"g","medido"],["Café",1,"taza","habitual"]],steps:["Tuesta el pan.","Añade tomate y pavo.","Termina con el AOVE medido.","Acompaña con el café habitual."],storage:"Sin preparación previa.",reheat:"No aplica."},
- {id:"b2",type:"breakfast",name:"Tostada integral con queso fresco, tomate y fruta",cat:"desayuno",protein:"queso",carb:"pan",time:5,prep:"Al momento",items:[["Pan integral",60,"g","listo"],["Queso fresco",70,"g","listo"],["Tomate",100,"g","crudo"],["Fruta",1,"pieza","entera"],["Café",1,"taza","habitual"]],steps:["Tuesta el pan.","Añade queso y tomate.","Toma la fruta y el café."],storage:"Sin preparación previa.",reheat:"No aplica."},
- {id:"b3",type:"breakfast",name:"Tostada integral con aguacate y pavo",cat:"desayuno",protein:"pavo",carb:"pan",time:5,prep:"Al momento",items:[["Pan integral",60,"g","listo"],["Aguacate",35,"g","listo"],["Pavo",60,"g","listo"],["Café",1,"taza","habitual"]],steps:["Tuesta el pan.","Unta el aguacate.","Añade pavo.","Acompaña con café."],storage:"Al momento.",reheat:"No aplica."},
- {id:"m1",type:"midmorning",name:"Fruta y yogur natural",cat:"tentempié",protein:"lácteo",carb:"fruta",time:2,prep:"Directo",items:[["Fruta",1,"pieza","entera"],["Yogur natural",1,"unidad","listo"]],steps:["Tomar directamente."],storage:"Transportable.",reheat:"No."},
- {id:"m2",type:"midmorning",name:"Pavo y pequeña tostada",cat:"tentempié",protein:"pavo",carb:"pan",time:3,prep:"Directo",items:[["Pavo",60,"g","listo"],["Pan integral",30,"g","listo"]],steps:["Preparar y llevar."],storage:"Transportable.",reheat:"No."},
- {id:"s1",type:"snack",name:"Yogur natural con kiwi",cat:"tentempié",protein:"lácteo",carb:"fruta",time:2,prep:"Directo",items:[["Yogur natural",1,"unidad","listo"],["Kiwi",1,"pieza","entero"]],steps:["Tomar directamente."],storage:"Transportable.",reheat:"No."},
- {id:"s2",type:"snack",name:"Queso fresco con tomate",cat:"tentempié",protein:"queso",carb:"verdura",time:3,prep:"Directo",items:[["Queso fresco",60,"g","listo"],["Tomate",150,"g","crudo"]],steps:["Cortar y servir."],storage:"En frío.",reheat:"No."},
+const LEARNING_CARDS=[
+ {title:"La báscula no cuenta toda la historia",body:"Peso, cintura, rendimiento y constancia aportan información distinta. Una medición aislada puede variar; la tendencia de varias semanas es más útil."},
+ {title:"Proteína repartida durante el día",body:"Incluir una fuente de proteína en las comidas principales ayuda a construir platos completos y facilita la recuperación del entrenamiento."},
+ {title:"Los hidratos también forman parte de una alimentación equilibrada",body:"Arroz, pasta, patata, pan y legumbres pueden formar parte del plan. Importan la cantidad, el conjunto del día y la actividad."},
+ {title:"Progresar no significa subir peso cada sesión",body:"A veces progresar es completar más repeticiones con buena técnica, controlar mejor el movimiento o terminar todas las series previstas."},
+ {title:"La recuperación también entrena",body:"Dormir, hidratarse y alternar el énfasis de las sesiones ayuda a mantener una práctica constante sin convertir cada día en una competición."},
+ {title:"Comer fuera no invalida la semana",body:"Una comida flexible planificada puede convivir con una semana equilibrada. No hace falta compensarla saltándose comidas después."},
+ {title:"Preparar bases ahorra decisiones",body:"Dejar verduras, legumbres y algunas proteínas listas reduce el tiempo de cocina sin tener que cocinar siete días completos el domingo."}
+];
 
- {id:"l1",type:"lunch",name:"Pasta mediterránea con pollo",cat:"pasta",protein:"pollo",carb:"pasta",time:15,prep:"Dejar preparada; solo calentar",items:[["Pasta integral",70,"g","crudo"],["Pollo",180,"g","crudo"],["Tomate",120,"g","cocinado"],["Pimientos",120,"g","cocinados"],["AOVE",10,"g","medido"]],steps:["Cuece la pasta.","Cocina el pollo en tiras.","Añade tomate y pimientos.","Mezcla y guarda en ración."],storage:"2-3 días en frío.",reheat:"Calentar suavemente."},
- {id:"l2",type:"lunch",name:"Arroz tres delicias saludable",cat:"arroz",protein:"huevo",carb:"arroz",time:15,prep:"Preparar la noche anterior",items:[["Arroz",65,"g","crudo"],["Huevo",1,"unidad","cocinado"],["Gambas",100,"g","cocinadas"],["Guisantes",60,"g","cocinados"],["Zanahoria",80,"g","cocinada"]],steps:["Cuece el arroz según el envase y deja que se enfríe.","Saltea zanahoria y guisantes 5-7 minutos.","Aparta la verdura a un lado y cuaja el huevo.","Añade las gambas y cocínalas completamente.","Incorpora el arroz y saltea 2-3 minutos.","Termina con ajo, perejil u otras especias suaves."],storage:"Enfriar pronto y conservar en frío.",reheat:"Recalentar completamente una sola vez."},
- {id:"l3",type:"lunch",name:"Lomo magro con pimientos y arroz",cat:"carne",protein:"cerdo",carb:"arroz",time:12,prep:"Dejar preparado; solo calentar",items:[["Lomo magro",180,"g","crudo"],["Arroz integral",60,"g","crudo"],["Pimientos asados",250,"g","cocinados"]],steps:["Cuece el arroz.","Cocina el lomo a la plancha.","Añade pimientos asados.","Guarda por ración."],storage:"2-3 días en frío.",reheat:"Calentar suavemente."},
- {id:"l4",type:"lunch",name:"Filete de ternera con patata y verduras",cat:"carne",protein:"ternera",carb:"patata",time:12,prep:"Dejar guarnición lista",items:[["Ternera magra",180,"g","crudo"],["Patata",220,"g","cocida"],["Verduras",250,"g","cocinadas"]],steps:["Cuece o asa la patata.","Deja las verduras listas.","Cocina la ternera en plancha caliente.","Monta la ración."],storage:"2 días en frío.",reheat:"Sin resecar."},
- {id:"l5",type:"lunch",name:"Garbanzos con espinacas y pollo",cat:"legumbre",protein:"pollo",carb:"legumbre",time:12,prep:"Ideal para preparar antes",items:[["Garbanzos",200,"g","cocidos"],["Espinacas",250,"g","cocinadas"],["Pollo",120,"g","crudo"]],steps:["Saltea las espinacas.","Añade garbanzos.","Incorpora el pollo ya cocinado.","Mezcla y guarda."],storage:"2-3 días en frío.",reheat:"Calentar suavemente."},
- {id:"l6",type:"lunch",name:"Lentejas con verduras y pavo",cat:"legumbre",protein:"pavo",carb:"legumbre",time:12,prep:"Preparar la noche anterior",items:[["Lentejas",200,"g","cocidas"],["Pavo",120,"g","crudo"],["Verduras",250,"g","cocinadas"]],steps:["Calienta las lentejas.","Añade verduras.","Incorpora pavo cocinado.","Guarda por ración."],storage:"2-3 días en frío.",reheat:"Bien caliente."},
- {id:"l7",type:"lunch",name:"Ensaladilla equilibrada con atún",cat:"ensaladilla",protein:"atún",carb:"patata",time:10,prep:"Dejar hecha en frío",items:[["Patata",220,"g","cocida"],["Atún",140,"g","escurrido"],["Zanahoria",80,"g","cocida"],["Guisantes",50,"g","cocidos"],["Yogur natural",40,"g","salsa ligera"]],steps:["Cuece y enfría patata y zanahoria.","Añade guisantes y atún.","Liga con salsa ligera de yogur.","Refrigera."],storage:"1-2 días en frío.",reheat:"No."},
- {id:"l8",type:"lunch",name:"Arroz con langostinos y verduras",cat:"arroz",protein:"langostinos",carb:"arroz",time:14,prep:"Preparar antes; solo calentar",items:[["Arroz",65,"g","crudo"],["Langostinos",160,"g","cocinados"],["Verduras",250,"g","cocinadas"]],steps:["Cuece el arroz.","Saltea verduras.","Añade langostinos al final.","Guarda."],storage:"1-2 días en frío.",reheat:"Calentar una vez."},
- {id:"l9",type:"lunch",name:"Mejillones con arroz y verduras",cat:"marisco",protein:"mejillones",carb:"arroz",time:12,prep:"Arroz y verduras preparados",items:[["Mejillones",180,"g","comestibles"],["Arroz",60,"g","crudo"],["Verduras",250,"g","cocinadas"]],steps:["Deja arroz y verduras listos.","Cocina o incorpora mejillones según formato.","Monta el plato."],storage:"Consumir pronto.",reheat:"Suave."},
- {id:"l10",type:"lunch",name:"Tortilla de patata ligera con ensalada",cat:"huevo",protein:"huevo",carb:"patata",time:15,prep:"Puede dejarse hecha",items:[["Huevos",2,"unidades","cocinados"],["Patata",200,"g","cocida"],["Cebolla",60,"g","cocinada"],["Ensalada",250,"g","cruda"]],steps:["Cuece o cocina la patata con poco aceite.","Añade cebolla.","Cuaja con huevo.","Acompaña con ensalada."],storage:"1-2 días en frío.",reheat:"Opcional."},
- {id:"l11",type:"lunch",name:"Salteado de espárragos, pollo y patata",cat:"verdura",protein:"pollo",carb:"patata",time:12,prep:"Preparar la noche anterior",items:[["Espárragos",250,"g","cocinados"],["Pollo",170,"g","crudo"],["Patata",200,"g","cocida"]],steps:["Saltea espárragos.","Añade pollo.","Acompaña con patata."],storage:"2 días.",reheat:"Suave."},
+const EXERCISES=[
+ {id:"leg_press",name:"Prensa de piernas",group:"Piernas",equipment:"Máquina",sets:3,reps:"10-12",seed:52,inc:5,tech:"Apoya toda la espalda y los pies. Baja con control sin despegar la pelvis y empuja manteniendo las rodillas alineadas.",alts:["hack_squat","leg_extension"]},
+ {id:"leg_curl",name:"Curl femoral",group:"Piernas",equipment:"Máquina",sets:3,reps:"10-12",seed:39,inc:3,tech:"Ajusta el rodillo sobre la parte baja de la pierna. Flexiona sin despegar la cadera y vuelve lentamente.",alts:["rdl_machine"]},
+ {id:"leg_extension",name:"Extensión de cuádriceps",group:"Piernas",equipment:"Máquina",sets:3,reps:"10-12",seed:39,inc:3,tech:"Alinea la rodilla con el eje de la máquina. Extiende sin bloquear bruscamente y baja con control.",alts:["leg_press"]},
+ {id:"abduction",name:"Abducción de cadera",group:"Piernas",equipment:"Máquina",sets:3,reps:"12-15",seed:39,inc:3,tech:"Mantén el tronco estable. Abre las piernas sin impulso y vuelve lentamente.",alts:["leg_press"]},
+ {id:"calf",name:"Gemelos en máquina",group:"Piernas",equipment:"Máquina",sets:3,reps:"12-15",seed:20,inc:5,tech:"Recorre el movimiento completo: talón abajo con control y elevación fuerte sin rebotes.",alts:["leg_press"]},
 
- {id:"d1",type:"dinner",name:"Merluza a la plancha con ensalada",cat:"pescado",protein:"merluza",carb:"verdura",time:12,prep:"Cena ligera",items:[["Merluza",200,"g","crudo"],["Ensalada",300,"g","cruda"]],steps:["Seca el pescado.","Cocina en plancha caliente hasta que esté hecho.","Monta la ensalada aparte."],storage:"Mejor al momento.",reheat:"Evitar."},
- {id:"d2",type:"dinner",name:"Salmón con espárragos",cat:"pescado",protein:"salmón",carb:"verdura",time:12,prep:"Cena ligera",items:[["Salmón",180,"g","crudo"],["Espárragos",250,"g","cocinados"]],steps:["Seca el salmón.","Cocina en plancha caliente controlando el punto.","Saltea los espárragos aparte.","Sirve junto."],storage:"Mejor al momento.",reheat:"Evitar resecar."},
- {id:"d3",type:"dinner",name:"Tortilla francesa con tomate y queso fresco",cat:"huevo",protein:"huevo",carb:"verdura",time:8,prep:"Rápida",items:[["Huevos",2,"unidades","cocinados"],["Tomate",200,"g","crudo"],["Queso fresco",50,"g","listo"]],steps:["Bate los huevos.","Cuaja la tortilla completamente.","Acompaña con tomate y queso fresco."],storage:"Al momento.",reheat:"No."},
- {id:"d4",type:"dinner",name:"Mejillones al vapor con ensalada",cat:"marisco",protein:"mejillones",carb:"verdura",time:10,prep:"Ligera",items:[["Mejillones",200,"g","comestibles"],["Ensalada",300,"g","cruda"]],steps:["Limpia los mejillones si procede.","Cocina al vapor hasta que estén hechos.","Monta la ensalada."],storage:"Al momento.",reheat:"No."},
- {id:"d5",type:"dinner",name:"Langostinos a la plancha con verduras",cat:"marisco",protein:"langostinos",carb:"verdura",time:10,prep:"Ligera",items:[["Langostinos",180,"g","cocinados"],["Verduras",300,"g","cocinadas"]],steps:["Cocina las verduras primero.","Plancha los langostinos hasta que estén hechos.","Sirve juntos."],storage:"Mejor al momento.",reheat:"No."},
- {id:"d6",type:"dinner",name:"Atún con tomate, aguacate y queso fresco",cat:"pescado",protein:"atún",carb:"verdura",time:7,prep:"Montar",items:[["Atún",150,"g","escurrido"],["Tomate",220,"g","crudo"],["Aguacate",40,"g","listo"],["Queso fresco",50,"g","listo"]],steps:["Escurre el atún.","Corta tomate y aguacate.","Añade queso fresco.","Monta y aliña."],storage:"Al momento.",reheat:"No."},
- {id:"d7",type:"dinner",name:"Pollo con verduras; reserva para mañana",cat:"pollo",protein:"pollo",carb:"verdura",time:12,prep:"Cena + preparar mañana",items:[["Pollo",300,"g","crudo"],["Verduras",300,"g","cocinadas"]],steps:["Cocina una ración amplia de pollo.","Cena una parte con verduras.","Reserva una porción para la comida del día siguiente."],storage:"Reserva en frío.",reheat:"Calentar mañana."},
- {id:"d8",type:"dinner",name:"Salteado de espárragos con huevo y pavo",cat:"huevo",protein:"huevo",carb:"verdura",time:10,prep:"Rápida",items:[["Espárragos",250,"g","cocinados"],["Huevo",1,"unidad","cocinado"],["Pavo",80,"g","listo"]],steps:["Saltea espárragos.","Añade pavo.","Cuaja el huevo completamente."],storage:"Al momento.",reheat:"No."},
- {id:"d9",type:"dinner",name:"Ensalada completa con queso fresco y pavo",cat:"ensalada",protein:"queso",carb:"verdura",time:8,prep:"Montar",items:[["Ensalada",300,"g","cruda"],["Queso fresco",70,"g","listo"],["Pavo",80,"g","listo"]],steps:["Lava y seca las hojas.","Añade queso y pavo.","Aliña al servir."],storage:"Al momento.",reheat:"No."}
+ {id:"lat_pulldown",name:"Jalón al pecho",group:"Espalda",equipment:"Polea/Máquina",sets:3,reps:"8-12",seed:45,inc:3,tech:"Pecho alto, hombros abajo. Lleva la barra hacia la parte alta del pecho y controla la vuelta.",alts:["chest_row","pullover"]},
+ {id:"chest_row",name:"Remo con apoyo al pecho",group:"Espalda",equipment:"Máquina",sets:3,reps:"8-12",seed:32,inc:3,tech:"Mantén el pecho apoyado. Lleva los codos atrás sin encoger los hombros.",alts:["low_row","lat_pulldown"]},
+ {id:"low_row",name:"Remo en polea baja",group:"Espalda",equipment:"Polea",sets:3,reps:"10-12",seed:30,inc:3,tech:"Tronco estable. Tira hacia el abdomen y evita balancearte.",alts:["chest_row"]},
+ {id:"pullover",name:"Pullover en polea/máquina",group:"Espalda",equipment:"Polea/Máquina",sets:3,reps:"10-12",seed:15.9,inc:2.3,tech:"Brazos casi extendidos. Lleva el agarre hacia los muslos usando la espalda sin convertirlo en un press.",alts:["lat_pulldown"]},
+ {id:"face_pull",name:"Face Pull",group:"Espalda/Hombro",equipment:"Polea",sets:3,reps:"12-15",seed:15.9,inc:2.3,tech:"Tira hacia la cara separando las manos y mantén los hombros lejos de las orejas.",alts:["rear_delt"]},
+
+ {id:"chest_press",name:"Press de pecho en máquina",group:"Pecho",equipment:"Máquina",sets:3,reps:"8-12",seed:32,inc:3,tech:"Ajusta el asiento para que las asas queden a la altura media del pecho. Empuja sin despegar la espalda.",alts:["incline_press","pec_deck"]},
+ {id:"incline_press",name:"Press inclinado en máquina",group:"Pecho",equipment:"Máquina",sets:3,reps:"8-12",seed:20,inc:2.5,tech:"Escápulas apoyadas. Empuja arriba y delante con recorrido controlado.",alts:["chest_press"]},
+ {id:"pec_deck",name:"Pec Deck / Mariposa",group:"Pecho",equipment:"Máquina",sets:3,reps:"10-12",seed:45,inc:3,tech:"Pecho apoyado, codos cómodos. Junta los brazos sin golpearlos y vuelve lentamente.",alts:["chest_press"]},
+
+ {id:"shoulder_press",name:"Press de hombros en máquina",group:"Hombro",equipment:"Máquina",sets:3,reps:"8-12",seed:13,inc:2,tech:"Ajusta el asiento y mantén la espalda apoyada. Empuja sin arquear la zona lumbar.",alts:["lateral_raise"]},
+ {id:"lateral_raise",name:"Elevaciones laterales",group:"Hombro",equipment:"Mancuernas/Máquina",sets:3,reps:"12-15",seed:7,inc:1,tech:"Eleva con codos suaves hasta una altura cómoda, sin impulso.",alts:["shoulder_press"]},
+ {id:"rear_delt",name:"Deltoide posterior en máquina",group:"Hombro",equipment:"Máquina",sets:3,reps:"12-15",seed:25,inc:3,tech:"Pecho apoyado y brazos abiertos. Mueve desde el hombro sin encoger el cuello.",alts:["face_pull"]},
+
+ {id:"biceps",name:"Curl de bíceps",group:"Brazos",equipment:"Mancuernas/Polea",sets:3,reps:"10-12",seed:10,inc:1,tech:"Codos estables. Flexiona sin balanceo y baja lentamente.",alts:["biceps_machine"]},
+ {id:"biceps_machine",name:"Curl de bíceps en máquina",group:"Brazos",equipment:"Máquina",sets:3,reps:"10-12",seed:20,inc:2.5,tech:"Ajusta el asiento y apoya los brazos. Evita despegar los codos.",alts:["biceps"]},
+ {id:"triceps",name:"Tríceps en polea",group:"Brazos",equipment:"Polea",sets:3,reps:"10-12",seed:15.9,inc:2.3,tech:"Codos pegados al cuerpo. Extiende sin balancear el tronco.",alts:["triceps_machine"]},
+ {id:"triceps_machine",name:"Tríceps en máquina",group:"Brazos",equipment:"Máquina",sets:3,reps:"10-12",seed:20,inc:2.5,tech:"Mantén el tronco estable y extiende con control.",alts:["triceps"]},
+
+ {id:"core_crunch",name:"Crunch abdominal en máquina",group:"Core",equipment:"Máquina",sets:3,reps:"12-15",seed:20,inc:2.5,tech:"Ajusta la máquina para flexionar el tronco de forma cómoda. Exhala al cerrar y vuelve con control.",alts:["core_rotation"]},
+ {id:"core_rotation",name:"Rotación de torso en máquina",group:"Core",equipment:"Máquina",sets:3,reps:"10-12/lado",seed:20,inc:2.5,tech:"Pelvis estable. Gira desde el torso dentro de un rango cómodo y controlado.",alts:["core_crunch"]},
+ {id:"back_extension",name:"Extensión lumbar en máquina",group:"Core",equipment:"Máquina",sets:2,reps:"12-15",seed:20,inc:2.5,tech:"Recorrido corto y controlado. Evita hiperextender al final.",alts:["core_crunch"]},
+
+ {id:"hack_squat",name:"Hack squat en máquina",group:"Piernas",equipment:"Máquina",sets:3,reps:"8-12",seed:30,inc:5,tech:"Espalda apoyada, pies estables y rodillas alineadas. Baja hasta un rango cómodo.",alts:["leg_press"]},
+ {id:"rdl_machine",name:"Bisagra de cadera en máquina",group:"Piernas",equipment:"Máquina",sets:3,reps:"10-12",seed:25,inc:5,tech:"Cadera atrás, espalda neutra y movimiento controlado.",alts:["leg_curl"]}
 ];
 
 const TRAINING_DAYS=[
- {day:"Día 1",title:"Full Body POWER",focus:"Fuerza + técnica",mission:"Consolidar cargas y mejorar 1–2 repeticiones con técnica limpia.",cardio:"12–15 min progresivo",ex:[
-  ["Prensa de piernas","Piernas","3×10–12",52],["Curl femoral máquina","Isquios","3×10–12",39],["Jalón al pecho","Espalda","3×10–12",45],["Press pecho máquina","Pecho","3×10–12",32],["Remo con apoyo al pecho","Espalda","3×10–12",32],["Press militar máquina","Hombro","3×10–12",13],["Curl bíceps","Bíceps","3×10–12",10],["Tríceps polea","Tríceps","3×10–12",15.9],["Crunch máquina","Core","3×12–15",0]]},
- {day:"Día 2",title:"Full Body PULL",focus:"Espalda + cadena posterior",mission:"Ganar control en tirones sin sacrificar postura.",cardio:"15 min moderado",ex:[
-  ["Remo con apoyo al pecho","Espalda","3×10–12",32],["Jalón al pecho","Espalda","3×10–12",45],["Pullover en polea/máquina","Espalda","3×12–15",15.9],["Prensa de piernas","Piernas","3×12",52],["Curl femoral máquina","Isquios","3×10–12",39],["Press inclinado máquina","Pecho","3×10–12",20],["Face Pull","Hombro posterior","3×12–15",15.9],["Abducción máquina","Glúteo","3×12–15",39],["Rotación de torso máquina","Core","3×12/lado",0]]},
- {day:"Día 3",title:"Full Body ENGINE",focus:"Trabajo global + capacidad cardiovascular",mission:"Mantener ritmo constante sin convertir la sesión en una carrera.",cardio:"18–20 min intervalos sin impacto",ex:[
-  ["Extensión de cuádriceps","Piernas","3×12–15",39],["Remo sentado máquina","Espalda","3×12",32],["Pec Deck","Pecho","3×12",45],["Curl femoral máquina","Isquios","3×12",39],["Jalón neutro","Espalda","3×12",45],["Elevaciones laterales","Hombro","3×12–15",7],["Curl martillo","Bíceps","3×12",10],["Tríceps cuerda","Tríceps","3×12",15.9],["Crunch máquina","Core","3×15",0]]},
- {day:"Día 4",title:"Full Body PUSH",focus:"Pecho + hombro + piernas",mission:"Buscar una progresión pequeña en un empuje, no en todos.",cardio:"12–15 min recuperación activa",ex:[
-  ["Prensa de piernas","Piernas","3×10–12",52],["Extensión de cuádriceps","Piernas","3×12",39],["Press inclinado máquina","Pecho","3×10–12",20],["Pec Deck","Pecho","3×12",45],["Remo máquina","Espalda","3×10–12",32],["Press hombro máquina","Hombro","3×10–12",13],["Face Pull","Hombro posterior","3×15",15.9],["Tríceps polea","Tríceps","3×12",15.9],["Extensión lumbar máquina","Core","3×12–15",0]]},
- {day:"Día 5",title:"Full Body COMPLETE",focus:"Cierre semanal + marcas",mission:"Terminar la semana con buena técnica y detectar 2 ejercicios listos para progresar.",cardio:"20 min progresivo",ex:[
-  ["Prensa de piernas","Piernas","3×12",52],["Curl femoral máquina","Isquios","3×12",39],["Jalón al pecho","Espalda","3×12",45],["Remo con apoyo al pecho","Espalda","3×12",32],["Press pecho máquina","Pecho","3×12",32],["Elevaciones laterales","Hombro","3×15",7],["Curl bíceps","Bíceps","3×12",10],["Tríceps polea","Tríceps","3×12",15.9],["Crunch máquina","Core","3×15",0]]}
+ {key:"POWER",title:"Full Body POWER",subtitle:"Base de fuerza y técnica",ex:["leg_press","lat_pulldown","chest_press","leg_curl","chest_row","shoulder_press","biceps","triceps","core_crunch"],cardio:{mode:"Progresivo",minutes:12}},
+ {key:"PULL",title:"Full Body PULL",subtitle:"Espalda y cadena posterior",ex:["leg_curl","chest_row","lat_pulldown","leg_press","pullover","face_pull","incline_press","biceps","core_rotation"],cardio:{mode:"Moderado",minutes:15}},
+ {key:"ENGINE",title:"Full Body ENGINE",subtitle:"Trabajo global + capacidad cardiovascular",ex:["leg_press","leg_extension","lat_pulldown","pec_deck","rear_delt","triceps","biceps_machine","abduction","core_crunch"],cardio:{mode:"Intervalos sin impacto",minutes:16}},
+ {key:"PUSH",title:"Full Body PUSH",subtitle:"Pecho, hombro y piernas",ex:["leg_press","incline_press","shoulder_press","leg_curl","pec_deck","chest_row","lateral_raise","triceps","core_rotation"],cardio:{mode:"Progresivo",minutes:12}},
+ {key:"COMPLETE",title:"Full Body COMPLETE",subtitle:"Cuerpo completo y control de marcas",ex:["hack_squat","lat_pulldown","chest_press","rdl_machine","low_row","face_pull","lateral_raise","biceps","core_crunch","back_extension"],cardio:{mode:"Moderado",minutes:18}}
 ];
-const DEFAULT_TRAINING=TRAINING_DAYS;
-const TRAINING_ALTS={"Prensa de piernas":["Hack squat máquina","Sentadilla guiada"],"Jalón al pecho":["Jalón neutro","Pullover en polea/máquina"],"Remo con apoyo al pecho":["Remo sentado máquina","Remo polea baja"],"Press pecho máquina":["Press inclinado máquina","Pec Deck"],"Curl bíceps":["Curl martillo","Curl máquina"],"Tríceps polea":["Tríceps cuerda","Fondos asistidos"]};
 
-function customRecipes(){return get("customRecipes",[])}
-function saveCustomRecipes(a){set("customRecipes",a)}
-function recipes(){return [...DEFAULT_RECIPES,...customRecipes()]}
-function recipe(id){return recipes().find(r=>r.id===id)}
-function recipesBy(t){return recipes().filter(r=>r.type===t)}
-function state(){const s=get("state",{plans:[],ratings:{},mealDone:{},pantry:[],shopping:[],trainingLog:[],measurements:[],settings:{flexMeal:true}});s.trainingLog=s.trainingLog||[];s.measurements=s.measurements||[];s.settings=s.settings||{flexMeal:true};return s}
-function saveState(s){set("state",s)}
+const SALADS=[
+ ["Mediterránea","Tomate, pepino, pimiento, cebolla y hojas verdes","AOVE + limón + orégano"],
+ ["Tomate y queso fresco","Tomate, queso fresco, cebolla y hojas verdes","AOVE + vinagre"],
+ ["Pimientos asados y atún","Pimientos asados, atún, cebolla y tomate","AOVE + vinagre"],
+ ["Aguacate y tomate","Tomate, aguacate, pepino y hojas verdes","Limón + AOVE"],
+ ["Garbanzos mediterráneos","Garbanzos, tomate, pepino, pimiento y cebolla","Limón + comino + AOVE"],
+ ["Judías y verduras","Judías cocidas, tomate, pimiento y cebolla","Vinagre + AOVE"],
+ ["Pollo y vegetales","Pollo, hojas verdes, tomate, pepino y zanahoria","Limón + mostaza suave + AOVE"],
+ ["Pasta fría equilibrada","Pasta, tomate, pepino, pimiento, atún y hojas verdes","AOVE + limón"]
+];
 
-function scoreRecipe(r,used,current){
+const RECIPES=[
+ {id:"b1",type:"breakfast",name:"Tostada integral con pavo, tomate y AOVE",cat:"desayuno",protein:"pavo",carb:"pan",time:5,prep:"Al momento",items:[["Pan integral",60,"g","listo"],["Pavo",70,"g","listo"],["Tomate",120,"g","crudo"],["AOVE",5,"g","medido"],["Café",1,"taza","habitual"]],steps:["Tuesta el pan hasta que quede ligeramente crujiente.","Ralla o corta el tomate y repártelo sobre la tostada.","Añade el pavo y termina con el AOVE medido.","Acompaña con el café habitual."],storage:"Preparar al momento.",reheat:"No aplica."},
+ {id:"b2",type:"breakfast",name:"Tostada integral con queso fresco, tomate y fruta",cat:"desayuno",protein:"queso",carb:"pan",time:5,prep:"Al momento",items:[["Pan integral",60,"g","listo"],["Queso fresco",70,"g","listo"],["Tomate",100,"g","crudo"],["Fruta",1,"pieza","entera"],["Café",1,"taza","habitual"]],steps:["Tuesta el pan.","Añade tomate y queso fresco.","Toma la fruta aparte y acompaña con café."],storage:"Preparar al momento.",reheat:"No aplica."},
+ {id:"b3",type:"breakfast",name:"Tostada integral con aguacate y pavo",cat:"desayuno",protein:"pavo",carb:"pan",time:5,prep:"Al momento",items:[["Pan integral",60,"g","listo"],["Aguacate",35,"g","listo"],["Pavo",60,"g","listo"],["Café",1,"taza","habitual"]],steps:["Tuesta el pan.","Machaca el aguacate y extiéndelo.","Añade el pavo y acompaña con café."],storage:"Preparar al momento para que el aguacate no se oxide.",reheat:"No aplica."},
+ {id:"b4",type:"breakfast",name:"Tostada integral con queso fresco y pimientos asados",cat:"desayuno",protein:"queso",carb:"pan",time:5,prep:"Pimientos preparados previamente",items:[["Pan integral",60,"g","listo"],["Queso fresco",70,"g","listo"],["Pimientos asados",80,"g","cocinados"],["Café",1,"taza","habitual"]],steps:["Tuesta el pan.","Coloca queso fresco y pimientos asados escurridos.","Acompaña con café."],storage:"Los pimientos pueden dejarse preparados en frío.",reheat:"No aplica."},
+
+ {id:"m1",type:"midmorning",name:"Fruta y yogur natural",cat:"tentempié",protein:"lácteo",carb:"fruta",time:2,prep:"Directo",items:[["Fruta",1,"pieza","entera"],["Yogur natural",1,"unidad","listo"]],steps:["Lleva ambos por separado y tómalos directamente."],storage:"Mantén el yogur refrigerado.",reheat:"No."},
+ {id:"m2",type:"midmorning",name:"Queso fresco y fruta",cat:"tentempié",protein:"queso",carb:"fruta",time:2,prep:"Directo",items:[["Queso fresco",60,"g","listo"],["Fruta",1,"pieza","entera"]],steps:["Porciona el queso y acompaña con una fruta."],storage:"Conservar en frío.",reheat:"No."},
+ {id:"m3",type:"midmorning",name:"Pavo y pequeña tostada",cat:"tentempié",protein:"pavo",carb:"pan",time:3,prep:"Directo",items:[["Pavo",60,"g","listo"],["Pan integral",30,"g","listo"]],steps:["Prepara la ración y llévala separada para que el pan mantenga textura."],storage:"Mantener el pavo en frío.",reheat:"No."},
+
+ {id:"s1",type:"snack",name:"Yogur natural con kiwi",cat:"tentempié",protein:"lácteo",carb:"fruta",time:2,prep:"Directo",items:[["Yogur natural",1,"unidad","listo"],["Kiwi",1,"pieza","entero"]],steps:["Pela el kiwi justo antes de comer y mézclalo con el yogur si quieres."],storage:"Yogur en frío.",reheat:"No."},
+ {id:"s2",type:"snack",name:"Queso fresco con tomate",cat:"tentempié",protein:"queso",carb:"verdura",time:3,prep:"Directo",items:[["Queso fresco",60,"g","listo"],["Tomate",150,"g","crudo"]],steps:["Corta tomate y queso y sirve juntos."],storage:"Conservar en frío.",reheat:"No."},
+ {id:"s3",type:"snack",name:"Fruta y café",cat:"tentempié",protein:"otro",carb:"fruta",time:2,prep:"Directo",items:[["Fruta",1,"pieza","entera"],["Café",1,"taza","habitual"]],steps:["Toma la fruta con el café."],storage:"No requiere.",reheat:"No."},
+
+ {id:"l1",type:"lunch",name:"Pasta mediterránea con pollo",cat:"pasta",protein:"pollo",carb:"pasta",time:20,prep:"Dejar preparada; solo calentar",items:[["Pasta integral",70,"g","crudo"],["Pollo",180,"g","crudo"],["Tomate",120,"g","cocinado"],["Pimientos",120,"g","cocinados"],["AOVE",10,"g","medido"]],steps:["Cuece la pasta hasta que quede al dente y escúrrela.","Corta el pollo en tiras y cocínalo en sartén caliente hasta que esté completamente hecho.","Añade pimientos y tomate y cocina 3-4 minutos.","Mezcla la pasta con el salteado y reparte en recipiente."],storage:"2-3 días en frío.",reheat:"Calienta suavemente la ración hasta que esté bien caliente."},
+ {id:"l2",type:"lunch",name:"Arroz tres delicias saludable",cat:"arroz",protein:"huevo",carb:"arroz",time:22,prep:"Preparar la noche anterior",items:[["Arroz",65,"g","crudo"],["Huevo",1,"unidad","cocinado"],["Gambas",100,"g","cocinadas"],["Guisantes",60,"g","cocinados"],["Zanahoria",80,"g","cocinada"]],steps:["Cuece el arroz según el envase hasta que quede suelto. Enfríalo pronto si vas a guardarlo.","Corta la zanahoria en dados pequeños y cocina junto con los guisantes hasta que estén tiernos.","Calienta una sartén amplia. Saltea las verduras 5-7 minutos.","Aparta las verduras a un lado, añade el huevo batido y remueve hasta que quede completamente cuajado.","Añade las gambas y cocina hasta que estén hechas.","Incorpora el arroz y saltea 2-3 minutos para mezclar y calentar.","Termina con ajo, perejil u otras especias suaves."],storage:"Enfriar pronto y conservar refrigerado en recipiente cerrado.",reheat:"Recalentar completamente una sola vez."},
+ {id:"l3",type:"lunch",name:"Lomo magro con pimientos y arroz",cat:"carne",protein:"cerdo",carb:"arroz",time:20,prep:"Dejar preparado; solo calentar",items:[["Lomo magro",180,"g","crudo"],["Arroz integral",60,"g","crudo"],["Pimientos asados",250,"g","cocinados"],["AOVE",10,"g","medido"]],steps:["Cuece el arroz y reserva.","Cocina el lomo en plancha caliente hasta que esté completamente hecho.","Calienta los pimientos asados y mezcla con el arroz.","Guarda cada componente en la misma ración o separado si prefieres mantener textura."],storage:"2-3 días en frío.",reheat:"Calentar sin resecar el lomo."},
+ {id:"l4",type:"lunch",name:"Filete de ternera con patata y verduras",cat:"carne",protein:"ternera",carb:"patata",time:20,prep:"Guarnición lista; carne rápida",items:[["Ternera magra",180,"g","crudo"],["Patata",220,"g","cocida"],["Verduras",250,"g","cocinadas"]],steps:["Cuece o asa la patata hasta que esté tierna.","Saltea o asa las verduras y déjalas preparadas.","Calienta bien una plancha y cocina la ternera por ambos lados hasta el punto seguro y deseado.","Monta la ración con patata y verduras."],storage:"Guarnición 2 días en frío; carne mejor próxima al consumo.",reheat:"Recalienta la guarnición y la carne con suavidad."},
+ {id:"l5",type:"lunch",name:"Garbanzos con espinacas y pollo",cat:"legumbre",protein:"pollo",carb:"legumbre",time:18,prep:"Ideal para preparar antes",items:[["Garbanzos",200,"g","cocidos"],["Espinacas",250,"g","cocinadas"],["Pollo",120,"g","crudo"],["AOVE",10,"g","medido"]],steps:["Cocina el pollo en dados hasta que esté completamente hecho.","Saltea las espinacas hasta reducir su volumen.","Añade garbanzos escurridos y calienta 3-4 minutos.","Incorpora el pollo, mezcla y divide en raciones."],storage:"2-3 días en frío.",reheat:"Calienta hasta que esté bien caliente."},
+ {id:"l6",type:"lunch",name:"Lentejas con verduras y pavo",cat:"legumbre",protein:"pavo",carb:"legumbre",time:20,prep:"Preparar la noche anterior",items:[["Lentejas",200,"g","cocidas"],["Pavo",120,"g","crudo"],["Verduras",250,"g","cocinadas"]],steps:["Corta y cocina las verduras hasta que estén tiernas.","Cocina el pavo en dados o tiras hasta que esté completamente hecho.","Añade las lentejas cocidas y calienta 4-5 minutos.","Incorpora el pavo y mezcla."],storage:"2-3 días en frío.",reheat:"Recalentar completamente."},
+ {id:"l7",type:"lunch",name:"Ensaladilla equilibrada con atún",cat:"ensaladilla",protein:"atún",carb:"patata",time:22,prep:"Dejar hecha en frío",items:[["Patata",220,"g","cocida"],["Atún",140,"g","escurrido"],["Zanahoria",80,"g","cocida"],["Guisantes",50,"g","cocidos"],["Yogur natural",40,"g","salsa ligera"]],steps:["Cuece patata y zanahoria hasta que estén tiernas y deja enfriar.","Cuece los guisantes si lo necesitan y escurre.","Corta patata y zanahoria, añade atún y guisantes.","Mezcla el yogur con limón o especias suaves y utiliza como salsa ligera.","Refrigera antes de servir."],storage:"1-2 días en frío.",reheat:"No recalentar."},
+ {id:"l8",type:"lunch",name:"Arroz con langostinos y verduras",cat:"arroz",protein:"langostinos",carb:"arroz",time:20,prep:"Preparar antes; solo calentar",items:[["Arroz",65,"g","crudo"],["Langostinos",160,"g","cocinados"],["Verduras",250,"g","cocinadas"]],steps:["Cuece el arroz y reserva.","Saltea las verduras empezando por las más duras.","Añade los langostinos al final y cocínalos hasta que estén hechos.","Incorpora el arroz y mezcla 2-3 minutos."],storage:"1-2 días en frío.",reheat:"Calienta una sola vez hasta que esté bien caliente."},
+ {id:"l9",type:"lunch",name:"Mejillones con arroz y verduras",cat:"marisco",protein:"mejillones",carb:"arroz",time:20,prep:"Base preparada; mejillones próximos al consumo",items:[["Mejillones",180,"g","comestibles"],["Arroz",60,"g","crudo"],["Verduras",250,"g","cocinadas"]],steps:["Cuece el arroz y deja preparado.","Cocina o asa las verduras.","Limpia y cocina los mejillones según su formato hasta que estén hechos.","Monta el plato añadiendo los mejillones al final."],storage:"Base 2 días; mejillones consumir pronto.",reheat:"Recalienta la base y añade el marisco al final."},
+ {id:"l10",type:"lunch",name:"Tortilla de patata ligera con ensalada",cat:"huevo",protein:"huevo",carb:"patata",time:25,prep:"Puede dejarse hecha",items:[["Huevos",2,"unidades","cocinados"],["Patata",200,"g","cocida"],["Cebolla",60,"g","cocinada"],["Ensalada",250,"g","cruda"]],steps:["Cuece o cocina la patata hasta que esté tierna y corta en láminas.","Cocina la cebolla lentamente hasta que esté tierna.","Bate los huevos, mezcla con patata y cebolla y cuaja la tortilla completamente por ambos lados.","Sirve con la ensalada sin aliñar hasta el momento de comer."],storage:"1-2 días en frío.",reheat:"Puede tomarse fría o templada."},
+ {id:"l11",type:"lunch",name:"Salteado de espárragos, pollo y patata",cat:"verdura",protein:"pollo",carb:"patata",time:20,prep:"Preparar la noche anterior",items:[["Espárragos",250,"g","cocinados"],["Pollo",170,"g","crudo"],["Patata",200,"g","cocida"]],steps:["Cuece o asa la patata.","Trocea los espárragos y saltéalos hasta que estén tiernos.","Cocina el pollo en tiras hasta que esté completamente hecho.","Mezcla el pollo con los espárragos y acompaña con patata."],storage:"2 días en frío.",reheat:"Calentar suavemente."},
+ {id:"l12",type:"lunch",name:"Paella sencilla de pollo y verduras",cat:"arroz",protein:"pollo",carb:"arroz",time:28,prep:"Batch cooking",items:[["Arroz",65,"g","crudo"],["Pollo",160,"g","crudo"],["Verduras",250,"g","cocinadas"]],steps:["Corta el pollo y cocina hasta que empiece a dorarse.","Añade verduras y cocina varios minutos.","Incorpora el arroz y el líquido necesario según el tipo de arroz.","Cocina hasta que el arroz esté hecho y el pollo completamente cocinado.","Deja reposar unos minutos antes de repartir."],storage:"Enfriar pronto y conservar en frío.",reheat:"Recalentar una sola vez."},
+ {id:"l13",type:"lunch",name:"Macarrones con tomate y ternera magra",cat:"pasta",protein:"ternera",carb:"pasta",time:22,prep:"Preparar antes",items:[["Pasta",70,"g","cruda"],["Ternera magra",150,"g","cruda"],["Tomate",150,"g","cocinado"]],steps:["Cuece los macarrones al dente y escurre.","Cocina la ternera desmenuzada o en tiras hasta que esté completamente hecha.","Añade tomate y cocina 3-4 minutos.","Mezcla con la pasta y divide en raciones."],storage:"2 días en frío.",reheat:"Calentar suavemente."},
+ {id:"l14",type:"lunch",name:"Sepia con arroz y verduras",cat:"marisco",protein:"sepia",carb:"arroz",time:20,prep:"Arroz listo; sepia próxima al consumo",items:[["Sepia",180,"g","cocinada"],["Arroz",60,"g","crudo"],["Verduras",250,"g","cocinadas"]],steps:["Cuece el arroz y reserva.","Saltea las verduras.","Seca bien la sepia y cocínala en plancha caliente hasta que esté completamente hecha.","Sirve la sepia con arroz y verduras."],storage:"Base 2 días; sepia mejor próxima al consumo.",reheat:"Calienta base y añade sepia al final."},
+
+ {id:"d1",type:"dinner",name:"Merluza a la plancha con ensalada",cat:"pescado",protein:"merluza",carb:"verdura",time:14,prep:"Cena ligera al momento",items:[["Merluza",200,"g","crudo"],["Ensalada",300,"g","cruda"],["AOVE",10,"g","medido"]],steps:["Seca la merluza y deja que pierda el frío unos minutos.","Calienta una plancha con una pequeña cantidad de aceite.","Cocina por ambos lados hasta que esté hecha sin resecar.","Monta la ensalada y aliña al servir."],storage:"Mejor al momento.",reheat:"Evitar."},
+ {id:"d2",type:"dinner",name:"Salmón con espárragos",cat:"pescado",protein:"salmón",carb:"verdura",time:15,prep:"Cena ligera",items:[["Salmón",180,"g","crudo"],["Espárragos",250,"g","cocinados"]],steps:["Seca el salmón.","Saltea los espárragos hasta que estén tiernos.","Calienta una plancha y cocina el salmón controlando el punto.","Sirve junto con los espárragos."],storage:"Mejor al momento.",reheat:"Evitar resecar."},
+ {id:"d3",type:"dinner",name:"Tortilla francesa con tomate y queso fresco",cat:"huevo",protein:"huevo",carb:"verdura",time:10,prep:"Rápida",items:[["Huevos",2,"unidades","cocinados"],["Tomate",200,"g","crudo"],["Queso fresco",50,"g","listo"]],steps:["Bate los huevos.","Calienta una sartén antiadherente y cuaja completamente la tortilla.","Corta tomate y queso fresco y sirve como acompañamiento."],storage:"Mejor al momento.",reheat:"No necesario."},
+ {id:"d4",type:"dinner",name:"Mejillones al vapor con ensalada",cat:"marisco",protein:"mejillones",carb:"verdura",time:14,prep:"Ligera",items:[["Mejillones",200,"g","comestibles"],["Ensalada",300,"g","cruda"]],steps:["Limpia los mejillones si son frescos.","Cocina al vapor hasta que estén hechos, descartando los que no se abran si corresponde.","Monta la ensalada aparte y aliña al servir."],storage:"Consumir al momento.",reheat:"No."},
+ {id:"d5",type:"dinner",name:"Langostinos a la plancha con verduras",cat:"marisco",protein:"langostinos",carb:"verdura",time:14,prep:"Ligera",items:[["Langostinos",180,"g","cocinados"],["Verduras",300,"g","cocinadas"]],steps:["Cocina primero las verduras hasta que estén tiernas.","Calienta la plancha y cocina los langostinos hasta que estén completamente hechos.","Sirve juntos y condimenta al final."],storage:"Mejor al momento.",reheat:"Evitar recalentados repetidos."},
+ {id:"d6",type:"dinner",name:"Atún con tomate, aguacate y queso fresco",cat:"pescado",protein:"atún",carb:"verdura",time:8,prep:"Montar",items:[["Atún",150,"g","escurrido"],["Tomate",220,"g","crudo"],["Aguacate",40,"g","listo"],["Queso fresco",50,"g","listo"]],steps:["Escurre bien el atún.","Corta tomate, aguacate y queso.","Monta el plato y aliña justo antes de comer."],storage:"Preparar cerca del consumo.",reheat:"No."},
+ {id:"d7",type:"dinner",name:"Pollo con verduras; reserva para mañana",cat:"pollo",protein:"pollo",carb:"verdura",time:18,prep:"Cena + preparación del día siguiente",items:[["Pollo",300,"g","crudo"],["Verduras",300,"g","cocinadas"]],steps:["Corta el pollo en piezas uniformes.","Cocina una ración amplia hasta que esté completamente hecha.","Saltea las verduras.","Cena una parte con verduras y guarda una porción de pollo para la comida del día siguiente."],storage:"Reserva la porción del día siguiente en frío.",reheat:"Calentar completamente al día siguiente."},
+ {id:"d8",type:"dinner",name:"Salteado de espárragos con huevo y pavo",cat:"huevo",protein:"huevo",carb:"verdura",time:12,prep:"Rápida",items:[["Espárragos",250,"g","cocinados"],["Huevo",1,"unidad","cocinado"],["Pavo",80,"g","listo"]],steps:["Trocea y saltea los espárragos.","Añade el pavo para calentarlo.","Incorpora el huevo y cocina hasta que quede completamente cuajado."],storage:"Mejor al momento.",reheat:"No."},
+ {id:"d9",type:"dinner",name:"Ensalada completa con queso fresco y pavo",cat:"ensalada",protein:"queso",carb:"verdura",time:8,prep:"Montar",items:[["Ensalada variada",300,"g","cruda"],["Queso fresco",70,"g","listo"],["Pavo",80,"g","listo"]],steps:["Lava y seca bien las hojas.","Añade queso fresco y pavo.","Aliña justo antes de servir."],storage:"Componentes separados hasta el consumo.",reheat:"No."},
+ {id:"d10",type:"dinner",name:"Salpicón de marisco equilibrado",cat:"marisco",protein:"marisco",carb:"verdura",time:12,prep:"Fría",items:[["Marisco cocido",180,"g","cocinado"],["Tomate",150,"g","crudo"],["Pimiento",120,"g","crudo"],["Cebolla",40,"g","cruda"]],steps:["Corta tomate, pimiento y cebolla en dados pequeños.","Añade el marisco ya cocido y frío.","Mezcla, aliña y refrigera unos minutos antes de servir."],storage:"1 día en frío.",reheat:"No."}
+];
+
+function baseState(){
+ return {
+  schema:SCHEMA_VERSION,
+  plans:[],ratings:{},mealDone:{},pantry:[],shopping:[],trainingSessions:[],
+  workoutDraft:null,measurements:[],customExercises:[],weeklyReviews:[],
+  settings:{flexMealDay:"Sábado",trainingDays:[1,2,3,4,5],learningSeen:[]},
+  importedLegacy:false
+ };
+}
+function readJSON(k,d){try{const v=localStorage.getItem(k);return v===null?d:JSON.parse(v)}catch{return d}}
+function state(){
+ const s=readJSON(STATE_KEY,null);
+ if(!s)return baseState();
+ return {...baseState(),...s,settings:{...baseState().settings,...(s.settings||{})}};
+}
+function saveState(s){s.schema=SCHEMA_VERSION;localStorage.setItem(STATE_KEY,JSON.stringify(s))}
+function customRecipes(){return readJSON(CUSTOM_RECIPE_KEY,[])}
+function saveCustomRecipes(a){localStorage.setItem(CUSTOM_RECIPE_KEY,JSON.stringify(a))}
+function allRecipes(){return [...RECIPES,...customRecipes()]}
+function recipe(id){return allRecipes().find(r=>r.id===id)}
+function recipesBy(type){return allRecipes().filter(r=>r.type===type)}
+function exercise(id){return EXERCISES.find(x=>x.id===id)}
+function toast(msg){
+ const old=$(".toast");if(old)old.remove();
+ const el=document.createElement("div");el.className="toast";el.textContent=msg;document.body.appendChild(el);
+ setTimeout(()=>el.remove(),1800);
+}
+
+function legacyBackup(){
+ const key=PREFIX+"legacyBackup_v4";
+ if(localStorage.getItem(key))return;
+ const snap={createdAt:new Date().toISOString(),items:{}};
+ for(let i=0;i<localStorage.length;i++){
+  const k=localStorage.key(i);
+  if(k&&(k.startsWith("p85_")||k.startsWith("p85proclean_")||k.startsWith("p85pro2_"))) snap.items[k]=localStorage.getItem(k);
+ }
+ localStorage.setItem(key,JSON.stringify(snap));
+}
+function normalizeMeasurement(m){
+ if(!m||typeof m!=="object")return null;
+ const pick=(...ks)=>{for(const k of ks)if(m[k]!==undefined&&m[k]!==null&&m[k]!=="")return finite(m[k],null);return null};
+ return {date:m.date||m.createdAt?.slice?.(0,10)||todayISO(),weight:pick("weight","peso"),waist:pick("waist","cintura"),hip:pick("hip","cadera"),chest:pick("chest","pecho"),arm:pick("arm","brazo"),thigh:pick("thigh","muslo"),calf:pick("calf","gemelo"),bodyFat:pick("bodyFat","fat"),visceral:pick("visceral","visceralFat"),water:pick("water"),skeletalMuscle:pick("skeletalMuscle"),muscleMass:pick("muscleMass"),protein:pick("protein"),bmr:pick("bmr")};
+}
+function migrateLegacyOnce(){
+ const s=state();
+ if(s.importedLegacy)return;
+ legacyBackup();
+ const measures=[...(readJSON("p85_measures",[])||[]),...(readJSON("p85proclean_measures",[])||[])];
+ const converted=measures.map(normalizeMeasurement).filter(Boolean);
+ if(converted.length&&!s.measurements.length)s.measurements=converted.sort((a,b)=>(b.date||"").localeCompare(a.date||""));
+ const sessions=readJSON("p85_sessions",[])||[];
+ if(Array.isArray(sessions)&&sessions.length&&!s.trainingSessions.length){
+  s.trainingSessions=sessions.map(x=>({id:x.id||uid(),date:x.date||todayISO(),legacy:true,...x}));
+ }
+ const pantry=readJSON("p85_pantry",[])||[]; if(Array.isArray(pantry)&&pantry.length&&!s.pantry.length)s.pantry=pantry;
+ const ratings=readJSON("p85_mealRatings",[])||[];
+ ratings.forEach(x=>{const id=x.mealId||x.recipeId||x.id,v=finite(x.score??x.rating,0);if(id&&v)s.ratings[id]=v});
+ const custom=[...(readJSON("p85_customRecipes",[])||[]),...(readJSON("p85proclean_customRecipes",[])||[])];
+ if(custom.length&&!customRecipes().length)saveCustomRecipes(custom);
+ s.importedLegacy=true;saveState(s);
+}
+
+function recipeScore(r,used,current=null){
  const s=state();let score=0;
  if(used.includes(r.id))score+=100;
  if(current&&r.protein===current.protein)score+=25;
- if(current&&r.carb===current.carb)score+=10;
+ if(current&&r.carb===current.carb)score+=12;
  score-=(s.ratings[r.id]||0)*2;
  return score;
 }
-function chooseRecipe(type,used,current=null){
- const pool=recipesBy(type).filter(r=>!current||r.id!==current.id);
- return [...pool].sort((a,b)=>scoreRecipe(a,used,current)-scoreRecipe(b,used,current))[0];
+function chooseRecipe(type,used=[],current=null,dayIndex=0){
+ let pool=recipesBy(type);
+ if(type==="lunch"&&[1,5].includes(dayIndex)){
+  const leg=pool.filter(r=>r.cat==="legumbre");if(leg.length)pool=leg;
+ }
+ if(type==="dinner"&&[0,2,4].includes(dayIndex)){
+  const light=pool.filter(r=>["pescado","marisco","huevo","ensalada"].includes(r.cat));if(light.length)pool=light;
+ }
+ return [...pool].filter(r=>!current||r.id!==current.id).sort((a,b)=>recipeScore(a,used,current)-recipeScore(b,used,current))[0]||pool[0];
 }
 function generatePlan(start){
- const s=state(),plan={weekStart:start,weekEnd:plus(start,6),status:"draft",days:{}};
+ const s=state(),plan={id:uid(),weekStart:start,weekEnd:plusDays(start,6),status:"draft",days:{},createdAt:new Date().toISOString(),flexMealDay:s.settings.flexMealDay};
  const used=[];
  DAYS.forEach((day,di)=>{
   plan.days[day]={};
-  Object.keys(MEALS).forEach(t=>{
-   let pool=recipesBy(t);
-   if(t==="lunch"&&[1,5].includes(di)){const p=pool.filter(r=>r.cat==="legumbre");if(p.length)pool=p}
-   if(t==="dinner"&&[0,2,4].includes(di)){const p=pool.filter(r=>["pescado","marisco","huevo"].includes(r.cat));if(p.length)pool=p}
-   const r=[...pool].sort((a,b)=>scoreRecipe(a,used)-scoreRecipe(b,used))[0];
-   plan.days[day][t]=r.id;used.push(r.id);
+  Object.keys(MEALS).forEach(type=>{
+   const r=chooseRecipe(type,used,null,di);plan.days[day][type]=r.id;used.push(r.id);
   });
  });
  s.plans=s.plans.filter(p=>p.weekStart!==start);s.plans.unshift(plan);saveState(s);return plan;
 }
 function getPlan(start){return state().plans.find(p=>p.weekStart===start)||generatePlan(start)}
 function confirmPlan(start){
- const s=state(),p=s.plans.find(x=>x.weekStart===start);if(!p)return;p.status="confirmed";saveState(s);buildShopping(p);migrateLegacyData();
-migrateLegacyData();
-render();
+ const s=state(),p=s.plans.find(x=>x.weekStart===start);if(!p)return;
+ p.status="confirmed";p.confirmedAt=new Date().toISOString();saveState(s);buildShopping(p);toast("Semana confirmada");render();
 }
-function buildShopping(p){
+function regeneratePlan(start){const s=state();s.plans=s.plans.filter(p=>p.weekStart!==start);saveState(s);generatePlan(start);render()}
+function changePlanMeal(start,day,type){
+ const s=state(),p=s.plans.find(x=>x.weekStart===start);if(!p)return;
+ const current=recipe(p.days[day][type]),used=Object.values(p.days).flatMap(x=>Object.values(x));
+ const next=chooseRecipe(type,used,current,DAYS.indexOf(day));if(!next)return;
+ p.days[day][type]=next.id;p.status="draft";saveState(s);render();
+}
+function currentMeal(type){
+ const p=state().plans.find(x=>x.weekStart===monday(0)&&x.status==="confirmed");
+ return recipe(p?.days?.[dayName()]?.[type])||recipesBy(type)[0];
+}
+function smartTodayMeal(type){
+ const s=state(),p=s.plans.find(x=>x.weekStart===monday(0)&&x.status==="confirmed");
+ if(!p)return toast("Confirma primero la semana");
+ const current=recipe(p.days[dayName()][type]),used=Object.values(p.days).flatMap(x=>Object.values(x));
+ const next=chooseRecipe(type,used,current,DAYS.indexOf(dayName()));if(!next)return;
+ p.days[dayName()][type]=next.id;saveState(s);
+ const card=document.querySelector(`[data-meal-card="${type}"]`);
+ if(card){const tmp=document.createElement("div");tmp.innerHTML=mealCard(type);card.replaceWith(tmp.firstElementChild)}else render();
+ toast("Comida cambiada teniendo en cuenta la semana");
+}
+function buildShopping(plan){
  const s=state(),need={};
- Object.values(p.days).forEach(ms=>Object.values(ms).forEach(id=>recipe(id).items.forEach(([n,q,u])=>{
-  if(!need[n])need[n]={name:n,qty:0,unit:u,bought:false};
-  need[n].qty+=(typeof q==="number"?q:1);
- })));
- const pantry=Object.fromEntries(s.pantry.map(x=>[x.name.toLowerCase(),Number(x.qty)||0]));
+ Object.values(plan.days).forEach(meals=>Object.values(meals).forEach(id=>{
+  const r=recipe(id);if(!r)return;
+  r.items.forEach(([name,qty,unit])=>{if(!need[name])need[name]={name,qty:0,unit,bought:false};need[name].qty+=typeof qty==="number"?qty:1});
+ }));
+ const pantry=Object.fromEntries(s.pantry.map(x=>[String(x.name).toLowerCase(),finite(x.qty,0)]));
  s.shopping=Object.values(need).map(x=>({...x,buy:Math.max(0,x.qty-(pantry[x.name.toLowerCase()]||0))})).filter(x=>x.buy>0);
  saveState(s);
 }
-function currentMeal(t){
- const p=state().plans.find(x=>x.weekStart===monday(0)&&x.status==="confirmed");
- return recipe(p?.days?.[dayName()]?.[t])||recipesBy(t)[0];
-}
-function smartReplacement(t){
- const s=state(),p=s.plans.find(x=>x.weekStart===monday(0)&&x.status==="confirmed");
- if(!p)return alert("Confirma primero la semana.");
- const current=recipe(p.days[dayName()][t]),used=Object.values(p.days).flatMap(x=>Object.values(x));
- const next=chooseRecipe(t,used,current);if(!next)return;
- p.days[dayName()][t]=next.id;saveState(s);
- const old=document.querySelector(`[data-meal-card="${t}"]`);
- if(old){const tmp=document.createElement("div");tmp.innerHTML=mealCard(t);old.replaceWith(tmp.firstElementChild)}
-}
-function toggleMealDone(t,v){
- const s=state();s.mealDone[`${todayISO()}_${t}`]=!!v;saveState(s);
- document.querySelector(`[data-meal-card="${t}"]`)?.classList.toggle("meal-complete",!!v);
-}
-function rateRecipe(id,v,btn){
- const s=state();s.ratings[id]=v;saveState(s);
- btn.closest(".rating")?.querySelectorAll("button").forEach(b=>b.classList.toggle("active",Number(b.textContent)===v));
-}
-function detailedSteps(r){
- const out=["Pesa todos los ingredientes y deja preparadas las verduras antes de empezar.",...(r.steps||[])];
- return out;
-}
+
+function detailedSteps(r){return ["Pesa todos los ingredientes y deja preparados los utensilios antes de empezar.",...(r.steps||[])]}
 function advanceAdvice(r){
- if(r.type==="dinner"&&["pescado","marisco"].includes(r.cat))return "Deja los ingredientes limpios y porcionados; cocina la proteína cerca de la cena.";
- if(r.cat==="ensalada")return "Lava y seca hojas con antelación, pero añade tomate, aguacate y aliño al servir.";
- return r.prep+"; puedes dejar la ración pesada y porcionada con antelación.";
+ if(r.type==="dinner"&&["pescado","marisco"].includes(r.cat))return "Deja limpios y porcionados los ingredientes; cocina la proteína cerca de la cena.";
+ if(r.cat==="ensalada"||/aguacate/i.test(r.name))return "Lava y seca los componentes con antelación, pero añade tomate, aguacate y aliño al servir.";
+ return r.prep+". Deja pesada y porcionada la ración con antelación.";
+}
+
+function latestExerciseEntries(id,limit=6){
+ const rows=[];
+ state().trainingSessions.forEach(sess=>{
+  (sess.exercises||[]).forEach(e=>{if(e.exerciseId===id)rows.push({date:sess.date,sets:e.sets||[],effort:e.effort||null})});
+ });
+ return rows.sort((a,b)=>b.date.localeCompare(a.date)).slice(0,limit);
+}
+function bestSet(id){
+ let best=null;
+ latestExerciseEntries(id,100).forEach(e=>e.sets.forEach(s=>{
+  const w=finite(s.weight,0),r=finite(s.reps,0),score=w*Math.max(r,1);
+  if(!best||score>best.score)best={weight:w,reps:r,score,date:e.date};
+ }));
+ return best;
+}
+function lastSetSummary(id){
+ const last=latestExerciseEntries(id,1)[0];if(!last)return null;
+ const complete=last.sets.filter(s=>s.done);
+ if(!complete.length)return null;
+ return {weight:Math.max(...complete.map(s=>finite(s.weight))),reps:Math.min(...complete.map(s=>finite(s.reps))),sets:complete.length,effort:last.effort};
+}
+function progressionFor(ex){
+ const last=lastSetSummary(ex.id);
+ if(!last)return {label:"INICIO",weight:ex.seed,why:"Usamos una carga inicial orientativa que podrás ajustar en la primera sesión."};
+ const target=parseInt(ex.reps)||10;
+ if(last.reps>=target+2&&finite(last.effort,7)<=8)return {label:"SUBIR",weight:Math.round((last.weight+ex.inc)*10)/10,why:"La última sesión completaste las repeticiones previstas con margen."};
+ if(finite(last.effort,7)>=9||last.reps<target)return {label:"MANTENER",weight:last.weight,why:"Primero consolidamos técnica y repeticiones antes de aumentar la carga."};
+ return {label:"MANTENER",weight:last.weight,why:"La progresión será completar más repeticiones con la misma carga."};
+}
+function trainingDayIndex(){
+ const d=new Date().getDay();
+ return d>=1&&d<=5?d-1:0;
+}
+function missionFor(day){
+ const ex=day.ex.map(exercise).filter(Boolean);
+ const candidate=ex.find(x=>lastSetSummary(x.id))||ex[0];
+ if(!candidate)return "Completa la sesión con técnica controlada.";
+ const p=progressionFor(candidate);
+ return p.label==="SUBIR"?`Prueba la progresión propuesta en ${candidate.name} manteniendo buena técnica.`:`Mejora al menos una repetición total en ${candidate.name} sin perder técnica.`;
+}
+function newWorkoutDraft(dayIndex=trainingDayIndex()){
+ const day=TRAINING_DAYS[dayIndex];
+ return {id:uid(),date:todayISO(),dayIndex,dayKey:day.key,title:day.title,startedAt:new Date().toISOString(),exercises:day.ex.map(id=>{
+  const ex=exercise(id),prog=progressionFor(ex);
+  return {exerciseId:id,sets:Array.from({length:ex.sets},()=>({weight:prog.weight,reps:parseInt(ex.reps)||10,done:false})),effort:7};
+ }),cardio:{mode:day.cardio.mode,minutes:day.cardio.minutes,intensity:5,distance:""},sessionEnergy:7,sessionDifficulty:7,notes:""};
+}
+function startWorkout(dayIndex=trainingDayIndex()){
+ const s=state();s.workoutDraft=newWorkoutDraft(dayIndex);saveState(s);PAGE="training";TRAINING_TAB="session";render();toast("Entrenamiento iniciado");
+}
+function updateDraftSet(exIndex,setIndex,field,value){
+ const s=state();if(!s.workoutDraft)return;
+ const set=s.workoutDraft.exercises[exIndex].sets[setIndex];
+ set[field]=field==="done"?!!value:finite(value,0);saveState(s);
+}
+function updateDraftField(path,value){
+ const s=state();if(!s.workoutDraft)return;
+ const [a,b]=path.split(".");
+ if(b)s.workoutDraft[a][b]=value;else s.workoutDraft[a]=value;
+ saveState(s);
+}
+function finishWorkout(){
+ const s=state(),d=s.workoutDraft;if(!d)return;
+ d.finishedAt=new Date().toISOString();
+ const completed=d.exercises.reduce((n,e)=>n+e.sets.filter(x=>x.done).length,0);
+ const total=d.exercises.reduce((n,e)=>n+e.sets.length,0);
+ d.completion=total?Math.round(completed/total*100):0;
+ s.trainingSessions.unshift(d);s.workoutDraft=null;saveState(s);TRAINING_TAB="history";render();toast("Entrenamiento guardado");
+}
+function workoutVolume(sess){
+ return (sess.exercises||[]).reduce((sum,e)=>sum+(e.sets||[]).filter(x=>x.done).reduce((a,x)=>a+finite(x.weight)*finite(x.reps),0),0);
+}
+function coachAfterSession(sess){
+ const vol=workoutVolume(sess),prev=state().trainingSessions.find(x=>x.id!==sess.id&&x.dayKey===sess.dayKey);
+ const prevVol=prev?workoutVolume(prev):0;
+ const delta=prevVol?Math.round((vol-prevVol)/prevVol*100):null;
+ const prs=[];
+ (sess.exercises||[]).forEach(e=>{
+  const ex=exercise(e.exerciseId),best=bestSet(e.exerciseId),maxNow=Math.max(0,...e.sets.filter(x=>x.done).map(x=>finite(x.weight)*finite(x.reps)));
+  if(best&&maxNow>=best.score)prs.push(ex?.name);
+ });
+ return {volume:Math.round(vol),delta,prs:prs.slice(0,3),message:sess.completion>=90?"Sesión muy completa. Mantén el criterio de progresar solo cuando la técnica y las repeticiones estén consolidadas.":"La sesión queda registrada. La próxima propuesta mantendrá las cargas donde no se completó el trabajo previsto."};
+}
+
+function firstAndLastMeasurements(){
+ const arr=[...state().measurements].filter(x=>x.date).sort((a,b)=>a.date.localeCompare(b.date));
+ return {first:arr[0]||null,last:arr[arr.length-1]||null,prev:arr[arr.length-2]||null};
+}
+function metricDelta(first,last,key){
+ if(!first||!last||first[key]==null||last[key]==null)return null;
+ return Math.round((finite(last[key])-finite(first[key]))*10)/10;
+}
+function svgLine(values,width=600,height=150){
+ const vals=values.filter(v=>v!=null&&Number.isFinite(Number(v))).map(Number);
+ if(vals.length<2)return `<div class="muted">Necesitamos al menos dos registros para dibujar la tendencia.</div>`;
+ const min=Math.min(...vals),max=Math.max(...vals),span=Math.max(max-min,1);
+ const pts=vals.map((v,i)=>`${20+i*(width-40)/(vals.length-1)},${height-20-(v-min)*(height-40)/span}`).join(" ");
+ return `<svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none"><polyline points="${pts}" fill="none" stroke="currentColor" stroke-width="4" style="color:#49d58a"/><line x1="20" y1="${height-20}" x2="${width-20}" y2="${height-20}" stroke="#244a39"/><line x1="20" y1="20" x2="20" y2="${height-20}" stroke="#244a39"/></svg>`;
+}
+function adherenceThisWeek(){
+ const s=state(),start=monday(0),end=plusDays(start,6);
+ const sessions=s.trainingSessions.filter(x=>x.date>=start&&x.date<=end).length;
+ const mealKeys=Object.entries(s.mealDone).filter(([k,v])=>v&&k.slice(0,10)>=start&&k.slice(0,10)<=end).length;
+ return {training:Math.min(100,Math.round(sessions/5*100)),nutrition:Math.min(100,Math.round(mealKeys/(7*5)*100)),sessions};
+}
+function saveMeasurement(){
+ const ids=["weight","waist","hip","chest","arm","thigh","calf","bodyFat","visceral","water","skeletalMuscle","muscleMass","protein","bmr"];
+ const row={date:$("#measure_date").value||todayISO()};
+ ids.forEach(k=>row[k]=$("#measure_"+k)?.value!==""?finite($("#measure_"+k).value,null):null);
+ const s=state();s.measurements=s.measurements.filter(x=>x.date!==row.date);s.measurements.unshift(row);s.measurements.sort((a,b)=>b.date.localeCompare(a.date));saveState(s);render();toast("Medidas guardadas");
+}
+function generateWeeklyReview(){
+ const s=state(),m=firstAndLastMeasurements(),adh=adherenceThisWeek();
+ const review={id:uid(),date:todayISO(),weekStart:monday(0),training:adh.training,nutrition:adh.nutrition,weight:m.last?.weight??null,waist:m.last?.waist??null,summary:`Entrenamientos completados esta semana: ${adh.sessions}. La tendencia se interpreta junto con medidas, rendimiento y constancia.`};
+ s.weeklyReviews=s.weeklyReviews.filter(x=>x.weekStart!==review.weekStart);s.weeklyReviews.unshift(review);saveState(s);return review;
 }
 
 function openModal(title,body){
- document.body.insertAdjacentHTML("beforeend",`<div class="modal-backdrop"><div class="modal"><div class="section-title"><h2>${title}</h2><button class="btn small" data-close-modal>Cerrar</button></div>${body}</div></div>`);
+ const old=$(".modal-backdrop");if(old)old.remove();
+ document.body.insertAdjacentHTML("beforeend",`<div class="modal-backdrop" data-action="modal-backdrop"><div class="modal"><div class="section-title"><h2>${esc(title)}</h2><button class="btn small" data-action="close-modal">Cerrar</button></div>${body}</div></div>`);
 }
-function closeModal(){document.querySelector(".modal-backdrop")?.remove()}
+function closeModal(){$(".modal-backdrop")?.remove()}
 function openRecipe(id){
  const r=recipe(id);if(!r)return;
- openModal(r.name,`<div class="meta"><span>${r.prep}</span><span>${r.time} min</span><span>${r.cat}</span></div>
- <h3>Ingredientes y cantidades</h3><ul class="list">${r.items.map(x=>`<li><b>${x[1]} ${x[2]}</b> ${x[0]}<small>${x[3]}</small></li>`).join("")}</ul>
- <h3>Preparación paso a paso</h3><ol>${detailedSteps(r).map(x=>`<li>${x}</li>`).join("")}</ol>
- <h3>Qué puedes adelantar</h3><p>${advanceAdvice(r)}</p><h3>Conservación</h3><p>${r.storage}</p><h3>Recalentado</h3><p>${r.reheat}</p>`);
+ openModal(r.name,`<div class="meta"><span>${esc(r.prep)}</span><span>${r.time} min</span><span>${esc(r.cat)}</span></div>
+ <h3>Ingredientes y cantidades</h3><ul class="list">${r.items.map(x=>`<li><b>${x[1]} ${esc(x[2])}</b> ${esc(x[0])}<small>${esc(x[3])}</small></li>`).join("")}</ul>
+ <h3>Preparación paso a paso</h3><ol>${detailedSteps(r).map(x=>`<li>${esc(x)}</li>`).join("")}</ol>
+ <h3>Qué puedes adelantar</h3><p>${esc(advanceAdvice(r))}</p>
+ <h3>Conservación</h3><p>${esc(r.storage)}</p><h3>Recalentado / acabado</h3><p>${esc(r.reheat)}</p>`);
 }
-function openCustomRecipeForm(id=""){
- const r=id?recipe(id):null;
- const items=(r?.items||[]).map(x=>`${x[0]} | ${x[1]} | ${x[2]} | ${x[3]}`).join("\n");
- const steps=(r?.steps||[]).join("\n");
+function openExercise(id){
+ const ex=exercise(id);if(!ex)return;
+ const hist=latestExerciseEntries(id,6),prog=progressionFor(ex),best=bestSet(id);
+ openModal(ex.name,`<div class="meta"><span>${esc(ex.group)}</span><span>${esc(ex.equipment)}</span><span>${ex.sets} × ${esc(ex.reps)}</span></div>
+ <h3>Técnica</h3><p>${esc(ex.tech)}</p>
+ <h3>Propuesta próxima vez</h3><p><b>${prog.label}</b> · ${prog.weight} kg</p><p class="muted">${esc(prog.why)}</p>
+ ${best?`<h3>Mejor registro</h3><p>${best.weight} kg × ${best.reps} rep · ${best.date}</p>`:""}
+ <h3>Últimos registros</h3>${hist.length?hist.map(h=>`<p><b>${h.date}</b> · ${h.sets.filter(x=>x.done).map(x=>`${x.weight}×${x.reps}`).join(" · ")||"Sin series completas"}</p>`).join(""):`<p class="muted">Sin historial todavía.</p>`}
+ <h3>Alternativas</h3><div class="btn-row">${ex.alts.map(a=>exercise(a)).filter(Boolean).map(a=>`<button class="btn small" data-action="open-exercise" data-id="${a.id}">${esc(a.name)}</button>`).join("")}</div>`);
+}
+function openRecipeForm(id=""){
+ const r=id?recipe(id):null,items=(r?.items||[]).map(x=>`${x[0]} | ${x[1]} | ${x[2]} | ${x[3]}`).join("\n"),steps=(r?.steps||[]).join("\n");
  openModal(id?"Editar receta":"Añadir receta",`<div class="form-grid">
- <label class="wide">Nombre<input id="cr_name" value="${r?.name||""}"></label>
+ <label class="wide">Nombre<input id="cr_name" value="${esc(r?.name||"")}"></label>
  <label>Momento<select id="cr_type">${Object.entries(MEALS).map(([k,v])=>`<option value="${k}" ${r?.type===k?"selected":""}>${v}</option>`).join("")}</select></label>
- <label>Categoría<input id="cr_cat" value="${r?.cat||""}"></label>
- <label>Proteína<input id="cr_protein" value="${r?.protein||""}"></label>
- <label>Hidrato<input id="cr_carb" value="${r?.carb||""}"></label>
- <label>Tiempo<input id="cr_time" type="number" value="${r?.time||15}"></label>
- <label class="wide">Ingredientes<textarea id="cr_items" rows="7">${items}</textarea></label>
- <label class="wide">Preparación<textarea id="cr_steps" rows="7">${steps}</textarea></label>
- <label>Conservación<input id="cr_storage" value="${r?.storage||""}"></label>
- <label>Recalentado<input id="cr_reheat" value="${r?.reheat||""}"></label>
- </div><div class="btn-row"><button class="btn primary" data-save-recipe="${id}">Guardar</button>${id?`<button class="btn danger" data-delete-recipe="${id}">Eliminar</button>`:""}</div>`);
+ <label>Categoría<input id="cr_cat" value="${esc(r?.cat||"")}"></label>
+ <label>Proteína principal<input id="cr_protein" value="${esc(r?.protein||"")}"></label>
+ <label>Hidrato principal<input id="cr_carb" value="${esc(r?.carb||"")}"></label>
+ <label>Tiempo (min)<input id="cr_time" type="number" value="${finite(r?.time,15)}"></label>
+ <label class="wide">Ingredientes<textarea id="cr_items" rows="7" placeholder="Pollo | 180 | g | crudo">${esc(items)}</textarea></label>
+ <label class="wide">Preparación (un paso por línea)<textarea id="cr_steps" rows="7">${esc(steps)}</textarea></label>
+ <label>Conservación<input id="cr_storage" value="${esc(r?.storage||"")}"></label>
+ <label>Recalentado<input id="cr_reheat" value="${esc(r?.reheat||"")}"></label>
+ </div><div class="btn-row"><button class="btn primary" data-action="save-recipe" data-id="${esc(id)}">Guardar</button>${id?`<button class="btn danger" data-action="delete-recipe" data-id="${esc(id)}">Eliminar</button>`:""}</div>`);
 }
 function saveCustomRecipe(id=""){
- const name=$("#cr_name").value.trim();if(!name)return alert("Escribe el nombre.");
- const row={id:id||"user_"+uid(),type:$("#cr_type").value,name,cat:$("#cr_cat").value.trim()||"propia",protein:$("#cr_protein").value.trim()||"otro",carb:$("#cr_carb").value.trim()||"otro",time:Number($("#cr_time").value)||15,prep:"Receta propia",items:$("#cr_items").value.split("\n").map(x=>x.split("|").map(y=>y.trim())).filter(x=>x[0]).map(x=>[x[0],Number(x[1])||x[1]||1,x[2]||"unidad",x[3]||"listo"]),steps:$("#cr_steps").value.split("\n").map(x=>x.trim()).filter(Boolean),storage:$("#cr_storage").value.trim()||"Según ingredientes.",reheat:$("#cr_reheat").value.trim()||"Según plato."};
- let a=customRecipes().filter(x=>x.id!==row.id);a.unshift(row);saveCustomRecipes(a);closeModal();render();
+ const name=$("#cr_name").value.trim();if(!name)return toast("Escribe el nombre");
+ const items=$("#cr_items").value.split("\n").map(x=>x.split("|").map(y=>y.trim())).filter(x=>x[0]).map(x=>[x[0],finite(x[1],1),x[2]||"unidad",x[3]||"listo"]);
+ if(!items.length)return toast("Añade ingredientes");
+ const row={id:id||("user_"+uid()),type:$("#cr_type").value,name,cat:$("#cr_cat").value.trim()||"propia",protein:$("#cr_protein").value.trim()||"otro",carb:$("#cr_carb").value.trim()||"otro",time:finite($("#cr_time").value,15),prep:"Receta propia",items,steps:$("#cr_steps").value.split("\n").map(x=>x.trim()).filter(Boolean),storage:$("#cr_storage").value.trim()||"Según ingredientes.",reheat:$("#cr_reheat").value.trim()||"Según plato."};
+ let a=customRecipes().filter(x=>x.id!==row.id);a.unshift(row);saveCustomRecipes(a);closeModal();render();toast("Receta guardada");
 }
 
-function mealCard(t){
- const r=currentMeal(t),s=state(),done=!!s.mealDone[`${todayISO()}_${t}`],rating=s.ratings[r.id]||0;
- return `<div class="meal-card ${done?"meal-complete":""}" data-meal-card="${t}">
- <div class="meal-head"><div><span class="eyebrow">${MEALS[t]}</span><h3>${r.name}</h3><div class="meta"><span>${r.prep}</span><span>${r.time} min</span><span>${r.cat}</span></div></div><button class="btn small" data-open-recipe="${r.id}">Receta</button></div>
- <ul class="list">${r.items.map(x=>`<li><b>${x[1]} ${x[2]}</b> ${x[0]}<small>${x[3]}</small></li>`).join("")}</ul>
- <label class="meal-check"><input type="checkbox" data-meal-done="${t}" ${done?"checked":""}> Comida realizada</label>
- <div class="btn-row"><button class="btn small primary" data-smart-change="${t}">Cambiar por otra equilibrada</button></div>
- <div class="rating">${[1,2,3,4,5,6,7,8,9,10].map(v=>`<button class="${rating===v?"active":""}" data-rate="${r.id}" data-value="${v}">${v}</button>`).join("")}</div></div>`;
+function mealCard(type){
+ const r=currentMeal(type),s=state(),done=!!s.mealDone[`${todayISO()}_${type}`],rating=s.ratings[r.id]||0;
+ return `<div class="meal-card ${done?"meal-complete":""}" data-meal-card="${type}">
+ <div class="meal-head"><div><span class="eyebrow">${MEALS[type]}</span><h3>${esc(r.name)}</h3><div class="meta"><span>${esc(r.prep)}</span><span>${r.time} min</span><span>${esc(r.cat)}</span></div></div><button class="btn small" data-action="open-recipe" data-id="${r.id}">Receta</button></div>
+ <ul class="list">${r.items.map(x=>`<li><b>${x[1]} ${esc(x[2])}</b> ${esc(x[0])}<small>${esc(x[3])}</small></li>`).join("")}</ul>
+ <label class="meal-check"><input type="checkbox" data-action="meal-done" data-type="${type}" ${done?"checked":""}> Comida realizada</label>
+ <div class="btn-row"><button class="btn small primary" data-action="smart-meal" data-type="${type}">Cambiar por otra equilibrada</button></div>
+ <div class="rating">${[1,2,3,4,5,6,7,8,9,10].map(v=>`<button class="${rating===v?"active":""}" data-action="rate-recipe" data-id="${r.id}" data-value="${v}">${v}</button>`).join("")}</div></div>`;
 }
 
-function planner(){
- return `<div class="planner-nav"><button class="tab-btn active" data-pview="current">Semana actual</button><button class="tab-btn" data-pview="next">Semana siguiente</button><button class="tab-btn" data-pview="history">Historial</button></div>
- <div id="p_current">${planMarkup(getPlan(monday(0)))}</div><div id="p_next" class="hidden">${planMarkup(getPlan(monday(1)))}</div><div id="p_history" class="hidden">${historyMarkup()}</div>`;
+function planMarkup(plan){
+ return `<div class="card"><div class="section-title"><div><span class="eyebrow">${plan.weekStart} → ${plan.weekEnd}</span><h2>${plan.status==="confirmed"?"Semana confirmada":"Borrador editable"}</h2></div><span class="pill ${plan.status==="confirmed"?"green":"amber"}">${plan.status}</span></div>
+ <p class="muted">Comida flexible planificada: ${esc(plan.flexMealDay)}. No requiere compensar saltándose otras comidas.</p>
+ <div class="btn-row"><button class="btn" data-action="regen-plan" data-start="${plan.weekStart}">Otra propuesta</button>${plan.status!=="confirmed"?`<button class="btn primary" data-action="confirm-plan" data-start="${plan.weekStart}">Confirmar semana</button>`:""}</div></div>
+ ${DAYS.map(day=>`<div class="week-card"><h3>${day}</h3>${Object.keys(MEALS).map(type=>{const r=recipe(plan.days[day][type]);return `<div class="week-row"><span>${MEALS[type]}</span><div><b>${esc(r?.name||"")}</b><small>${esc(r?.prep||"")} · ${r?.time||"-"} min</small></div><div class="actions"><button class="btn small" data-action="open-recipe" data-id="${r?.id||""}">Ver</button><button class="btn small" data-action="change-plan-meal" data-start="${plan.weekStart}" data-day="${day}" data-type="${type}">Cambiar</button></div></div>`}).join("")}</div>`).join("")}`;
 }
-function planMarkup(p){
- return `<div class="card"><div class="section-title"><div><span class="eyebrow">${p.weekStart} → ${p.weekEnd}</span><h2>${p.status==="confirmed"?"Semana confirmada":"Borrador editable"}</h2></div></div>
- <div class="btn-row"><button class="btn" data-regenerate="${p.weekStart}">Otra propuesta</button>${p.status!=="confirmed"?`<button class="btn primary" data-confirm-plan="${p.weekStart}">Confirmar semana</button>`:""}</div></div>
- ${DAYS.map(day=>`<div class="week-card"><h3>${day}</h3>${Object.keys(MEALS).map(t=>{const r=recipe(p.days[day][t]);return `<div class="week-row"><span>${MEALS[t]}</span><div><b>${r.name}</b><small>${r.prep} · ${r.time} min</small></div><div class="actions"><button class="btn small" data-open-recipe="${r.id}">Ver</button><button class="btn small" data-change-plan="${p.weekStart}|${day}|${t}">Cambiar</button></div></div>`}).join("")}</div>`).join("")}`;
+function nutritionPlanner(){
+ return `<div class="planner-nav"><button class="tab-btn active" data-action="planner-tab" data-tab="current">Semana actual</button><button class="tab-btn" data-action="planner-tab" data-tab="next">Semana siguiente</button><button class="tab-btn" data-action="planner-tab" data-tab="history">Historial</button></div>
+ <div id="planner_current">${planMarkup(getPlan(monday(0)))}</div>
+ <div id="planner_next" class="hidden">${planMarkup(getPlan(monday(1)))}</div>
+ <div id="planner_history" class="hidden">${nutritionHistory()}</div>`;
 }
-function historyMarkup(){const a=state().plans.filter(p=>p.weekStart<monday(0));return a.length?a.map(p=>`<div class="card"><h3>${p.weekStart} → ${p.weekEnd}</h3><p>${p.status}</p></div>`).join(""):`<div class="card"><p class="muted">Sin historial todavía.</p></div>`}
-function changePlan(start,day,t){
- const p=getPlan(start),cur=recipe(p.days[day][t]),used=Object.values(p.days).flatMap(x=>Object.values(x)),next=chooseRecipe(t,used,cur);
- if(!next)return;const s=state(),sp=s.plans.find(x=>x.weekStart===start);sp.days[day][t]=next.id;sp.status="draft";saveState(s);render();
+function nutritionHistory(){
+ const old=state().plans.filter(p=>p.weekStart<monday(0)).sort((a,b)=>b.weekStart.localeCompare(a.weekStart));
+ return old.length?old.map(p=>`<div class="card"><h3>${p.weekStart} → ${p.weekEnd}</h3><p>${p.status}</p></div>`).join(""):`<div class="card"><p class="muted">Sin semanas anteriores registradas.</p></div>`;
 }
-
-function library(){
- const main=recipes().filter(r=>["lunch","dinner"].includes(r.type)),other=recipes().filter(r=>!["lunch","dinner"].includes(r.type));
- const tile=r=>`<div class="recipe-card"><span class="eyebrow">${MEALS[r.type]}</span><h3>${r.name}</h3><p class="muted">${r.prep} · ${r.time} min</p><div class="btn-row"><button class="btn small" data-open-recipe="${r.id}">Ver</button>${String(r.id).startsWith("user_")?`<button class="btn small" data-edit-recipe="${r.id}">Editar</button>`:""}</div></div>`;
- return `<div class="card"><div class="section-title"><div><span class="eyebrow">BIBLIOTECA PRINCIPAL</span><h2>${main.length} comidas y cenas</h2></div><button class="btn primary" data-add-recipe>+ Añadir receta</button></div></div><div class="recipe-grid">${main.map(tile).join("")}</div><div class="card"><span class="eyebrow">DESAYUNOS Y TENTEMPIÉS</span><h3>${other.length} opciones</h3></div><div class="recipe-grid">${other.map(tile).join("")}</div>`;
+function nutritionLibrary(){
+ const main=allRecipes().filter(r=>["lunch","dinner"].includes(r.type)),other=allRecipes().filter(r=>!["lunch","dinner"].includes(r.type));
+ const tile=r=>`<div class="recipe-card recipe-filter" data-search="${esc((r.name+" "+r.cat+" "+r.protein+" "+r.items.map(x=>x[0]).join(" ")).toLowerCase())}" data-cat="${esc(r.cat)}"><span class="eyebrow">${MEALS[r.type]}</span><h3>${esc(r.name)}</h3><p class="muted">${esc(r.prep)} · ${r.time} min</p><div class="btn-row"><button class="btn small" data-action="open-recipe" data-id="${r.id}">Ver receta</button>${String(r.id).startsWith("user_")?`<button class="btn small" data-action="edit-recipe" data-id="${r.id}">Editar</button>`:""}</div></div>`;
+ return `<div class="card"><div class="section-title"><div><span class="eyebrow">BIBLIOTECA PRINCIPAL</span><h2>${main.length} comidas y cenas</h2></div><button class="btn primary" data-action="add-recipe">+ Añadir receta</button></div>
+ <div class="filter-row"><input id="recipe_search" placeholder="Buscar plato o ingrediente"><select id="recipe_filter"><option value="">Todas las categorías</option>${[...new Set(main.map(r=>r.cat))].sort().map(x=>`<option>${esc(x)}</option>`).join("")}</select></div></div>
+ <div id="recipe_grid" class="library-grid">${main.map(tile).join("")}</div>
+ <div class="card"><span class="eyebrow">DESAYUNOS Y TENTEMPIÉS</span><h3>${other.length} opciones</h3></div><div class="library-grid">${other.map(tile).join("")}</div>`;
 }
-function shopping(){
+function shoppingMarkup(){
  const a=state().shopping;if(!a.length)return `<div class="card"><p>Confirma una semana para generar la compra.</p></div>`;
- return `<div class="card"><h2>Compra semanal</h2>${a.map((x,i)=>`<div class="shop-row"><div><b>${x.name}</b><small>Comprar ${Math.ceil(x.buy)} ${x.unit}</small></div><input type="checkbox" data-shop="${i}" ${x.bought?"checked":""}></div>`).join("")}</div>`;
+ return `<div class="card"><h2>Compra semanal</h2>${a.map((x,i)=>`<div class="shop-row"><div><b>${esc(x.name)}</b><small>Comprar ${Math.ceil(x.buy)} ${esc(x.unit)}</small></div><input type="checkbox" data-action="shop-done" data-index="${i}" ${x.bought?"checked":""}></div>`).join("")}</div>`;
 }
-function pantry(){
- const a=state().pantry;return `<div class="card"><h2>Despensa</h2><div class="form-grid"><label>Producto<input id="pn"></label><label>Cantidad<input id="pq" type="number"></label></div><button class="btn primary" data-add-pantry>Añadir</button>${a.map((x,i)=>`<div class="pantry-row"><div><b>${x.name}</b><small>${x.qty}</small></div><button class="btn small danger" data-remove-pantry="${i}">Quitar</button></div>`).join("")}</div>`;
+function pantryMarkup(){
+ const a=state().pantry;
+ return `<div class="card"><h2>Despensa</h2><div class="form-grid"><label>Producto<input id="pantry_name"></label><label>Cantidad<input id="pantry_qty" type="number"></label></div><button class="btn primary" data-action="add-pantry">Añadir</button>
+ ${a.map((x,i)=>`<div class="pantry-row"><div><b>${esc(x.name)}</b><small>${x.qty}</small></div><button class="btn small danger" data-action="remove-pantry" data-index="${i}">Quitar</button></div>`).join("")}</div>`;
 }
-function prepMarkup(){
+function preparationMarkup(){
  const p=getPlan(monday(1));
- const meal=(day,t)=>{const r=recipe(p.days[day][t]);return `<div class="meal-card"><span class="eyebrow">${day.toUpperCase()} · ${MEALS[t].toUpperCase()}</span><h3>${r.name}</h3><h4>Qué adelantar</h4><p>${advanceAdvice(r)}</p><h4>Ingredientes</h4><ul class="list">${r.items.map(x=>`<li><b>${x[1]} ${x[2]}</b> ${x[0]}</li>`).join("")}</ul><h4>Preparación</h4><ol>${detailedSteps(r).map(x=>`<li>${x}</li>`).join("")}</ol><h4>Conservación</h4><p>${r.storage}</p></div>`};
- return `<div class="card"><span class="eyebrow">PREPARACIÓN DE LA SEMANA</span><h2>Fin de semana</h2><ol><li>Revisa primero la semana siguiente.</li><li>Lava y corta verduras resistentes y asa una bandeja de verduras/pimientos.</li><li>Deja porcionadas proteínas y cocina por adelantado solo las que lo permitan.</li><li>Prepara legumbres para los primeros días.</li><li>Deja componentes de ensaladas separados y sin aliñar.</li><li>Reserva 20–30 min a mitad de semana para completar el resto.</li></ol></div>${DAYS.map(d=>meal(d,"lunch")).join("")}<div class="card"><h2>Cenas</h2></div>${DAYS.map(d=>meal(d,"dinner")).join("")}`;
+ const prepCard=(day,type)=>{const r=recipe(p.days[day][type]);return `<div class="meal-card"><span class="eyebrow">${day.toUpperCase()} · ${MEALS[type].toUpperCase()}</span><h3>${esc(r.name)}</h3><h4>Qué adelantar</h4><p>${esc(advanceAdvice(r))}</p><h4>Ingredientes</h4><ul class="list">${r.items.map(x=>`<li><b>${x[1]} ${esc(x[2])}</b> ${esc(x[0])}<small>${esc(x[3])}</small></li>`).join("")}</ul><h4>Preparación</h4><ol>${detailedSteps(r).map(x=>`<li>${esc(x)}</li>`).join("")}</ol><h4>Conservación</h4><p>${esc(r.storage)}</p><h4>Recalentado / acabado</h4><p>${esc(r.reheat)}</p></div>`};
+ return `<div class="card"><span class="eyebrow">PREPARACIÓN · SEMANA SIGUIENTE</span><h2>Bloque del fin de semana</h2><p class="muted">Prepara bases para los primeros días y evita guardar toda la semana cocinada desde el domingo.</p>
+ <ol><li>Lava, seca y porciona verduras resistentes; asa pimientos y verduras que vayan cocinadas.</li><li>Deja porcionadas las proteínas. Cocina por adelantado solo las recetas que lo toleran bien; pescado y marisco, cerca del consumo.</li><li>Prepara legumbres de los primeros días y congela porciones posteriores cuando corresponda.</li><li>Con arroz y pasta, cocina solo lo previsto para primeros días o porciona adecuadamente; enfría pronto tras cocinar.</li><li>Deja componentes de ensaladas separados y sin aliñar.</li><li>Haz un segundo bloque de 20-30 min a mitad de semana.</li></ol></div>
+ <div class="card"><span class="eyebrow">COMIDAS REALES</span><h2>Qué preparar cada día</h2></div>${DAYS.map(d=>prepCard(d,"lunch")).join("")}
+ <div class="card"><span class="eyebrow">CENAS REALES</span><h2>Cenas y preparación para mañana</h2></div>${DAYS.map(d=>prepCard(d,"dinner")).join("")}
+ <div class="card"><span class="eyebrow">ENSALADAS</span><h2>Opciones para variar</h2>${SALADS.map(x=>`<p><b>${x[0]}</b><br>${x[1]}<br><small>Aliño: ${x[2]}</small></p>`).join("")}</div>`;
 }
 
-function trainingWeekIndex(){return Math.max(1,Math.floor((new Date()-new Date("2026-07-16T00:00:00"))/604800000)+1)}
-function todayTrainingIndex(){const d=new Date().getDay();return d>=1&&d<=5?d-1:0}
-function exerciseLogs(name){return state().trainingLog.filter(x=>x.exercise===name&&!x.imported).sort((a,b)=>(b.date||"").localeCompare(a.date||""))}
-function lastExercise(name){return exerciseLogs(name)[0]}
-function training(){const idx=todayTrainingIndex(),d=TRAINING_DAYS[idx],logs=state().trainingLog.filter(x=>x.date===todayISO()&&!x.imported),done=new Set(logs.map(x=>x.exercise));return `<div class="card hero"><span class="eyebrow">ENTRENADOR85 · SEMANA ${trainingWeekIndex()}</span><h2>${d.title}</h2><p>${d.focus}</p><div class="grid"><div class="stat"><span>Progreso hoy</span><b>${done.size}/${d.ex.length}</b></div><div class="stat"><span>Cardio</span><b>${d.cardio}</b></div></div><div class="coach-box"><b>🎯 Misión de hoy</b><p>${d.mission}</p></div><button class="btn primary" data-start-training="${idx}">Comenzar / continuar</button></div>
- <div class="tabs">${TRAINING_DAYS.map((x,i)=>`<button class="tab-btn ${i===idx?"active":""}" data-training-day="${i}">${i+1}</button>`).join("")}</div>
- <div id="trainingDay">${trainingDayMarkup(idx)}</div><div class="card"><span class="eyebrow">CARDIO</span><h3>Registro cardiovascular</h3><p class="muted">Registra máquina, minutos e intensidad. Buscamos constancia y progresión, no agotamiento.</p><button class="btn" data-log-cardio>Registrar cardio</button></div>`}
-function trainingDayMarkup(i){const d=TRAINING_DAYS[i];return `<div class="card"><span class="eyebrow">${d.day} · ${d.focus}</span><h2>${d.title}</h2>${d.ex.map((x,n)=>{const [name,muscle,target,base]=x,last=lastExercise(name);return `<div class="exercise-row"><div><b>${n+1}. ${name}</b><small>${muscle} · ${target}${last?` · Última: ${last.weight} kg × ${last.reps}`:` · Base orientativa: ${base||"ajustar"} kg`}</small></div><button class="btn small ${last?"":"primary"}" data-log-ex="${i}|${n}">Registrar</button></div>`}).join("")}</div>`}
-function openExerciseLog(di,ei){const x=TRAINING_DAYS[di].ex[ei],[name,muscle,target,base]=x,last=lastExercise(name),hist=exerciseLogs(name).slice(0,5);openModal(name,`<span class="eyebrow">${muscle}</span><p>Objetivo: <b>${target}</b></p>${last?`<div class="coach-box"><b>Entrenador85</b><p>Última: ${last.weight} kg × ${last.reps}. ${last.reps>=12?"Si la técnica fue limpia, puedes probar una pequeña subida de carga.":"Mantén la carga y busca completar el rango con control."}</p></div>`:""}<div class="form-grid"><label>Peso kg<input id="tr_weight" type="number" step="0.1" value="${last?.weight??base??""}"></label><label>Repeticiones<input id="tr_reps" type="number" value="${last?.reps||12}"></label><label>Series<input id="tr_sets" type="number" value="${last?.sets||3}"></label><label>Esfuerzo 1–10<input id="tr_effort" type="number" min="1" max="10" value="${last?.effort||7}"></label></div><div class="btn-row"><button class="btn primary" data-save-ex="${di}|${ei}">Guardar ejercicio</button><button class="btn" data-alt-ex="${di}|${ei}">Máquina ocupada</button></div><h3>Historial</h3>${hist.length?hist.map(h=>`<div class="history-line"><b>${h.date}</b><span>${h.weight} kg · ${h.sets}×${h.reps} · esfuerzo ${h.effort||"–"}</span></div>`).join(""):`<p class="muted">Primer registro de este ejercicio.</p>`}`)}
-function saveExercise(di,ei){const s=state(),x=TRAINING_DAYS[di].ex[ei];s.trainingLog.push({id:uid(),date:todayISO(),day:di+1,session:TRAINING_DAYS[di].title,exercise:x[0],muscle:x[1],weight:Number($("#tr_weight").value)||0,reps:Number($("#tr_reps").value)||0,sets:Number($("#tr_sets").value)||0,effort:Number($("#tr_effort").value)||null});saveState(s);closeModal();render()}
-function altExercise(di,ei){const name=TRAINING_DAYS[di].ex[ei][0],alts=TRAINING_ALTS[name]||["Otra máquina equivalente del mismo grupo muscular"];alert("Alternativas: "+alts.join(" · "))}
-function logCardio(){openModal("Cardio de hoy",`<div class="form-grid"><label>Máquina<select id="ca_type"><option>Cinta</option><option>Bicicleta</option><option>Elíptica</option><option>Remo</option></select></label><label>Minutos<input id="ca_min" type="number" value="15"></label><label>Intensidad 1–10<input id="ca_int" type="number" min="1" max="10" value="6"></label><label>Distancia km<input id="ca_dist" type="number" step="0.1"></label></div><button class="btn primary" data-save-cardio>Guardar cardio</button>`)}
-function saveCardio(){const s=state();s.trainingLog.push({id:uid(),date:todayISO(),kind:"cardio",exercise:"Cardio",type:$("#ca_type").value,minutes:Number($("#ca_min").value)||0,intensity:Number($("#ca_int").value)||0,distance:Number($("#ca_dist").value)||null});saveState(s);closeModal();render()}
-function evolution(){const s=state(),a=[...s.measurements].sort((x,y)=>(x.date||"").localeCompare(y.date||"")),first=a[0],m=a[a.length-1],prev=a[a.length-2];const metric=(label,key,unit="")=>`<div class="progress-stat"><span>${label}</span><b>${m?.[key]??"—"}${unit}</b><small>${first?.[key]!=null&&m?.[key]!=null?`Desde inicio: ${(m[key]-first[key]).toFixed(1)}${unit}`:"Sin tendencia aún"}${prev?.[key]!=null&&m?.[key]!=null?` · Semana: ${(m[key]-prev[key]).toFixed(1)}${unit}`:""}</small></div>`;return `<div class="card hero"><span class="eyebrow">TU EVOLUCIÓN</span><h2>Más que un número en la báscula</h2><p class="muted">Valoramos tendencia, cintura, fuerza, constancia y composición corporal. Una medición aislada no decide el plan.</p><div class="progress-grid">${metric("Peso","weight"," kg")}${metric("Cintura","waist"," cm")}${metric("Grasa corporal","bodyFat"," %")}${metric("Masa muscular","muscleMass"," kg")}</div></div><div class="card"><span class="eyebrow">CONTROL SEMANAL</span><h2>Todos los lunes</h2><div class="form-grid"><label>Peso<input id="ev_weight" type="number" step="0.1" value="${m?.weight||""}"></label><label>Cintura<input id="ev_waist" type="number" step="0.1" value="${m?.waist||""}"></label><label>Cadera<input id="ev_hip" type="number" step="0.1" value="${m?.hip||""}"></label><label>Pecho<input id="ev_chest" type="number" step="0.1" value="${m?.chest||""}"></label><label>Brazo<input id="ev_arm" type="number" step="0.1" value="${m?.arm||""}"></label><label>Muslo<input id="ev_thigh" type="number" step="0.1" value="${m?.thigh||""}"></label><label>Gemelo<input id="ev_calf" type="number" step="0.1" value="${m?.calf||""}"></label><label>Grasa corporal %<input id="ev_bodyFat" type="number" step="0.1" value="${m?.bodyFat||""}"></label><label>Grasa visceral<input id="ev_visceral" type="number" step="0.1" value="${m?.visceral||""}"></label><label>Agua %<input id="ev_water" type="number" step="0.1" value="${m?.water||""}"></label><label>Músculo esquelético %<input id="ev_skeletal" type="number" step="0.1" value="${m?.skeletalMuscle||""}"></label><label>Masa muscular kg<input id="ev_muscle" type="number" step="0.1" value="${m?.muscleMass||""}"></label><label>Proteína %<input id="ev_protein" type="number" step="0.1" value="${m?.protein||""}"></label><label>Metabolismo basal<input id="ev_bmr" type="number" value="${m?.bmr||""}"></label></div><button class="btn primary" data-save-measure>Guardar control semanal</button></div>${recoveredHistoryMarkup()}<div class="card"><span class="eyebrow">HISTORIAL</span><h3>${a.length} controles</h3>${[...a].reverse().slice(0,12).map(x=>`<div class="history-line"><b>${x.date}</b><span>${x.weight??"—"} kg · cintura ${x.waist??"—"} cm · grasa ${x.bodyFat??"—"}%</span></div>`).join("")||`<p class="muted">Aún no hay controles.</p>`}</div>`}
-function dailyLesson(){const lessons=["La báscula cambia por hidratación y otros factores: mira la tendencia de varias semanas.","La fuerza ayuda a conservar y desarrollar masa muscular mientras mejoras tu composición corporal.","No existen alimentos mágicos: importa el patrón de alimentación que puedes mantener.","El cardio complementa la fuerza; no tiene que dejarte agotado para ser útil.","Preparar parte de las comidas con antelación reduce decisiones improvisadas durante la semana.","Dormir y recuperarte también forman parte del entrenamiento.","Progresar puede ser subir peso, hacer más repeticiones o ejecutar mejor el mismo ejercicio."];return lessons[new Date().getDay()]}
-function home(){const p=state().plans.find(x=>x.weekStart===monday(0)&&x.status==="confirmed"),d=TRAINING_DAYS[todayTrainingIndex()],todayMeals=Object.keys(MEALS).filter(t=>state().mealDone[`${todayISO()}_${t}`]).length;return `<div class="card hero"><span class="eyebrow">HOY · ${dayName().toUpperCase()}</span><h2>Tu día en Proyecto85</h2><p class="muted">Come bien · entrena · aprende · registra · mejora.</p><div class="grid"><div class="stat"><span>Entreno</span><b>${d.title.replace("Full Body ","")}</b></div><div class="stat"><span>Nutrición</span><b>${todayMeals}/5</b></div><div class="stat"><span>Semana</span><b>${p?"Planificada":"Preparar"}</b></div><div class="stat"><span>Constancia</span><b>${state().trainingLog.filter(x=>!x.imported).length} registros</b></div></div></div><div class="card"><span class="eyebrow">🎯 MISIÓN</span><h3>${d.mission}</h3><button class="btn primary" data-go-training>Ir al entrenamiento</button></div><div class="card learn"><span class="eyebrow">APRENDE CONMIGO · 1 MIN</span><h3>${dailyLesson()}</h3><p class="muted">Proyecto85 busca que entiendas tus decisiones, no solo que sigas instrucciones.</p></div>`}
-function more(){return `${recoveredHistoryMarkup()}<div class="card"><span class="eyebrow">MÁS</span><h2>Proyecto85 Pro</h2><p>Base única y limpia, sin service worker.</p><button class="btn" data-export>Exportar datos</button></div>`}
-function nutrition(){return `<div class="card hero"><span class="eyebrow">NUTRICIÓN</span><h2>Planifica → prepara → compra → sigue</h2><p class="muted">Plan semanal estable, recetas, compra, despensa y preparación.</p></div><div class="tabs" id="nutritionTabs">${[["today","Hoy"],["plan","Plan semanal"],["recipes","Biblioteca"],["shopping","Compra"],["pantry","Despensa"],["prep","Preparación"]].map(([id,l],i)=>`<button class="tab-btn ${i===0?"active":""}" data-ntab="${id}">${l}</button>`).join("")}</div><section id="n_today">${Object.keys(MEALS).map(mealCard).join("")}</section><section id="n_plan" class="hidden">${planner()}</section><section id="n_recipes" class="hidden">${library()}</section><section id="n_shopping" class="hidden">${shopping()}</section><section id="n_pantry" class="hidden">${pantry()}</section><section id="n_prep" class="hidden">${prepMarkup()}</section>`}
+function renderNutrition(){
+ return `<div class="card hero"><span class="eyebrow">NUTRICIÓN</span><h2>Planifica → prepara → compra → sigue → aprende</h2><p class="muted">Desayuno con café + tostada como base. Plan semanal estable y comidas prácticas.</p></div>
+ <div class="tabs" id="nutrition_tabs">${[["today","Hoy"],["plan","Plan semanal"],["recipes","Biblioteca"],["shopping","Compra"],["pantry","Despensa"],["prep","Preparación"]].map(([id,l],i)=>`<button class="tab-btn ${i===0?"active":""}" data-action="nutrition-tab" data-tab="${id}">${l}</button>`).join("")}</div>
+ <section id="nutrition_today">${Object.keys(MEALS).map(mealCard).join("")}</section>
+ <section id="nutrition_plan" class="hidden">${nutritionPlanner()}</section>
+ <section id="nutrition_recipes" class="hidden">${nutritionLibrary()}</section>
+ <section id="nutrition_shopping" class="hidden">${shoppingMarkup()}</section>
+ <section id="nutrition_pantry" class="hidden">${pantryMarkup()}</section>
+ <section id="nutrition_prep" class="hidden">${preparationMarkup()}</section>`;
+}
+
+function trainingTodayCard(){
+ const idx=trainingDayIndex(),day=TRAINING_DAYS[idx],s=state(),draft=s.workoutDraft,mission=missionFor(day);
+ const lastSame=s.trainingSessions.find(x=>x.dayKey===day.key);
+ return `<div class="card hero"><span class="eyebrow">ENTRENADOR85 · HOY</span><h2>${day.title}</h2><p>${day.subtitle}</p>
+ <div class="grid3"><div class="stat"><span>Ejercicios</span><b>${day.ex.length}</b></div><div class="stat"><span>Cardio</span><b>${day.cardio.minutes} min</b></div><div class="stat"><span>Última sesión</span><b>${lastSame?lastSame.completion+"%":"—"}</b></div></div>
+ <div class="mission"><b>🎯 Misión de hoy</b><p>${esc(mission)}</p></div>
+ <div class="btn-row" style="margin-top:12px">${draft?`<button class="btn primary" data-action="training-tab" data-tab="session">Continuar entrenamiento</button>`:`<button class="btn primary" data-action="start-workout" data-day="${idx}">Comenzar entrenamiento</button>`}<button class="btn" data-action="training-tab" data-tab="plan">Ver los 5 días</button></div></div>`;
+}
+function trainingPlanMarkup(){
+ return TRAINING_DAYS.map((d,i)=>`<div class="card"><div class="section-title"><div><span class="eyebrow">DÍA ${i+1}</span><h3>${d.title}</h3><p class="muted">${d.subtitle}</p></div><button class="btn small primary" data-action="start-workout" data-day="${i}">Iniciar</button></div>
+ <div class="list">${d.ex.map(id=>{const ex=exercise(id),p=progressionFor(ex);return `<li><b>${esc(ex.name)}</b><small>${ex.sets} × ${esc(ex.reps)} · ${p.label} ${p.weight} kg</small></li>`}).join("")}</div>
+ <p class="note">Core en máquina · Cardio ${d.cardio.mode} ${d.cardio.minutes} min</p></div>`).join("");
+}
+function workoutSessionMarkup(){
+ const d=state().workoutDraft;if(!d)return `<div class="card"><p>No hay entrenamiento activo.</p><button class="btn primary" data-action="start-workout" data-day="${trainingDayIndex()}">Empezar el de hoy</button></div>`;
+ const day=TRAINING_DAYS[d.dayIndex];
+ return `<div class="card hero"><span class="eyebrow">SESIÓN ACTIVA</span><h2>${esc(d.title)}</h2><p class="muted">Registra cada serie. La aplicación conservará el peso y las repeticiones.</p></div>
+ ${d.exercises.map((row,ei)=>{const ex=exercise(row.exerciseId),prog=progressionFor(ex),best=bestSet(ex.id);return `<div class="exercise-card"><div class="exercise-head"><div><span class="eyebrow">${esc(ex.group)}</span><h3>${esc(ex.name)}</h3><div class="meta"><span>${ex.sets} × ${esc(ex.reps)}</span><span>${prog.label}: ${prog.weight} kg</span>${best?`<span>Mejor ${best.weight}×${best.reps}</span>`:""}</div></div><button class="btn small" data-action="open-exercise" data-id="${ex.id}">Técnica</button></div>
+ ${row.sets.map((set,si)=>`<div class="set-row"><div class="set-index">${si+1}</div><input type="number" step="0.1" value="${set.weight}" data-action="draft-set" data-ex="${ei}" data-set="${si}" data-field="weight" aria-label="Peso"><input type="number" value="${set.reps}" data-action="draft-set" data-ex="${ei}" data-set="${si}" data-field="reps" aria-label="Repeticiones"><div class="set-ok"><input type="checkbox" ${set.done?"checked":""} data-action="draft-set-done" data-ex="${ei}" data-set="${si}"></div></div>`).join("")}
+ <div class="form-grid" style="margin-top:10px"><label>Esfuerzo 1-10<input type="number" min="1" max="10" value="${row.effort||7}" data-action="draft-effort" data-ex="${ei}"></label><label>Alternativa<select data-action="draft-alternative" data-ex="${ei}"><option value="">Mantener ejercicio</option>${ex.alts.map(a=>exercise(a)).filter(Boolean).map(a=>`<option value="${a.id}">${esc(a.name)}</option>`).join("")}</select></label></div></div>`}).join("")}
+ <div class="card"><span class="eyebrow">CORE</span><h3>Siempre en máquina</h3><p class="muted">Los ejercicios de core incluidos arriba son máquinas y se registran como cualquier otro ejercicio.</p></div>
+ <div class="card"><span class="eyebrow">CARDIO</span><h3>${esc(d.cardio.mode)}</h3><div class="form-grid"><label>Minutos<input type="number" value="${d.cardio.minutes}" data-action="draft-field" data-path="cardio.minutes"></label><label>Intensidad 1-10<input type="number" min="1" max="10" value="${d.cardio.intensity}" data-action="draft-field" data-path="cardio.intensity"></label><label>Distancia opcional<input value="${esc(d.cardio.distance)}" data-action="draft-field" data-path="cardio.distance"></label><label>Tipo<select data-action="draft-field" data-path="cardio.mode">${["Moderado","Progresivo","Intervalos sin impacto","Recuperación"].map(x=>`<option ${d.cardio.mode===x?"selected":""}>${x}</option>`).join("")}</select></label></div></div>
+ <div class="card"><span class="eyebrow">CIERRE DE SESIÓN</span><div class="form-grid"><label>Energía 1-10<input type="number" min="1" max="10" value="${d.sessionEnergy}" data-action="draft-field" data-path="sessionEnergy"></label><label>Dificultad 1-10<input type="number" min="1" max="10" value="${d.sessionDifficulty}" data-action="draft-field" data-path="sessionDifficulty"></label><label class="wide">Notas<textarea data-action="draft-field" data-path="notes">${esc(d.notes)}</textarea></label></div><button class="btn primary" data-action="finish-workout">Terminar y analizar</button></div>`;
+}
+function trainingHistoryMarkup(){
+ const sessions=state().trainingSessions;
+ if(!sessions.length)return `<div class="card"><p class="muted">Todavía no hay entrenamientos guardados.</p></div>`;
+ return sessions.slice(0,30).map(sess=>{const c=coachAfterSession(sess);return `<div class="card coach"><div class="section-title"><div><span class="eyebrow">${sess.date}</span><h3>${esc(sess.title||sess.dayKey||"Entrenamiento")}</h3></div><span class="pill green">${sess.completion||0}%</span></div>
+ <div class="grid3"><div class="stat"><span>Volumen</span><b>${c.volume}</b></div><div class="stat"><span>Cambio</span><b>${c.delta==null?"—":(c.delta>0?"+":"")+c.delta+"%"}</b></div><div class="stat"><span>Cardio</span><b>${sess.cardio?.minutes||0} min</b></div></div>
+ ${c.prs.length?`<p>🏆 ${c.prs.map(esc).join(" · ")}</p>`:""}<p class="muted">${esc(c.message)}</p></div>`}).join("");
+}
+function exerciseLibraryMarkup(){
+ return `<div class="card"><div class="filter-row"><input id="exercise_search" placeholder="Buscar ejercicio o músculo"><select id="exercise_filter"><option value="">Todos</option>${[...new Set(EXERCISES.map(x=>x.group))].sort().map(x=>`<option>${esc(x)}</option>`).join("")}</select></div></div>
+ <div id="exercise_grid" class="library-grid">${EXERCISES.map(ex=>{const p=progressionFor(ex);return `<div class="exercise-card exercise-filter" data-search="${esc((ex.name+" "+ex.group+" "+ex.equipment).toLowerCase())}" data-group="${esc(ex.group)}"><span class="eyebrow">${esc(ex.group)}</span><h3>${esc(ex.name)}</h3><div class="meta"><span>${esc(ex.equipment)}</span><span>${ex.sets} × ${esc(ex.reps)}</span><span>${p.label} ${p.weight} kg</span></div><button class="btn small" data-action="open-exercise" data-id="${ex.id}">Historial y técnica</button></div>`}).join("")}</div>`;
+}
+let TRAINING_TAB="today";
+function renderTraining(){
+ const tabs=[["today","Hoy"],["session","Sesión"],["plan","5 días"],["history","Historial"],["library","Biblioteca"]];
+ const body=TRAINING_TAB==="today"?trainingTodayCard():TRAINING_TAB==="session"?workoutSessionMarkup():TRAINING_TAB==="plan"?trainingPlanMarkup():TRAINING_TAB==="history"?trainingHistoryMarkup():exerciseLibraryMarkup();
+ return `<div class="card hero"><span class="eyebrow">ENTRENAMIENTO</span><h2>Entrenador85</h2><p class="muted">Full Body 5 días · progreso registrado · core en máquina · cardio integrado.</p></div>
+ <div class="tabs">${tabs.map(([id,l])=>`<button class="tab-btn ${TRAINING_TAB===id?"active":""}" data-action="training-tab" data-tab="${id}">${l}</button>`).join("")}</div>${body}`;
+}
+
+function evolutionSummary(){
+ const {first,last,prev}=firstAndLastMeasurements(),adh=adherenceThisWeek();
+ if(!last)return `<div class="card hero"><h2>Empieza tu evolución</h2><p class="muted">Introduce las medidas para crear comparativas y gráficas.</p></div>`;
+ const cards=[
+  ["Peso",last.weight,"kg",metricDelta(first,last,"weight")],
+  ["Cintura",last.waist,"cm",metricDelta(first,last,"waist")],
+  ["Cadera",last.hip,"cm",metricDelta(first,last,"hip")],
+  ["Pecho",last.chest,"cm",metricDelta(first,last,"chest")]
+ ];
+ return `<div class="card hero"><span class="eyebrow">EVOLUCIÓN DESDE EL INICIO</span><h2>${first?.date||"Inicio"} → ${last.date}</h2><div class="grid">${cards.map(([n,v,u,d])=>`<div class="stat"><span>${n}</span><b>${v??"—"} ${v!=null?u:""}</b><small class="delta ${d==null?"neutral":d<0?"good":"neutral"}">${d==null?"Sin comparación":(d>0?"+":"")+d+" "+u}</small></div>`).join("")}</div>
+ <div class="grid" style="margin-top:10px"><div class="stat"><span>Entrenamiento semanal</span><b>${adh.training}%</b></div><div class="stat"><span>Plan nutricional marcado</span><b>${adh.nutrition}%</b></div></div></div>`;
+}
+function measurementForm(){
+ const last=firstAndLastMeasurements().last||{};
+ const fields=[["weight","Peso (kg)"],["waist","Cintura (cm)"],["hip","Cadera (cm)"],["chest","Pecho (cm)"],["arm","Brazo (cm)"],["thigh","Muslo (cm)"],["calf","Gemelo (cm)"],["bodyFat","Grasa corporal (%)"],["visceral","Grasa visceral"],["water","Agua (%)"],["skeletalMuscle","Músculo esquelético (%)"],["muscleMass","Masa muscular (kg)"],["protein","Proteína (%)"],["bmr","BMR"]];
+ return `<div class="card"><div class="section-title"><div><span class="eyebrow">CONTROL SEMANAL</span><h2>Medidas</h2></div><span class="pill green">Lunes</span></div><div class="form-grid"><label>Fecha<input id="measure_date" type="date" value="${todayISO()}"></label>${fields.map(([k,l])=>`<label>${l}<input id="measure_${k}" type="number" step="0.1" value="${last[k]??""}"></label>`).join("")}</div><button class="btn primary" data-action="save-measurement">Guardar control</button></div>`;
+}
+function evolutionCharts(){
+ const arr=[...state().measurements].filter(x=>x.date).sort((a,b)=>a.date.localeCompare(b.date));
+ return `<div class="card"><span class="eyebrow">TENDENCIA</span><h3>Peso</h3><div class="chart">${svgLine(arr.map(x=>x.weight))}</div><div class="legend">${arr.slice(-6).map(x=>`<span>${x.date}: <b>${x.weight??"—"}</b></span>`).join("")}</div></div>
+ <div class="card"><span class="eyebrow">TENDENCIA</span><h3>Cintura</h3><div class="chart">${svgLine(arr.map(x=>x.waist))}</div><div class="legend">${arr.slice(-6).map(x=>`<span>${x.date}: <b>${x.waist??"—"}</b></span>`).join("")}</div></div>`;
+}
+function weeklyCoachMarkup(){
+ const s=state(),r=s.weeklyReviews.find(x=>x.weekStart===monday(0));
+ return `<div class="card coach"><div class="section-title"><div><span class="eyebrow">INFORME DEL ENTRENADOR</span><h2>Semana actual</h2></div><button class="btn small primary" data-action="weekly-review">${r?"Actualizar":"Generar"}</button></div>${r?`<div class="grid"><div class="stat"><span>Entrenamiento</span><b>${r.training}%</b></div><div class="stat"><span>Nutrición</span><b>${r.nutrition}%</b></div></div><p>${esc(r.summary)}</p>`:`<p class="muted">Genera el informe cuando hayas registrado parte de la semana.</p>`}</div>`;
+}
+function renderEvolution(){
+ return evolutionSummary()+evolutionCharts()+weeklyCoachMarkup()+measurementForm();
+}
+
+function todayDashboard(){
+ const idx=trainingDayIndex(),day=TRAINING_DAYS[idx],p=state().plans.find(x=>x.weekStart===monday(0)&&x.status==="confirmed"),learn=LEARNING_CARDS[new Date().getDate()%LEARNING_CARDS.length],last=firstAndLastMeasurements().last;
+ const dinner=p?recipe(p.days?.[dayName()]?.dinner):currentMeal("dinner");
+ const lunchTomorrow=p?recipe(p.days?.[DAYS[(Math.max(0,DAYS.indexOf(dayName()))+1)%7]]?.lunch):null;
+ return `<div class="card hero"><span class="eyebrow">HOY</span><h2>${day.title}</h2><p>${day.subtitle}</p><div class="btn-row"><button class="btn primary" data-action="go-page" data-page="training">Entrenar</button><button class="btn" data-action="go-page" data-page="nutrition">Ver comidas</button></div></div>
+ <div class="grid"><div class="card"><span class="eyebrow">ENTRENO</span><h3>${day.title}</h3><p>${day.ex.length} ejercicios · core máquina · ${day.cardio.minutes} min cardio</p><div class="mission"><b>Misión</b><p>${esc(missionFor(day))}</p></div></div>
+ <div class="card"><span class="eyebrow">NUTRICIÓN</span><h3>${p?"Semana confirmada":"Semana por confirmar"}</h3><p>Comida: ${esc(currentMeal("lunch")?.name||"")}</p><p>Cena: ${esc(dinner?.name||"")}</p></div></div>
+ <div class="card"><span class="eyebrow">PREPARA HOY</span><h3>Para mañana</h3><p>${lunchTomorrow?`${esc(lunchTomorrow.name)} · ${esc(advanceAdvice(lunchTomorrow))}`:"Confirma la semana para ver la preparación del día siguiente."}</p></div>
+ <div class="card learning"><span class="eyebrow">APRENDE CONMIGO</span><h3>${esc(learn.title)}</h3><p>${esc(learn.body)}</p></div>
+ <div class="card"><span class="eyebrow">EVOLUCIÓN</span><h3>${last?`Último control · ${last.date}`:"Sin control todavía"}</h3>${last?`<div class="grid"><div class="stat"><span>Peso</span><b>${last.weight??"—"}</b></div><div class="stat"><span>Cintura</span><b>${last.waist??"—"}</b></div></div>`:`<p class="muted">Introduce tus medidas para empezar la comparación.</p>`}<button class="btn small" data-action="go-page" data-page="evolution">Ver evolución</button></div>`;
+}
+function moreMarkup(){
+ const backup=!!localStorage.getItem(PREFIX+"legacyBackup_v4");
+ return `<div class="card"><span class="eyebrow">DATOS Y SEGURIDAD</span><h2>Proyecto85 Pro 4.0</h2><p class="muted">Sin service worker. Las futuras mejoras pueden sustituir los archivos manteniendo estas mismas claves de datos.</p>
+ <div class="grid"><div class="stat"><span>Esquema de datos</span><b>v${SCHEMA_VERSION}</b></div><div class="stat"><span>Copia legacy</span><b>${backup?"Sí":"No"}</b></div></div>
+ <div class="btn-row" style="margin-top:12px"><button class="btn primary" data-action="export-data">Exportar copia</button><button class="btn" data-action="import-data">Importar copia</button><input id="import_file" type="file" accept="application/json" class="hidden"></div></div>
+ <div class="card learning"><span class="eyebrow">FILOSOFÍA</span><h3>Planifica → Haz → Registra → Aprende → Analiza → Ajusta</h3><p>Proyecto85 prioriza constancia, técnica, alimentación variada y evolución de varias semanas por encima de decisiones basadas en un solo dato.</p></div>`;
+}
 
 let PAGE="home";
-function nav(){const it=[["home","⌂","Inicio"],["training","🏋️","Entreno"],["nutrition","🍽️","Nutrición"],["evolution","↗","Evolución"],["more","•••","Más"]];return `<nav class="bottom"><div class="bottom-inner">${it.map(([p,i,l])=>`<button class="nav-btn ${PAGE===p?"active":""}" data-page="${p}"><b>${i}</b>${l}</button>`).join("")}</div></nav>`}
-function render(){const host=$("#app");if(!host)return;const content=PAGE==="home"?home():PAGE==="training"?training():PAGE==="nutrition"?nutrition():PAGE==="evolution"?evolution():more();host.innerHTML=`<div class="shell"><header><div class="brand"><small>ENTRENADOR PERSONAL</small><h1>Proyecto85 Pro <span class="version">3.0.1</span></h1></div></header>${content}</div>${nav()}`}
+function nav(){
+ const items=[["home","⌂","Hoy"],["training","🏋️","Entreno"],["nutrition","🍽️","Nutrición"],["evolution","↗","Evolución"],["more","•••","Más"]];
+ return `<nav class="bottom"><div class="bottom-inner">${items.map(([p,i,l])=>`<button class="nav-btn ${PAGE===p?"active":""}" data-action="go-page" data-page="${p}"><b>${i}</b>${l}</button>`).join("")}</div></nav>`;
+}
+function render(){
+ const host=$("#app");if(!host)return;
+ let content;
+ if(PAGE==="home")content=todayDashboard();
+ else if(PAGE==="training")content=renderTraining();
+ else if(PAGE==="nutrition")content=renderNutrition();
+ else if(PAGE==="evolution")content=renderEvolution();
+ else content=moreMarkup();
+ host.innerHTML=`<div class="shell"><header><div class="brand"><small>ENTRENADOR PERSONAL</small><h1>Proyecto85 Pro <span class="version">4.0</span></h1></div><span class="header-badge">Entrenador85</span></header>${content}</div>${nav()}`;
+}
+function boot(){
+ try{migrateLegacyOnce();render()}catch(err){
+  console.error(err);
+  $("#app").innerHTML=`<div class="error-card"><h2>Proyecto85 Pro</h2><p>Se ha producido un error al iniciar. Tus datos no se han borrado.</p><pre>${esc(err?.stack||err?.message||err)}</pre><button class="btn primary" onclick="location.reload()">Reintentar</button></div>`;
+ }
+}
 
-document.addEventListener("click",e=>{
- const page=e.target.closest("[data-page]");if(page){PAGE=page.dataset.page;render();window.scrollTo(0,0);return}
- const st=e.target.closest("[data-start-training]");if(st){document.querySelector("#trainingDay")?.scrollIntoView({behavior:"smooth",block:"start"});return}
- const go=e.target.closest("[data-go-training]");if(go){PAGE="training";render();window.scrollTo(0,0);return}
- const td=e.target.closest("[data-training-day]");if(td){const i=Number(td.dataset.trainingDay);$("#trainingDay").innerHTML=trainingDayMarkup(i);td.parentElement.querySelectorAll(".tab-btn").forEach(x=>x.classList.toggle("active",x===td));return}
- const le=e.target.closest("[data-log-ex]");if(le){const [di,ei]=le.dataset.logEx.split("|").map(Number);openExerciseLog(di,ei);return}
- const se=e.target.closest("[data-save-ex]");if(se){const [di,ei]=se.dataset.saveEx.split("|").map(Number);saveExercise(di,ei);return}
- const ae=e.target.closest("[data-alt-ex]");if(ae){const [di,ei]=ae.dataset.altEx.split("|").map(Number);altExercise(di,ei);return}
- if(e.target.closest("[data-log-cardio]")){logCardio();return}
- if(e.target.closest("[data-save-cardio]")){saveCardio();return}
- const nt=e.target.closest("[data-ntab]");if(nt){const id=nt.dataset.ntab;["today","plan","recipes","shopping","pantry","prep"].forEach(x=>$("#n_"+x)?.classList.toggle("hidden",x!==id));$("#nutritionTabs")?.querySelectorAll(".tab-btn").forEach(x=>x.classList.toggle("active",x===nt));return}
- const pv=e.target.closest("[data-pview]");if(pv){["current","next","history"].forEach(x=>$("#p_"+x)?.classList.toggle("hidden",x!==pv.dataset.pview));pv.parentElement.querySelectorAll(".tab-btn").forEach(x=>x.classList.toggle("active",x===pv));return}
- const op=e.target.closest("[data-open-recipe]");if(op){openRecipe(op.dataset.openRecipe);return}
- const sc=e.target.closest("[data-smart-change]");if(sc){smartReplacement(sc.dataset.smartChange);return}
- const cp=e.target.closest("[data-confirm-plan]");if(cp){confirmPlan(cp.dataset.confirmPlan);return}
- const rg=e.target.closest("[data-regenerate]");if(rg){generatePlan(rg.dataset.regenerate);render();return}
- const ch=e.target.closest("[data-change-plan]");if(ch){const [a,b,c]=ch.dataset.changePlan.split("|");changePlan(a,b,c);return}
- if(e.target.closest("[data-add-recipe]")){openCustomRecipeForm();return}
- const er=e.target.closest("[data-edit-recipe]");if(er){openCustomRecipeForm(er.dataset.editRecipe);return}
- const sv=e.target.closest("[data-save-recipe]");if(sv){saveCustomRecipe(sv.dataset.saveRecipe);return}
- const dr=e.target.closest("[data-delete-recipe]");if(dr){saveCustomRecipes(customRecipes().filter(x=>x.id!==dr.dataset.deleteRecipe));closeModal();render();return}
- if(e.target.closest("[data-close-modal]")){closeModal();return}
- if(e.target.closest("[data-add-pantry]")){const n=$("#pn").value.trim(),q=Number($("#pq").value)||0;if(n){const s=state();s.pantry.push({name:n,qty:q});saveState(s);render()}return}
- const rp=e.target.closest("[data-remove-pantry]");if(rp){const s=state();s.pantry.splice(Number(rp.dataset.removePantry),1);saveState(s);render();return}
- const rt=e.target.closest("[data-rate]");if(rt){rateRecipe(rt.dataset.rate,Number(rt.dataset.value),rt);return}
- if(e.target.closest("[data-save-measure]")){const s=state(),v=id=>Number($(id)?.value)||null;s.measurements=s.measurements.filter(x=>x.date!==todayISO());s.measurements.push({date:todayISO(),weight:v("#ev_weight"),waist:v("#ev_waist"),hip:v("#ev_hip"),chest:v("#ev_chest"),arm:v("#ev_arm"),thigh:v("#ev_thigh"),calf:v("#ev_calf"),bodyFat:v("#ev_bodyFat"),visceral:v("#ev_visceral"),water:v("#ev_water"),skeletalMuscle:v("#ev_skeletal"),muscleMass:v("#ev_muscle"),protein:v("#ev_protein"),bmr:v("#ev_bmr")});saveState(s);alert("Control semanal guardado");render();return}
- if(e.target.closest("[data-export]")){const blob=new Blob([JSON.stringify(state(),null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="Proyecto85-datos.json";a.click();return}
+document.addEventListener("click",async e=>{
+ const b=e.target.closest("[data-action]");if(!b)return;
+ const a=b.dataset.action;
+ if(a==="go-page"){PAGE=b.dataset.page;render();window.scrollTo(0,0);return}
+ if(a==="training-tab"){TRAINING_TAB=b.dataset.tab;render();return}
+ if(a==="start-workout"){startWorkout(Number(b.dataset.day));return}
+ if(a==="finish-workout"){finishWorkout();return}
+ if(a==="open-exercise"){openExercise(b.dataset.id);return}
+ if(a==="open-recipe"){openRecipe(b.dataset.id);return}
+ if(a==="close-modal"){closeModal();return}
+ if(a==="modal-backdrop"&&e.target===b){closeModal();return}
+ if(a==="nutrition-tab"){
+  const tab=b.dataset.tab;["today","plan","recipes","shopping","pantry","prep"].forEach(x=>$("#nutrition_"+x)?.classList.toggle("hidden",x!==tab));
+  $("#nutrition_tabs")?.querySelectorAll(".tab-btn").forEach(x=>x.classList.toggle("active",x===b));return
+ }
+ if(a==="planner-tab"){
+  const tab=b.dataset.tab;["current","next","history"].forEach(x=>$("#planner_"+x)?.classList.toggle("hidden",x!==tab));
+  b.parentElement.querySelectorAll(".tab-btn").forEach(x=>x.classList.toggle("active",x===b));return
+ }
+ if(a==="confirm-plan"){confirmPlan(b.dataset.start);return}
+ if(a==="regen-plan"){regeneratePlan(b.dataset.start);return}
+ if(a==="change-plan-meal"){changePlanMeal(b.dataset.start,b.dataset.day,b.dataset.type);return}
+ if(a==="smart-meal"){smartTodayMeal(b.dataset.type);return}
+ if(a==="rate-recipe"){
+  const s=state();s.ratings[b.dataset.id]=Number(b.dataset.value);saveState(s);
+  b.closest(".rating")?.querySelectorAll("button").forEach(x=>x.classList.toggle("active",x===b));return
+ }
+ if(a==="add-recipe"){openRecipeForm();return}
+ if(a==="edit-recipe"){openRecipeForm(b.dataset.id);return}
+ if(a==="save-recipe"){saveCustomRecipe(b.dataset.id||"");return}
+ if(a==="delete-recipe"){if(confirm("¿Eliminar esta receta propia?")){saveCustomRecipes(customRecipes().filter(x=>x.id!==b.dataset.id));closeModal();render()}return}
+ if(a==="add-pantry"){
+  const n=$("#pantry_name").value.trim(),q=finite($("#pantry_qty").value,0);if(!n)return;
+  const s=state();s.pantry.push({name:n,qty:q});saveState(s);render();return
+ }
+ if(a==="remove-pantry"){const s=state();s.pantry.splice(Number(b.dataset.index),1);saveState(s);render();return}
+ if(a==="save-measurement"){saveMeasurement();return}
+ if(a==="weekly-review"){generateWeeklyReview();render();return}
+ if(a==="export-data"){
+  const payload={app:"Proyecto85 Pro",version:APP_VERSION,schema:SCHEMA_VERSION,exportedAt:new Date().toISOString(),state:state(),customRecipes:customRecipes()};
+  const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"}),link=document.createElement("a");link.href=URL.createObjectURL(blob);link.download=`Proyecto85_backup_${todayISO()}.json`;link.click();setTimeout(()=>URL.revokeObjectURL(link.href),1000);return
+ }
+ if(a==="import-data"){$("#import_file").click();return}
 });
-document.addEventListener("change",e=>{
- if(e.target.matches("[data-meal-done]"))toggleMealDone(e.target.dataset.mealDone,e.target.checked);
- if(e.target.matches("[data-shop]")){const s=state();s.shopping[Number(e.target.dataset.shop)].bought=e.target.checked;saveState(s)}
+
+document.addEventListener("change",async e=>{
+ const t=e.target;
+ if(t.matches('[data-action="meal-done"]')){
+  const s=state(),key=`${todayISO()}_${t.dataset.type}`;s.mealDone[key]=t.checked;saveState(s);t.closest(".meal-card")?.classList.toggle("meal-complete",t.checked);return
+ }
+ if(t.matches('[data-action="shop-done"]')){const s=state();s.shopping[Number(t.dataset.index)].bought=t.checked;saveState(s);return}
+ if(t.matches('[data-action="draft-set"]')){updateDraftSet(Number(t.dataset.ex),Number(t.dataset.set),t.dataset.field,t.value);return}
+ if(t.matches('[data-action="draft-set-done"]')){updateDraftSet(Number(t.dataset.ex),Number(t.dataset.set),"done",t.checked);return}
+ if(t.matches('[data-action="draft-effort"]')){const s=state();if(s.workoutDraft){s.workoutDraft.exercises[Number(t.dataset.ex)].effort=finite(t.value,7);saveState(s)}return}
+ if(t.matches('[data-action="draft-alternative"]')&&t.value){
+  const s=state(),i=Number(t.dataset.ex);if(s.workoutDraft){const alt=exercise(t.value),prog=progressionFor(alt);s.workoutDraft.exercises[i]={exerciseId:alt.id,sets:Array.from({length:alt.sets},()=>({weight:prog.weight,reps:parseInt(alt.reps)||10,done:false})),effort:7};saveState(s);render()}return
+ }
+ if(t.matches('[data-action="draft-field"]')){updateDraftField(t.dataset.path,t.type==="number"?finite(t.value,0):t.value);return}
+ if(t.id==="recipe_search"||t.id==="recipe_filter"){
+  const q=($("#recipe_search")?.value||"").toLowerCase(),f=$("#recipe_filter")?.value||"";
+  $$(".recipe-filter").forEach(x=>x.classList.toggle("hidden",(q&&!x.dataset.search.includes(q))||(f&&x.dataset.cat!==f)));return
+ }
+ if(t.id==="exercise_search"||t.id==="exercise_filter"){
+  const q=($("#exercise_search")?.value||"").toLowerCase(),f=$("#exercise_filter")?.value||"";
+  $$(".exercise-filter").forEach(x=>x.classList.toggle("hidden",(q&&!x.dataset.search.includes(q))||(f&&x.dataset.group!==f)));return
+ }
+ if(t.id==="import_file"&&t.files?.[0]){
+  try{
+   const data=JSON.parse(await t.files[0].text());
+   if(!data.state)throw new Error("El archivo no contiene datos de Proyecto85.");
+   localStorage.setItem(STATE_KEY,JSON.stringify({...baseState(),...data.state,schema:SCHEMA_VERSION}));
+   if(Array.isArray(data.customRecipes))saveCustomRecipes(data.customRecipes);
+   toast("Copia importada");setTimeout(()=>location.reload(),600);
+  }catch(err){toast("No se pudo importar: "+err.message)}
+ }
 });
 
-/* ===== 2.0.1 · RECUPERACIÓN DE HISTORIAL LEGACY ===== */
-function legacyJSON(key,fallback=null){
- try{
-   const raw=localStorage.getItem(key);
-   return raw===null?fallback:JSON.parse(raw);
- }catch{return fallback}
-}
-function legacyKeys(){
- const keys=[];
- for(let i=0;i<localStorage.length;i++){
-   const k=localStorage.key(i);
-   if(k && (k.startsWith("p85_")||k.startsWith("p85proclean_"))) keys.push(k);
- }
- return keys;
-}
-function backupLegacyOnce(){
- if(localStorage.getItem(PREFIX+"legacyBackup"))return;
- const snap={createdAt:new Date().toISOString(),items:{}};
- legacyKeys().forEach(k=>snap.items[k]=localStorage.getItem(k));
- localStorage.setItem(PREFIX+"legacyBackup",JSON.stringify(snap));
-}
-function normalizeMeasure(m){
- if(!m||typeof m!=="object")return null;
- return {
-  date:m.date||m.createdAt?.slice?.(0,10)||todayISO(),
-  weight:Number(m.weight??m.peso)||null,
-  waist:Number(m.waist??m.cintura)||null,
-  hip:Number(m.hip??m.cadera)||null,
-  chest:Number(m.chest??m.pecho)||null,
-  arm:Number(m.arm??m.brazo)||null,
-  thigh:Number(m.thigh??m.muslo)||null,
-  calf:Number(m.calf??m.gemelo)||null,
-  bodyFat:Number(m.bodyFat??m.fat)||null,
-  visceral:Number(m.visceral??m.visceralFat)||null,
-  water:Number(m.water)||null,
-  skeletalMuscle:Number(m.skeletalMuscle)||null,
-  muscleMass:Number(m.muscleMass)||null,
-  protein:Number(m.protein)||null,
-  bmr:Number(m.bmr)||null
- };
-}
-function migrateLegacyData(){
- backupLegacyOnce();
- if(localStorage.getItem(PREFIX+"legacyMigrated"))return;
-
- const s=state();
-
- // Measurements / body history
- const oldMeasures=legacyJSON("p85_measures",[])||[];
- if(Array.isArray(oldMeasures)){
-   const converted=oldMeasures.map(normalizeMeasure).filter(Boolean);
-   const seen=new Set(s.measurements.map(x=>`${x.date}|${x.weight}|${x.waist}`));
-   converted.forEach(x=>{const k=`${x.date}|${x.weight}|${x.waist}`;if(!seen.has(k)){s.measurements.push(x);seen.add(k)}});
-   s.measurements.sort((a,b)=>(b.date||"").localeCompare(a.date||""));
- }
-
- // Training sessions: preserve full legacy object, do not flatten away detail
- const oldSessions=legacyJSON("p85_sessions",[])||[];
- if(Array.isArray(oldSessions)){
-   const existing=new Set(s.trainingLog.map(x=>x.legacyId||x.id||JSON.stringify(x).slice(0,80)));
-   oldSessions.forEach(x=>{
-     const id=x.id||x.uid||`${x.date||""}-${x.day||x.title||""}`;
-     if(!existing.has(id)){
-       s.trainingLog.push({legacyId:id,imported:true,...x});
-       existing.add(id);
-     }
-   });
- }
-
- // Pantry and shopping
- const oldPantry=legacyJSON("p85_pantry",[])||[];
- if(Array.isArray(oldPantry)&&!s.pantry.length) s.pantry=oldPantry;
- const oldShopping=legacyJSON("p85_shopping",[])||[];
- if(Array.isArray(oldShopping)&&!s.shopping.length) s.shopping=oldShopping;
-
- // Nutrition plans: preserve weekly menus in history field and import compatible ones
- const weekly=legacyJSON("p85_weeklyMenus",[])||[];
- s.legacyWeeklyMenus=s.legacyWeeklyMenus||[];
- if(Array.isArray(weekly)){
-   s.legacyWeeklyMenus=[...weekly,...s.legacyWeeklyMenus].slice(0,100);
-   weekly.forEach(w=>{
-     if(!w||!w.days)return;
-     const weekStart=w.weekStart||w.start||w.createdAt?.slice?.(0,10);
-     if(!weekStart||s.plans.some(p=>p.weekStart===weekStart))return;
-     s.plans.push({
-       weekStart,
-       weekEnd:w.weekEnd||plus(weekStart,6),
-       status:w.locked||w.status==="confirmed"?"confirmed":"history",
-       days:w.days,
-       imported:true
-     });
-   });
- }
-
- // Ratings from old mealRatings array
- const oldRatings=legacyJSON("p85_mealRatings",[])||[];
- if(Array.isArray(oldRatings)){
-   oldRatings.forEach(x=>{
-     const id=x.mealId||x.recipeId||x.id;
-     const v=Number(x.score??x.rating);
-     if(id&&v)s.ratings[id]=v;
-   });
- }
-
- saveState(s);
-
- // Custom recipes from both generations
- const oldCustom=legacyJSON("p85_customRecipes",[])||[];
- const cleanCustom=legacyJSON("p85proclean_customRecipes",[])||[];
- const all=[...(Array.isArray(oldCustom)?oldCustom:[]),...(Array.isArray(cleanCustom)?cleanCustom:[])];
- if(all.length){
-   const current=customRecipes(),ids=new Set(current.map(x=>x.id));
-   all.forEach(r=>{if(r?.id&&!ids.has(r.id)){current.push(r);ids.add(r.id)}});
-   saveCustomRecipes(current);
- }
-
- localStorage.setItem(PREFIX+"legacyMigrated",new Date().toISOString());
-}
-
-function recoveredHistoryMarkup(){
- const s=state();
- const importedSessions=s.trainingLog.filter(x=>x.imported).length;
- const importedMeasures=s.measurements.length;
- const legacyMenus=(s.legacyWeeklyMenus||[]).length;
- const backup=!!localStorage.getItem(PREFIX+"legacyBackup");
- return `<div class="card"><span class="eyebrow">RECUPERACIÓN</span><h2>Historial anterior</h2>
- <div class="grid">
-  <div class="stat"><span>Mediciones disponibles</span><b>${importedMeasures}</b></div>
-  <div class="stat"><span>Sesiones importadas</span><b>${importedSessions}</b></div>
-  <div class="stat"><span>Menús antiguos</span><b>${legacyMenus}</b></div>
-  <div class="stat"><span>Copia legacy</span><b>${backup?"Sí":"No"}</b></div>
- </div>
- <p class="muted">La aplicación conserva una copia de los datos antiguos antes de migrarlos.</p></div>`;
-}
-
-migrateLegacyData();
-
-
-/* ===== 3.0.1 · ARRANQUE PROTEGIDO ===== */
-function p85SafeHTML(fn,label){
-  try{
-    const out=fn();
-    return typeof out==="string"?out:"";
-  }catch(err){
-    console.error("Proyecto85 · "+label,err);
-    return `<div class="card">
-      <span class="eyebrow">ERROR DE SECCIÓN</span>
-      <h3>${label}</h3>
-      <p class="muted">${String(err?.message||err)}</p>
-    </div>`;
-  }
-}
-
-function p85SafeRender(){
-  const host=document.getElementById("app");
-  if(!host)return;
-  try{
-    if(typeof render==="function"){
-      render();
-      return;
-    }
-    host.innerHTML=`<div class="shell"><div class="card"><h2>Proyecto85 Pro 3.0.1</h2><p>No se encontró la función de renderizado principal.</p></div></div>`;
-  }catch(err){
-    console.error("Proyecto85 boot error:",err);
-    host.innerHTML=`<div class="shell">
-      <header><div class="brand"><small>ENTRENADOR PERSONAL</small><h1>Proyecto85 Pro <span class="version">3.0.1</span></h1></div></header>
-      <div class="card">
-        <span class="eyebrow">ARRANQUE PROTEGIDO</span>
-        <h2>La aplicación ha arrancado con una incidencia</h2>
-        <p>No se ha quedado en negro. El error detectado es:</p>
-        <pre style="white-space:pre-wrap;color:#ffb5ad">${String(err?.stack||err?.message||err)}</pre>
-        <button class="btn primary" onclick="location.reload()">Reintentar</button>
-      </div>
-    </div>`;
-  }
-}
-
-function p85Boot301(){
-  try{
-    if(typeof migrateLegacyData==="function") migrateLegacyData();
-  }catch(e){
-    console.warn("Migración legacy omitida:",e);
-  }
-  p85SafeRender();
-}
-if(document.readyState==="loading"){
-  document.addEventListener("DOMContentLoaded",p85Boot301,{once:true});
-}else{
-  p85Boot301();
-}
-
+if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",boot,{once:true});else boot();
