@@ -1,5 +1,5 @@
 
-const VERSION="1.6.0",PREFIX="p85proclean_";
+const VERSION="1.7.0",PREFIX="p85proclean_";
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const uid=()=>crypto.randomUUID?crypto.randomUUID():String(Date.now()+Math.random());
 const get=(k,d)=>{try{return JSON.parse(localStorage.getItem(PREFIX+k))??d}catch{return d}};
@@ -159,7 +159,7 @@ function confirmPlan(start){const d=db(),p=d.plans.find(x=>x.weekStart===start);
 function buildShopping(p){const d=db(),need={};Object.values(p.days).forEach(ms=>Object.values(ms).forEach(id=>recipe(id).items.forEach(([n,q,u])=>{if(!need[n])need[n]={name:n,qty:0,unit:u,bought:false};need[n].qty+=(typeof q==="number"?q:1)})));const pan=Object.fromEntries(d.pantry.map(x=>[x.name.toLowerCase(),x.qty||0]));d.shopping=Object.values(need).map(x=>({...x,buy:Math.max(0,x.qty-(pan[x.name.toLowerCase()]||0))})).filter(x=>x.buy>0);saveDB(d)}
 function currentMeal(t){const p=db().plans.find(x=>x.weekStart===monday(0)&&x.status==="confirmed");return recipe(p?.days?.[dayName()]?.[t])||recipesBy(t)[0]}
 let page="home";
-function render(){const c=page==="home"?home():page==="nutrition"?nutrition():page==="evolution"?evolution():page==="training"?training():more();$("#app").innerHTML=`<div class="shell"><header><div class="brand"><small>ENTRENADOR PERSONAL</small><h1>Proyecto85 Pro <span class="version">Clean 1.6</span></h1></div></header>${c}</div>${nav()}`}
+function render(){const c=page==="home"?home():page==="nutrition"?nutrition():page==="evolution"?evolution():page==="training"?training():more();$("#app").innerHTML=`<div class="shell"><header><div class="brand"><small>ENTRENADOR PERSONAL</small><h1>Proyecto85 Pro <span class="version">Clean 1.7</span></h1></div></header>${c}</div>${nav()}`}
 function nav(){return `<nav class="bottom"><div class="bottom-inner">${[["home","⌂","Inicio"],["training","🏋️","Entreno"],["nutrition","🍽️","Nutrición"],["evolution","↗","Evolución"],["more","•••","Más"]].map(([p,i,l])=>`<button class="nav-btn ${page===p?"active":""}" onclick="page='${p}';render()"><b>${i}</b>${l}</button>`).join("")}</div></nav>`}
 function home(){const d=db(),x=d.measurements[0],p=d.plans.find(x=>x.weekStart===monday(0)&&x.status==="confirmed");return `<div class="card hero"><span class="eyebrow">PROYECTO85 PRO</span><h2>Hoy</h2><div class="grid"><div class="stat"><span>Peso</span><b>${x.weight} kg</b></div><div class="stat"><span>Objetivo</span><b>90 kg</b></div><div class="stat"><span>Semana</span><b>${p?"Confirmada":"Pendiente"}</b></div><div class="stat"><span>Base</span><b>Clean</b></div></div></div>`}
 function training(){return `<div class="card"><span class="eyebrow">ENTRENO</span><h2>Módulo de entrenamiento</h2><p class="muted">Se desarrollará sobre esta base limpia sin tocar Nutrición.</p></div>`}
@@ -189,30 +189,53 @@ function library(){const main=allRecipes().filter(r=>["lunch","dinner"].includes
 function tile(r){const own=String(r.id).startsWith("user_");return `<div class="recipe-card filter-recipe" data-search="${(r.name+" "+r.cat+" "+r.protein+" "+r.items.map(x=>x[0]).join(" ")).toLowerCase()}" data-cat="${r.cat}">${r.photo?`<img src="${r.photo}" class="recipe-photo" alt="">`:""}<span class="eyebrow">${MEALS[r.type]}</span><h3>${r.name}</h3><p>${r.prep} · ${r.time} min</p><div class="btn-row"><button class="btn small" onclick="openRecipe('${r.id}')">Ver receta</button>${own?`<button class="btn small" onclick="openCustomRecipeForm('${r.id}')">Editar</button>`:""}</div></div>`}
 function shopping(){const a=db().shopping;if(!a.length)return `<div class="card"><p>Confirma una semana para generar la compra.</p></div>`;return `<div class="card"><h2>Compra semanal</h2>${a.map((x,i)=>`<div class="shopping-row"><input type="checkbox" ${x.bought?"checked":""} onchange="toggleBought(${i},this.checked)"><div><b>${x.name}</b><small>Comprar ${Math.ceil(x.buy)} ${x.unit}</small></div></div>`).join("")}</div>`}
 function pantry(){const a=db().pantry;return `<div class="card"><h2>Despensa</h2><div class="form-grid"><label>Producto<input id="pn"></label><label>Cantidad<input id="pq" type="number"></label></div><button class="btn primary" onclick="addPantry()">Añadir</button>${a.map((x,i)=>`<div class="pantry-row"><span>•</span><div><b>${x.name}</b><small>${x.qty}</small></div><button class="btn small danger" onclick="removePantry(${i})">Quitar</button></div>`).join("")}</div>`}
-function prepMarkup(){const p=getPlan(monday(1)),l=DAYS.map(day=>recipe(p.days[day].lunch));return `<div class="card"><span class="eyebrow">PREPARACIÓN SEMANAL</span><h2>Qué dejar listo</h2><ol>${l.map((r,i)=>`<li><b>${DAYS[i]}:</b> ${r.name} — ${r.prep}. ${r.storage}</li>`).join("")}</ol><p class="note">Las comidas están diseñadas para llegar al mediodía con el trabajo hecho.</p></div>`}
-function ntab(id,b){["today","plan","recipes","shopping","pantry","prep"].forEach(x=>$("#n_"+x)?.classList.add("hidden"));$("#n_"+id)?.classList.remove("hidden");b.parentElement.querySelectorAll(".tab-btn").forEach(x=>x.classList.remove("active"));b.classList.add("active")}
-function pview(id,b){["current","next","history"].forEach(x=>$("#p_"+x)?.classList.add("hidden"));$("#p_"+id)?.classList.remove("hidden");b.parentElement.querySelectorAll(".tab-btn").forEach(x=>x.classList.remove("active"));b.classList.add("active")}
-function openModal(title,body){document.body.insertAdjacentHTML("beforeend",`<div class="modal-backdrop" onclick="if(event.target===this)closeModal()"><div class="modal"><div class="section-title"><h2>${title}</h2><button class="btn small" onclick="closeModal()">Cerrar</button></div>${body}</div></div>`)}
-function closeModal(){$(".modal-backdrop")?.remove()}
-function openRecipe(id){const r=recipe(id);openModal(r.name,`<div class="meta"><span>${r.prep}</span><span>${r.time} min</span><span>${r.cat}</span></div><h3>Ingredientes</h3><ul class="meal-items">${r.items.map(x=>`<li><b>${x[1]} ${x[2]}</b> ${x[0]}<small>${x[3]}</small></li>`).join("")}</ul><h3>Preparación</h3><ol>${r.steps.map(x=>`<li>${x}</li>`).join("")}</ol><h3>Conservación</h3><p>${r.storage}</p><h3>Recalentado</h3><p>${r.reheat}</p>`)}
-function changeToday(t){const cur=currentMeal(t);openModal("Cambiar "+MEALS[t],recipesBy(t).filter(r=>r.id!==cur.id).map(r=>`<button class="btn" style="display:block;width:100%;margin:6px 0" onclick="setToday('${t}','${r.id}')">${r.name}</button>`).join(""))}
-function setToday(t,id){const d=db(),p=d.plans.find(x=>x.weekStart===monday(0)&&x.status==="confirmed");if(p){p.days[dayName()][t]=id;saveDB(d)}closeModal();render()}
-function changePlanMeal(start,day,t){const cur=recipe(getPlan(start).days[day][t]);openModal(day+" · "+MEALS[t],recipesBy(t).filter(r=>r.id!==cur.id).map(r=>`<button class="btn" style="display:block;width:100%;margin:6px 0" onclick="setPlanMeal('${start}','${day}','${t}','${r.id}')">${r.name}</button>`).join(""))}
-function setPlanMeal(start,day,t,id){const d=db(),p=d.plans.find(x=>x.weekStart===start);p.days[day][t]=id;p.status="draft";saveDB(d);closeModal();render()}
-function swapIngredient(t){const r=currentMeal(t),map={"Pollo":["Pavo","Lomo magro"],"Arroz":["Patata","Pasta integral"],"Merluza":["Bacalao","Salmón"],"Queso fresco":["Pavo","Atún"]};const item=r.items.find(x=>map[x[0]]);if(!item)return alert("Este plato no necesita una sustitución simple");openModal("Cambiar ingrediente",map[item[0]].map(rep=>`<button class="btn" onclick="applySwap('${t}','${item[0]}','${rep}')">${item[0]} → ${rep}</button>`).join(" "))}
-function applySwap(t,oldI,newI){const d=db(),p=d.plans.find(x=>x.weekStart===monday(0)&&x.status==="confirmed");if(!p)return;const base=recipe(p.days[dayName()][t]);const c={...base,id:"custom_"+uid(),name:base.name.replace(new RegExp(oldI,"i"),newI),items:base.items.map(x=>x[0]===oldI?[newI,x[1],x[2],x[3]]:x)};RECIPES.push(c);p.days[dayName()][t]=c.id;saveDB(d);closeModal();render()}
-function rate(id,v){const d=db();d.ratings[id]=v;saveDB(d);render()}
-function filterRecipes(){const q=($("#q")?.value||"").toLowerCase(),f=$("#f")?.value||"";$$(".filter-recipe").forEach(x=>x.classList.toggle("hidden",(q&&!x.dataset.search.includes(q))||(f&&x.dataset.cat!==f)))}
-function toggleBought(i,v){const d=db();d.shopping[i].bought=v;saveDB(d);render()}
-function addPantry(){const n=$("#pn").value.trim(),q=Number($("#pq").value)||0;if(!n)return;const d=db();d.pantry.push({name:n,qty:q});saveDB(d);render()}
-function removePantry(i){const d=db();d.pantry.splice(i,1);saveDB(d);render()}
-
-function mealLogs(){return get("mealLog",{})}
-function mealDone(type){return !!mealLogs()[`${todayISO()}_${type}`]}
-function toggleMealDone(type,checked){
- const a=mealLogs();a[`${todayISO()}_${type}`]=!!checked;set("mealLog",a);
- const card=document.querySelector(`[data-meal-card="${type}"]`);
- if(card)card.classList.toggle("meal-complete",!!checked);
+function prepMarkup(){
+ const p=getPlan(monday(1));
+ const mealPrep=(day,type)=>{
+   const r=recipe(p.days[day][type]);
+   if(!r)return "";
+   const steps=detailedSteps(r);
+   return `<div class="meal-card prep-real">
+     <span class="eyebrow">${day.toUpperCase()} · ${type==="lunch"?"COMIDA":"CENA"}</span>
+     <h3>${r.name}</h3>
+     <div class="meta"><span>${r.prep}</span><span>${r.time} min</span><span>${r.cat}</span></div>
+     <h4>Ingredientes de esta receta</h4>
+     <ul class="meal-items">${r.items.map(x=>`<li><b>${x[1]} ${x[2]}</b> ${x[0]}<small>${x[3]}</small></li>`).join("")}</ul>
+     <h4>Qué adelantar</h4><p>${advanceAdvice(r)}</p>
+     <h4>Preparación</h4><ol>${steps.map(x=>`<li>${x}</li>`).join("")}</ol>
+     <h4>Conservación</h4><p>${r.storage}</p>
+     <h4>Recalentado / acabado</h4><p>${r.reheat}</p>
+     <button class="btn small" onclick="openRecipe('${r.id}')">Ver receta completa</button>
+   </div>`;
+ };
+ const salads=[
+ ["Mediterránea","tomate, pepino, pimiento, cebolla y hojas verdes","AOVE, limón y orégano"],
+ ["Tomate y queso fresco","tomate, queso fresco, cebolla y hojas verdes","AOVE y vinagre"],
+ ["Pimientos asados y atún","pimientos asados, atún, cebolla y tomate","AOVE y vinagre"],
+ ["Aguacate y tomate","tomate, aguacate, pepino y hojas verdes","limón y AOVE"],
+ ["Garbanzos mediterráneos","garbanzos, tomate, pepino, pimiento y cebolla","limón, comino y AOVE"],
+ ["Pollo y vegetales","pollo, hojas verdes, tomate, pepino y zanahoria","limón, mostaza suave y AOVE"]
+ ];
+ return `<div class="card">
+   <span class="eyebrow">PREPARACIÓN · SEMANA SIGUIENTE</span>
+   <h2>Organización profesional</h2>
+   <p class="muted">Esta pantalla se genera directamente desde el menú de la semana siguiente. Si cambias un plato en Plan semanal, aquí aparecerá el nuevo plato.</p>
+   <h3>Bloque del fin de semana</h3>
+   <ol>
+    <li><b>Revisa los 7 almuerzos y cenas:</b> confirma primero el plan para no cocinar alimentos que después vayas a sustituir.</li>
+    <li><b>Verduras:</b> lava, seca y porciona. Asa pimientos y verduras que vayan a utilizarse cocinadas. Conserva las hojas sin aliñar.</li>
+    <li><b>Proteínas:</b> deja porcionadas las cantidades indicadas. Cocina por adelantado solo las recetas que lo permitan; pescado y marisco se terminan preferentemente cerca del consumo.</li>
+    <li><b>Legumbres:</b> cuece o deja listas las raciones necesarias y guárdalas separadas por receta.</li>
+    <li><b>Arroz y pasta:</b> prepara únicamente las recetas que indiquen que pueden adelantarse; enfría rápidamente después de cocinar y conserva refrigerado.</li>
+    <li><b>Miércoles:</b> realiza un segundo bloque corto para jueves, viernes y fin de semana, evitando guardar demasiados días comida ya cocinada.</li>
+   </ol>
+ </div>
+ <div class="card"><span class="eyebrow">COMIDAS REALES</span><h2>Qué preparar cada día</h2><p class="muted">No son ejemplos: son los platos actualmente asignados a tu próxima semana.</p></div>
+ ${DAYS.map(day=>mealPrep(day,"lunch")).join("")}
+ <div class="card"><span class="eyebrow">CENAS REALES</span><h2>Qué dejar listo por la noche</h2><p class="muted">Cenas ligeras y preparación útil para el día siguiente.</p></div>
+ ${DAYS.map(day=>mealPrep(day,"dinner")).join("")}
+ <div class="card"><span class="eyebrow">ENSALADAS</span><h2>Opciones para acompañar</h2>
+ ${salads.map(x=>`<p><b>${x[0]}</b><br>${x[1]}<br><small>Aliño: ${x[2]}</small></p>`).join("")}</div>`;
 }
 function weekUsedRecipeIds(){
  const p=db().plans.find(x=>x.weekStart===monday(0));return p?Object.values(p.days||{}).flatMap(x=>Object.values(x||{})):[];
