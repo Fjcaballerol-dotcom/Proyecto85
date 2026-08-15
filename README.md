@@ -1,18 +1,15 @@
-# Proyecto85 Pro 2.0.1 — Recuperación de historial
+# Proyecto85 Pro 3.0.0 — Entrenador85
 
-Esta versión busca datos de versiones anteriores guardados con:
-- p85_*
-- p85proclean_*
+Versión única para uso diario. Mantiene el módulo de Nutrición de la base 2.0.1 y reconstruye Inicio, Entreno y Evolución.
 
-Antes de importar realiza una copia de seguridad local completa.
+## Importante
+- Conserva el prefijo de almacenamiento `p85pro2_` para no romper los datos existentes de esta base.
+- Ejecuta la migración/backup legacy antes de mostrar la app.
+- No incluye service worker ni sistema interno de actualización.
+- Antes de sustituir una instalación, usa **Más → Exportar datos** como copia adicional cuando sea posible.
 
-Recupera cuando existen:
-- mediciones corporales
-- sesiones de entrenamiento
-- recetas propias
-- despensa
-- compra
-- puntuaciones
-- menús semanales antiguos
+## Entrenamiento
+Full Body 5 días: POWER, PULL, ENGINE, PUSH y COMPLETE. Registro por ejercicio de peso, series, repeticiones y esfuerzo; historial individual; alternativas de máquina; core en máquina; cardio; misión diaria y recomendaciones simples de progresión.
 
-Los datos originales no se eliminan.
+## Evolución
+Control semanal ampliado y comparativa de peso, cintura, grasa corporal y masa muscular, además del historial recuperado.
