@@ -1,4 +1,0 @@
-1. Sustituye todos los archivos en GitHub.
-2. Espera 2–3 minutos.
-3. Abre Proyecto85 y pulsa ↻.
-4. Comprueba V6.1.
