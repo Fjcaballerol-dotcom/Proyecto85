@@ -1,5 +1,4 @@
-
-const VERSION="3.0.0",PREFIX="p85pro2_";
+const VERSION="3.0.1",PREFIX="p85pro2_";
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const uid=()=>crypto.randomUUID?crypto.randomUUID():String(Date.now()+Math.random());
 const get=(k,d)=>{try{return JSON.parse(localStorage.getItem(PREFIX+k))??d}catch{return d}};
@@ -238,7 +237,7 @@ function nutrition(){return `<div class="card hero"><span class="eyebrow">NUTRIC
 
 let PAGE="home";
 function nav(){const it=[["home","⌂","Inicio"],["training","🏋️","Entreno"],["nutrition","🍽️","Nutrición"],["evolution","↗","Evolución"],["more","•••","Más"]];return `<nav class="bottom"><div class="bottom-inner">${it.map(([p,i,l])=>`<button class="nav-btn ${PAGE===p?"active":""}" data-page="${p}"><b>${i}</b>${l}</button>`).join("")}</div></nav>`}
-function render(){const host=$("#app");if(!host)return;const content=PAGE==="home"?home():PAGE==="training"?training():PAGE==="nutrition"?nutrition():PAGE==="evolution"?evolution():more();host.innerHTML=`<div class="shell"><header><div class="brand"><small>ENTRENADOR PERSONAL</small><h1>Proyecto85 Pro <span class="version">3.0.0</span></h1></div></header>${content}</div>${nav()}`}
+function render(){const host=$("#app");if(!host)return;const content=PAGE==="home"?home():PAGE==="training"?training():PAGE==="nutrition"?nutrition():PAGE==="evolution"?evolution():more();host.innerHTML=`<div class="shell"><header><div class="brand"><small>ENTRENADOR PERSONAL</small><h1>Proyecto85 Pro <span class="version">3.0.1</span></h1></div></header>${content}</div>${nav()}`}
 
 document.addEventListener("click",e=>{
  const page=e.target.closest("[data-page]");if(page){PAGE=page.dataset.page;render();window.scrollTo(0,0);return}
@@ -409,4 +408,58 @@ function recoveredHistoryMarkup(){
 }
 
 migrateLegacyData();
-render();
+
+
+/* ===== 3.0.1 · ARRANQUE PROTEGIDO ===== */
+function p85SafeHTML(fn,label){
+  try{
+    const out=fn();
+    return typeof out==="string"?out:"";
+  }catch(err){
+    console.error("Proyecto85 · "+label,err);
+    return `<div class="card">
+      <span class="eyebrow">ERROR DE SECCIÓN</span>
+      <h3>${label}</h3>
+      <p class="muted">${String(err?.message||err)}</p>
+    </div>`;
+  }
+}
+
+function p85SafeRender(){
+  const host=document.getElementById("app");
+  if(!host)return;
+  try{
+    if(typeof render==="function"){
+      render();
+      return;
+    }
+    host.innerHTML=`<div class="shell"><div class="card"><h2>Proyecto85 Pro 3.0.1</h2><p>No se encontró la función de renderizado principal.</p></div></div>`;
+  }catch(err){
+    console.error("Proyecto85 boot error:",err);
+    host.innerHTML=`<div class="shell">
+      <header><div class="brand"><small>ENTRENADOR PERSONAL</small><h1>Proyecto85 Pro <span class="version">3.0.1</span></h1></div></header>
+      <div class="card">
+        <span class="eyebrow">ARRANQUE PROTEGIDO</span>
+        <h2>La aplicación ha arrancado con una incidencia</h2>
+        <p>No se ha quedado en negro. El error detectado es:</p>
+        <pre style="white-space:pre-wrap;color:#ffb5ad">${String(err?.stack||err?.message||err)}</pre>
+        <button class="btn primary" onclick="location.reload()">Reintentar</button>
+      </div>
+    </div>`;
+  }
+}
+
+function p85Boot301(){
+  try{
+    if(typeof migrateLegacyData==="function") migrateLegacyData();
+  }catch(e){
+    console.warn("Migración legacy omitida:",e);
+  }
+  p85SafeRender();
+}
+if(document.readyState==="loading"){
+  document.addEventListener("DOMContentLoaded",p85Boot301,{once:true});
+}else{
+  p85Boot301();
+}
+
