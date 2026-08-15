@@ -1,9 +1,5 @@
 
-if(typeof window.p85SaladsHTML!=="function"){
- window.p85SaladsHTML=()=>`<div class="card"><span class="eyebrow">ENSALADAS</span><h3>Opciones variadas</h3><p class="muted">Mediterránea · tomate y queso fresco · pimientos y atún · aguacate y tomate · garbanzos · pollo y vegetales.</p></div>`;
-}
-
-const VERSION="1.5.2",PREFIX="p85proclean_";
+const VERSION="1.7.0",PREFIX="p85proclean_";
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const uid=()=>crypto.randomUUID?crypto.randomUUID():String(Date.now()+Math.random());
 const get=(k,d)=>{try{return JSON.parse(localStorage.getItem(PREFIX+k))??d}catch{return d}};
@@ -163,7 +159,7 @@ function confirmPlan(start){const d=db(),p=d.plans.find(x=>x.weekStart===start);
 function buildShopping(p){const d=db(),need={};Object.values(p.days).forEach(ms=>Object.values(ms).forEach(id=>recipe(id).items.forEach(([n,q,u])=>{if(!need[n])need[n]={name:n,qty:0,unit:u,bought:false};need[n].qty+=(typeof q==="number"?q:1)})));const pan=Object.fromEntries(d.pantry.map(x=>[x.name.toLowerCase(),x.qty||0]));d.shopping=Object.values(need).map(x=>({...x,buy:Math.max(0,x.qty-(pan[x.name.toLowerCase()]||0))})).filter(x=>x.buy>0);saveDB(d)}
 function currentMeal(t){const p=db().plans.find(x=>x.weekStart===monday(0)&&x.status==="confirmed");return recipe(p?.days?.[dayName()]?.[t])||recipesBy(t)[0]}
 let page="home";
-function render(){const c=page==="home"?home():page==="nutrition"?nutrition():page==="evolution"?evolution():page==="training"?training():more();$("#app").innerHTML=`<div class="shell"><header><div class="brand"><small>ENTRENADOR PERSONAL</small><h1>Proyecto85 Pro <span class="version">Clean 1.5.2.2</span></h1></div></header>${c}</div>${nav()}`}
+function render(){const c=page==="home"?home():page==="nutrition"?nutrition():page==="evolution"?evolution():page==="training"?training():more();$("#app").innerHTML=`<div class="shell"><header><div class="brand"><small>ENTRENADOR PERSONAL</small><h1>Proyecto85 Pro <span class="version">Clean 1.7</span></h1></div></header>${c}</div>${nav()}`}
 function nav(){return `<nav class="bottom"><div class="bottom-inner">${[["home","⌂","Inicio"],["training","🏋️","Entreno"],["nutrition","🍽️","Nutrición"],["evolution","↗","Evolución"],["more","•••","Más"]].map(([p,i,l])=>`<button class="nav-btn ${page===p?"active":""}" onclick="page='${p}';render()"><b>${i}</b>${l}</button>`).join("")}</div></nav>`}
 function home(){const d=db(),x=d.measurements[0],p=d.plans.find(x=>x.weekStart===monday(0)&&x.status==="confirmed");return `<div class="card hero"><span class="eyebrow">PROYECTO85 PRO</span><h2>Hoy</h2><div class="grid"><div class="stat"><span>Peso</span><b>${x.weight} kg</b></div><div class="stat"><span>Objetivo</span><b>90 kg</b></div><div class="stat"><span>Semana</span><b>${p?"Confirmada":"Pendiente"}</b></div><div class="stat"><span>Base</span><b>Clean</b></div></div></div>`}
 function training(){return `<div class="card"><span class="eyebrow">ENTRENO</span><h2>Módulo de entrenamiento</h2><p class="muted">Se desarrollará sobre esta base limpia sin tocar Nutrición.</p></div>`}
@@ -171,6 +167,21 @@ function evolution(){const x=db().measurements[0];return `<div class="card"><spa
 function more(){return `<div class="card"><span class="eyebrow">BASE LIMPIA</span><h2>Sin caché interna</h2><p>Esta versión no utiliza service worker. Las actualizaciones dejan de depender del mecanismo que estaba fallando.</p></div>`}
 function nutrition(){return `<div class="card hero"><span class="eyebrow">NUTRICIÓN</span><h2>Planifica → prepara → compra → sigue</h2><p class="muted">Café + tostada como base del desayuno. Comidas preparables. Cenas ligeras.</p></div><div class="tabs"><button class="tab-btn active" onclick="ntab('today',this)">Hoy</button><button class="tab-btn" onclick="ntab('plan',this)">Plan semanal</button><button class="tab-btn" onclick="ntab('recipes',this)">Biblioteca</button><button class="tab-btn" onclick="ntab('shopping',this)">Compra</button><button class="tab-btn" onclick="ntab('pantry',this)">Despensa</button><button class="tab-btn" onclick="ntab('prep',this)">Preparación</button></div><section id="n_today">${Object.keys(MEALS).map(mealCard).join("")}</section><section id="n_plan" class="hidden">${planner()}</section><section id="n_recipes" class="hidden">${library()}</section><section id="n_shopping" class="hidden">${shopping()}</section><section id="n_pantry" class="hidden">${pantry()}</section><section id="n_prep" class="hidden">${prepMarkup()}</section>`}
 function mealCard(t){const r=currentMeal(t),rating=db().ratings[r.id]||0;return `<div class="meal-card"><div class="meal-head"><div><span class="eyebrow">${MEALS[t]}</span><h3>${r.name}</h3><div class="meta"><span>${r.prep}</span><span>${r.time} min</span><span>${r.cat}</span></div></div><button class="btn small" onclick="openRecipe('${r.id}')">Receta</button></div><ul class="meal-items">${r.items.map(x=>`<li><b>${x[1]} ${x[2]}</b> ${x[0]}<small>${x[3]}</small></li>`).join("")}</ul><div class="btn-row"><button class="btn small" onclick="changeToday('${t}')">Cambiar plato</button><button class="btn small" onclick="swapIngredient('${t}')">Cambiar ingrediente</button></div><div class="rating">${[1,2,3,4,5,6,7,8,9,10].map(v=>`<button class="${rating===v?"active":""}" onclick="rate('${r.id}',${v})">${v}</button>`).join("")}</div></div>`}
+
+function mealCard(t){
+ const r=currentMeal(t),rating=db().ratings[r.id]||0,done=mealDone(t);
+ return `<div class="meal-card ${done?"meal-complete":""}" data-meal-card="${t}">
+ <div class="meal-head"><div><span class="eyebrow">${MEALS[t]}</span><h3>${r.name}</h3><div class="meta"><span>${r.prep}</span><span>${r.time} min</span><span>${r.cat}</span></div></div><button class="btn small" onclick="openRecipe('${r.id}')">Receta</button></div>
+ <ul class="meal-items">${r.items.map(x=>`<li><b>${x[1]} ${x[2]}</b> ${x[0]}<small>${x[3]}</small></li>`).join("")}</ul>
+ <label class="meal-check"><input type="checkbox" ${done?"checked":""} onchange="toggleMealDone('${t}',this.checked)"> Comida realizada</label>
+ <div class="btn-row"><button class="btn small primary" onclick="smartReplacement('${t}')">Cambiar por otra equilibrada</button><button class="btn small" onclick="swapIngredient('${t}')">Cambiar ingrediente</button></div>
+ <div class="rating"><span class="rating-label">Puntuación</span>${[1,2,3,4,5,6,7,8,9,10].map(v=>`<button class="${rating===v?"active":""}" onclick="rateNoJump('${r.id}',${v},this)">${v}</button>`).join("")}</div></div>`;
+}
+function rateNoJump(id,v,button){
+ const d=db();d.ratings[id]=v;saveDB(d);
+ const row=button.closest(".rating");if(row)row.querySelectorAll("button").forEach(x=>x.classList.toggle("active",Number(x.textContent)===v));
+}
+
 function planner(){return `<div class="planner-nav"><button class="tab-btn active" onclick="pview('current',this)">Semana actual</button><button class="tab-btn" onclick="pview('next',this)">Semana siguiente</button><button class="tab-btn" onclick="pview('history',this)">Historial</button></div><div id="p_current">${planMarkup(getPlan(monday(0)))}</div><div id="p_next" class="hidden">${planMarkup(getPlan(monday(1)))}</div><div id="p_history" class="hidden">${historyMarkup()}</div>`}
 function planMarkup(p){return `<div class="card"><div class="section-title"><div><span class="eyebrow">${p.weekStart} → ${p.weekEnd}</span><h2>${p.status==="confirmed"?"Semana confirmada":"Borrador editable"}</h2></div></div><div class="btn-row"><button class="btn" onclick="generatePlan('${p.weekStart}');render()">Otra propuesta</button>${p.status!=="confirmed"?`<button class="btn primary" onclick="confirmPlan('${p.weekStart}')">Confirmar semana</button>`:""}</div></div>${DAYS.map(day=>`<div class="week-card"><h3>${day}</h3>${Object.keys(MEALS).map(t=>{const r=recipe(p.days[day][t]);return `<div class="week-row"><span>${MEALS[t]}</span><div><b>${r.name}</b><small>${r.prep} · ${r.time} min</small></div><div class="actions"><button class="btn small" onclick="openRecipe('${r.id}')">Ver</button><button class="btn small" onclick="changePlanMeal('${p.weekStart}','${day}','${t}')">Cambiar</button></div></div>`}).join("")}</div>`).join("")}`}
 function historyMarkup(){const a=db().plans.filter(p=>p.weekStart<monday(0));return a.length?a.map(p=>`<div class="card"><h3>${p.weekStart} → ${p.weekEnd}</h3><p>${p.status}</p></div>`).join(""):`<div class="card"><p class="muted">Aún no hay semanas anteriores.</p></div>`}
@@ -179,65 +190,111 @@ function tile(r){const own=String(r.id).startsWith("user_");return `<div class="
 function shopping(){const a=db().shopping;if(!a.length)return `<div class="card"><p>Confirma una semana para generar la compra.</p></div>`;return `<div class="card"><h2>Compra semanal</h2>${a.map((x,i)=>`<div class="shopping-row"><input type="checkbox" ${x.bought?"checked":""} onchange="toggleBought(${i},this.checked)"><div><b>${x.name}</b><small>Comprar ${Math.ceil(x.buy)} ${x.unit}</small></div></div>`).join("")}</div>`}
 function pantry(){const a=db().pantry;return `<div class="card"><h2>Despensa</h2><div class="form-grid"><label>Producto<input id="pn"></label><label>Cantidad<input id="pq" type="number"></label></div><button class="btn primary" onclick="addPantry()">Añadir</button>${a.map((x,i)=>`<div class="pantry-row"><span>•</span><div><b>${x.name}</b><small>${x.qty}</small></div><button class="btn small danger" onclick="removePantry(${i})">Quitar</button></div>`).join("")}</div>`}
 function prepMarkup(){
+ const p=getPlan(monday(1));
+ const mealPrep=(day,type)=>{
+   const r=recipe(p.days[day][type]);
+   if(!r)return "";
+   const steps=detailedSteps(r);
+   return `<div class="meal-card prep-real">
+     <span class="eyebrow">${day.toUpperCase()} · ${type==="lunch"?"COMIDA":"CENA"}</span>
+     <h3>${r.name}</h3>
+     <div class="meta"><span>${r.prep}</span><span>${r.time} min</span><span>${r.cat}</span></div>
+     <h4>Ingredientes de esta receta</h4>
+     <ul class="meal-items">${r.items.map(x=>`<li><b>${x[1]} ${x[2]}</b> ${x[0]}<small>${x[3]}</small></li>`).join("")}</ul>
+     <h4>Qué adelantar</h4><p>${advanceAdvice(r)}</p>
+     <h4>Preparación</h4><ol>${steps.map(x=>`<li>${x}</li>`).join("")}</ol>
+     <h4>Conservación</h4><p>${r.storage}</p>
+     <h4>Recalentado / acabado</h4><p>${r.reheat}</p>
+     <button class="btn small" onclick="openRecipe('${r.id}')">Ver receta completa</button>
+   </div>`;
+ };
+ const salads=[
+ ["Mediterránea","tomate, pepino, pimiento, cebolla y hojas verdes","AOVE, limón y orégano"],
+ ["Tomate y queso fresco","tomate, queso fresco, cebolla y hojas verdes","AOVE y vinagre"],
+ ["Pimientos asados y atún","pimientos asados, atún, cebolla y tomate","AOVE y vinagre"],
+ ["Aguacate y tomate","tomate, aguacate, pepino y hojas verdes","limón y AOVE"],
+ ["Garbanzos mediterráneos","garbanzos, tomate, pepino, pimiento y cebolla","limón, comino y AOVE"],
+ ["Pollo y vegetales","pollo, hojas verdes, tomate, pepino y zanahoria","limón, mostaza suave y AOVE"]
+ ];
+ return `<div class="card">
+   <span class="eyebrow">PREPARACIÓN · SEMANA SIGUIENTE</span>
+   <h2>Organización profesional</h2>
+   <p class="muted">Esta pantalla se genera directamente desde el menú de la semana siguiente. Si cambias un plato en Plan semanal, aquí aparecerá el nuevo plato.</p>
+   <h3>Bloque del fin de semana</h3>
+   <ol>
+    <li><b>Revisa los 7 almuerzos y cenas:</b> confirma primero el plan para no cocinar alimentos que después vayas a sustituir.</li>
+    <li><b>Verduras:</b> lava, seca y porciona. Asa pimientos y verduras que vayan a utilizarse cocinadas. Conserva las hojas sin aliñar.</li>
+    <li><b>Proteínas:</b> deja porcionadas las cantidades indicadas. Cocina por adelantado solo las recetas que lo permitan; pescado y marisco se terminan preferentemente cerca del consumo.</li>
+    <li><b>Legumbres:</b> cuece o deja listas las raciones necesarias y guárdalas separadas por receta.</li>
+    <li><b>Arroz y pasta:</b> prepara únicamente las recetas que indiquen que pueden adelantarse; enfría rápidamente después de cocinar y conserva refrigerado.</li>
+    <li><b>Miércoles:</b> realiza un segundo bloque corto para jueves, viernes y fin de semana, evitando guardar demasiados días comida ya cocinada.</li>
+   </ol>
+ </div>
+ <div class="card"><span class="eyebrow">COMIDAS REALES</span><h2>Qué preparar cada día</h2><p class="muted">No son ejemplos: son los platos actualmente asignados a tu próxima semana.</p></div>
+ ${DAYS.map(day=>mealPrep(day,"lunch")).join("")}
+ <div class="card"><span class="eyebrow">CENAS REALES</span><h2>Qué dejar listo por la noche</h2><p class="muted">Cenas ligeras y preparación útil para el día siguiente.</p></div>
+ ${DAYS.map(day=>mealPrep(day,"dinner")).join("")}
+ <div class="card"><span class="eyebrow">ENSALADAS</span><h2>Opciones para acompañar</h2>
+ ${salads.map(x=>`<p><b>${x[0]}</b><br>${x[1]}<br><small>Aliño: ${x[2]}</small></p>`).join("")}</div>`;
+}
+function weekUsedRecipeIds(){
+ const p=db().plans.find(x=>x.weekStart===monday(0));return p?Object.values(p.days||{}).flatMap(x=>Object.values(x||{})):[];
+}
+function smartReplacement(type){
+ const d=db(),p=d.plans.find(x=>x.weekStart===monday(0)&&x.status==="confirmed");
+ if(!p)return alert("Confirma primero la semana.");
+ const current=recipe(p.days[dayName()][type]),used=weekUsedRecipeIds();
+ const candidates=recipesBy(type).filter(r=>r.id!==current.id).sort((a,b)=>{
+  const sa=(used.includes(a.id)?100:0)+(a.protein===current.protein?25:0)+(a.carb===current.carb?10:0)-(d.ratings[a.id]||0)*2;
+  const sb=(used.includes(b.id)?100:0)+(b.protein===current.protein?25:0)+(b.carb===current.carb?10:0)-(d.ratings[b.id]||0)*2;
+  return sa-sb;
+ });
+ const next=candidates[0];if(!next)return alert("No hay alternativa.");
+ p.days[dayName()][type]=next.id;saveDB(d);
+ const old=document.querySelector(`[data-meal-card="${type}"]`);
+ if(old){const tmp=document.createElement("div");tmp.innerHTML=mealCard(type);old.replaceWith(tmp.firstElementChild)}else render();
+}
+function detailedSteps(r){
+ const items=(r.items||[]).map(x=>String(x[0]).toLowerCase()),out=[];
+ out.push("Pesa todos los ingredientes y deja lavadas, cortadas y escurridas las verduras antes de empezar.");
+ if(items.some(x=>x.includes("arroz")))out.push("Cuece el arroz siguiendo el tiempo del envase. Si vas a guardarlo, enfríalo pronto y resérvalo separado hasta el montaje final.");
+ if(items.some(x=>x.includes("pasta")))out.push("Cuece la pasta hasta que quede al dente según el envase. Escúrrela bien y reserva.");
+ if(items.some(x=>x.includes("patata")))out.push("Cuece o asa la patata hasta que esté tierna al pincharla. Déjala templar antes de mezclar o guardar.");
+ if(items.some(x=>/pollo|pavo|lomo|ternera/.test(x)))out.push("Calienta una sartén o plancha a fuego medio-alto y cocina la carne por ambos lados hasta que quede completamente hecha sin resecarla.");
+ if(items.some(x=>/salmón|merluza|bacalao|atún/.test(x)))out.push("Seca el pescado, calienta la plancha y cocínalo controlando el punto para que quede hecho sin secarse.");
+ if(items.some(x=>/langostino|gamba|sepia|mejill/.test(x)))out.push("Añade el marisco cuando el resto esté casi listo y cocínalo solo el tiempo necesario para que quede completamente hecho.");
+ if(items.some(x=>/huevo/.test(x)))out.push("Cocina el huevo al final o por separado hasta que quede completamente cuajado.");
+ if(items.some(x=>/verdura|pimiento|espárrago|zanahoria|espinaca/.test(x)))out.push("Cocina primero las verduras más duras y después las más tiernas, hasta que estén hechas pero con textura.");
+ (r.steps||[]).forEach(x=>out.push(x));
+ out.push("Monta el plato al final y añade las especias y el aceite en la cantidad indicada.");
+ return [...new Set(out)];
+}
+function advanceAdvice(r){
+ const s=(r.name+" "+r.prep).toLowerCase();
+ if(r.type==="dinner"&&/pescado|marisco/.test(s))return "Deja limpios y porcionados los ingredientes y cocina la proteína cerca de la cena.";
+ if(/ensalada|aguacate/.test(s))return "Deja las hojas lavadas y secas; tomate, aguacate y aliño se añaden al servir.";
+ return r.prep+"; deja la ración pesada y porcionada desde el día anterior.";
+}
+
+
+function openRecipe(id){
+ const r=recipe(id);if(!r)return;
+ openModal(r.name,`<div class="meta"><span>${r.prep}</span><span>${r.time} min</span><span>${r.cat}</span></div>
+ <h3>Ingredientes y cantidades</h3><ul class="meal-items">${r.items.map(x=>`<li><b>${x[1]} ${x[2]}</b> ${x[0]}<small>${x[3]}</small></li>`).join("")}</ul>
+ <h3>Antes de empezar</h3><p>Pesa y prepara todos los ingredientes para seguir la receta sin improvisar.</p>
+ <h3>Preparación paso a paso</h3><ol>${detailedSteps(r).map(x=>`<li>${x}</li>`).join("")}</ol>
+ <h3>Qué puedes adelantar</h3><p>${advanceAdvice(r)}</p><h3>Conservación</h3><p>${r.storage}</p><h3>Recalentado</h3><p>${r.reheat}</p>`);
+}
+
+
+function prepMarkup(){
  const p=getPlan(monday(1)),l=DAYS.map(day=>recipe(p.days[day].lunch));
- return `<div class="card"><span class="eyebrow">PREPARACIÓN · NUTRICIÓN</span>
- <h2>Preparar la semana</h2>
- <p class="muted">Organiza el fin de semana las bases de las comidas para reducir el trabajo diario, manteniendo separados los alimentos que conviene terminar al momento.</p>
- <ol>
- <li><b>Verduras:</b> lava y corta verduras resistentes. Asa pimientos y una bandeja de verduras. Guarda las hojas verdes lavadas y muy secas, sin aliñar.</li>
- <li><b>Proteínas:</b> deja cocinado pollo o lomo para los primeros días. Porciona el resto. Pescado y marisco, mejor cocinarlos próximos al consumo.</li>
- <li><b>Legumbres:</b> prepara garbanzos o lentejas y divide en raciones. Congela las destinadas a días posteriores cuando sea apropiado.</li>
- <li><b>Arroz y pasta:</b> prepara las raciones de los primeros días; enfría pronto tras cocinar y conserva correctamente. Para días posteriores, prepara más cerca del consumo o congela cuando proceda.</li>
- <li><b>Ensaladas:</b> deja los componentes separados. Tomate, aguacate, queso, atún y aliño se incorporan el día de consumo.</li>
- <li><b>Aliños:</b> deja preparados pequeños recipientes de mediterráneo, vinagreta y limón-mostaza suave.</li>
- <li><b>Miércoles:</b> haz una preparación corta de 20–30 minutos para completar jueves-viernes y el fin de semana.</li>
- </ol></div>
- <div class="card"><span class="eyebrow">COMIDAS DE LA SEMANA SIGUIENTE</span><h3>Qué adelantar cada día</h3>
- <ol>${l.map((r,i)=>`<li><b>${DAYS[i]}:</b> ${r.name}<br><small>${r.prep}. ${r.storage}</small></li>`).join("")}</ol></div>
- ${typeof p85SaladsHTML==="function"?p85SaladsHTML():""}`;
+ const salads=[["Mediterránea","tomate, pepino, pimiento, cebolla y hojas verdes","AOVE + limón + orégano"],["Tomate y queso fresco","tomate, queso fresco, cebolla y hojas verdes","AOVE + vinagre"],["Pimientos asados y atún","pimientos asados, atún, cebolla y tomate","AOVE + vinagre"],["Aguacate y tomate","tomate, aguacate, pepino y hojas verdes","limón + AOVE"],["Garbanzos mediterráneos","garbanzos, tomate, pepino, pimiento y cebolla","limón + comino + AOVE"],["Pollo y vegetales","pollo, hojas verdes, tomate, pepino y zanahoria","limón + mostaza suave + AOVE"]];
+ return `<div class="card"><span class="eyebrow">PREPARACIÓN · NUTRICIÓN</span><h2>Fin de semana</h2>
+ <p class="muted">Prepara bases para los primeros días y deja para más adelante lo que pierde calidad o conviene cocinar cerca del consumo.</p>
+ <ol><li><b>Verduras:</b> lava y corta verduras resistentes; asa pimientos y una bandeja de verduras. Hojas verdes, lavadas y secas sin aliñar.</li><li><b>Proteínas:</b> cocina pollo o lomo de los primeros días. Pescado y marisco, mejor próximos al consumo.</li><li><b>Legumbres:</b> prepara garbanzos o lentejas y divide en raciones.</li><li><b>Arroz/pasta:</b> prepara las raciones de primeros días y enfría pronto tras cocinar.</li><li><b>Ensaladas:</b> guarda componentes separados; añade tomate, aguacate, queso, atún y aliño al consumir.</li><li><b>Miércoles:</b> reserva 20–30 min para completar jueves a domingo.</li></ol></div>
+ <div class="card"><span class="eyebrow">SEMANA SIGUIENTE</span><h3>Qué adelantar</h3><ol>${l.map((r,i)=>`<li><b>${DAYS[i]}:</b> ${r.name}<br><small>${advanceAdvice(r)} ${r.storage}</small></li>`).join("")}</ol></div>
+ <div class="card"><span class="eyebrow">ENSALADAS</span><h3>Opciones para variar</h3>${salads.map(x=>`<p><b>${x[0]}</b><br>${x[1]}<br><small>Aliño: ${x[2]}</small></p>`).join("")}</div>`;
 }
 
-
-function p85DetailedRecipe(r){
- const name=r.name||r.title||"Receta";
- const ing=r.ingredients||r.ingredientes||"Consulta las cantidades indicadas en la ficha.";
- const base=r.prep||r.preparation||r.preparacion||"Prepara los ingredientes y cocina hasta alcanzar el punto adecuado.";
- const mins=r.time||r.tiempo||"Según receta";
- const advance=r.advance||r.weekend||"Deja pesados, lavados y cortados los ingredientes que lo permitan.";
- const storage=r.storage||r.conservacion||"Enfría pronto si se guarda y conserva en recipiente cerrado en frío.";
- const reheat=r.reheat||r.recalentado||"Recalienta completamente solo la ración que vayas a consumir cuando proceda.";
- return `<div class="recipe-detail"><h3>${name}</h3>
- <p><b>Ingredientes y cantidades</b><br>${ing}</p>
- <p><b>Antes de empezar</b><br>Pesa las cantidades, lava y corta los ingredientes necesarios y deja todo preparado antes de encender el fuego.</p>
- <p><b>Preparación paso a paso</b><br>${String(base).replace(/\n/g,"<br>")}</p>
- <p><b>Tiempo</b><br>${mins}</p>
- <p><b>Qué puedes adelantar</b><br>${advance}</p>
- <p><b>Conservación</b><br>${storage}</p>
- <p><b>Recalentado</b><br>${reheat}</p></div>`;
-}
-
-function p85Boot(){
- try{
-   if(!document.getElementById("app")){
-     console.error("Proyecto85 Pro: falta #app");
-     return;
-   }
-   render();
- }catch(err){
-   console.error("Proyecto85 Pro boot error:",err);
-   const host=document.getElementById("app");
-   if(host){
-     host.innerHTML=`<div style="max-width:720px;margin:40px auto;padding:20px;color:#fff;font-family:-apple-system;background:#0b2118;border-radius:20px">
-       <h2>Proyecto85 Pro</h2>
-       <p>Se ha producido un error al iniciar.</p>
-       <pre style="white-space:pre-wrap;color:#ffb3ad">${String(err?.message||err)}</pre>
-       <button onclick="location.reload()" style="padding:12px 16px;border:0;border-radius:12px;background:#48d489;font-weight:800">Reintentar</button>
-     </div>`;
-   }
- }
-}
-if(document.readyState==="loading"){
- document.addEventListener("DOMContentLoaded",p85Boot,{once:true});
-}else{
- p85Boot();
-}
+render();

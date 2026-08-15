@@ -1,12 +1,9 @@
-# Proyecto85 Pro — despliegue limpio 1.5.1
+# Proyecto85 Pro Clean 1.7
 
-En el repositorio deben quedar como archivos de la aplicación:
-- index.html
-- app.js
-- styles.css
-- manifest.json
-- reset.html
-- icon-192.png
-- icon-512.png
+Preparación profesional corregida.
 
-Elimina los app-clean-*.js y styles-clean-*.css antiguos para evitar confusión.
+- Preparación usa los platos reales del plan de la semana siguiente.
+- Muestra comidas y cenas de lunes a domingo.
+- Cada plato incluye ingredientes/cantidades, qué adelantar, pasos, conservación y recalentado.
+- Si el menú cambia, Preparación lee el nuevo plato automáticamente.
+- Mantiene el bloque de organización de fin de semana y las opciones de ensaladas.
