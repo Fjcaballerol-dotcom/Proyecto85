@@ -1,7 +1,0 @@
-{
-  "version": "10.0.1",
-  "name": "Proyecto85 Pro",
-  "channel": "stable",
-  "build": "2026-08-14-update-fix",
-  "notes": "Corrige el sistema de actualización: limpia caché, fuerza service worker nuevo y recarga sin borrar datos locales."
-}
