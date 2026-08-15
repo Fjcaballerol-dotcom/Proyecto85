@@ -154,14 +154,20 @@ function toast(msg){
 }
 
 function legacyBackup(){
- const key=PREFIX+"legacyBackup_v4";
- if(localStorage.getItem(key))return;
- const snap={createdAt:new Date().toISOString(),items:{}};
- for(let i=0;i<localStorage.length;i++){
-  const k=localStorage.key(i);
-  if(k&&(k.startsWith("p85_")||k.startsWith("p85proclean_")||k.startsWith("p85pro2_"))) snap.items[k]=localStorage.getItem(k);
- }
- localStorage.setItem(key,JSON.stringify(snap));
+ // Best-effort only: a backup must never prevent the app from starting.
+ try{
+  const key=PREFIX+"legacyBackup_v4";
+  if(localStorage.getItem(key))return true;
+  const snap={createdAt:new Date().toISOString(),items:{}};
+  const keys=[];
+  for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k)keys.push(k)}
+  for(const k of keys){
+   // Do not include this backup key itself; that caused recursive growth/quota errors.
+   if(k!==key&&(k.startsWith("p85_")||k.startsWith("p85proclean_")||k.startsWith("p85pro2_"))) snap.items[k]=localStorage.getItem(k);
+  }
+  localStorage.setItem(key,JSON.stringify(snap));
+  return true;
+ }catch(err){console.warn("Legacy backup omitted; continuing safely",err);return false}
 }
 function normalizeMeasurement(m){
  if(!m||typeof m!=="object")return null;
@@ -171,6 +177,7 @@ function normalizeMeasurement(m){
 function migrateLegacyOnce(){
  const s=state();
  if(s.importedLegacy)return;
+ // Migration is non-blocking. Existing data stays untouched if a legacy step fails.
  legacyBackup();
  const measures=[...(readJSON("p85_measures",[])||[]),...(readJSON("p85proclean_measures",[])||[])];
  const converted=measures.map(normalizeMeasurement).filter(Boolean);
@@ -183,8 +190,9 @@ function migrateLegacyOnce(){
  const ratings=readJSON("p85_mealRatings",[])||[];
  ratings.forEach(x=>{const id=x.mealId||x.recipeId||x.id,v=finite(x.score??x.rating,0);if(id&&v)s.ratings[id]=v});
  const custom=[...(readJSON("p85_customRecipes",[])||[]),...(readJSON("p85proclean_customRecipes",[])||[])];
- if(custom.length&&!customRecipes().length)saveCustomRecipes(custom);
- s.importedLegacy=true;saveState(s);
+ if(custom.length&&!customRecipes().length){try{saveCustomRecipes(custom)}catch(err){console.warn("Custom recipe migration skipped",err)}}
+ s.importedLegacy=true;
+ try{saveState(s)}catch(err){console.warn("Legacy state migration could not be persisted",err)}
 }
 
 function recipeScore(r,used,current=null){
