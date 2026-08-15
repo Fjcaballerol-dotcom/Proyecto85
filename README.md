@@ -1,9 +1,3 @@
-# Proyecto85 Pro Clean 1.7
+# Proyecto85 Pro Clean 1.6 ESTABLE
 
-Preparación profesional corregida.
-
-- Preparación usa los platos reales del plan de la semana siguiente.
-- Muestra comidas y cenas de lunes a domingo.
-- Cada plato incluye ingredientes/cantidades, qué adelantar, pasos, conservación y recalentado.
-- Si el menú cambia, Preparación lee el nuevo plato automáticamente.
-- Mantiene el bloque de organización de fin de semana y las opciones de ensaladas.
+Reconstruida desde Clean 1.2 funcional. Botones, puntuación, marcado de comidas, cambio automático equilibrado, preparación detallada y preparación semanal dentro de Nutrición.
