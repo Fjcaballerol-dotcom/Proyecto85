@@ -1,5 +1,5 @@
 
-const VERSION="2.0.0",PREFIX="p85pro2_";
+const VERSION="2.0.1",PREFIX="p85pro2_";
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const uid=()=>crypto.randomUUID?crypto.randomUUID():String(Date.now()+Math.random());
 const get=(k,d)=>{try{return JSON.parse(localStorage.getItem(PREFIX+k))??d}catch{return d}};
@@ -88,7 +88,8 @@ function generatePlan(start){
 }
 function getPlan(start){return state().plans.find(p=>p.weekStart===start)||generatePlan(start)}
 function confirmPlan(start){
- const s=state(),p=s.plans.find(x=>x.weekStart===start);if(!p)return;p.status="confirmed";saveState(s);buildShopping(p);render();
+ const s=state(),p=s.plans.find(x=>x.weekStart===start);if(!p)return;p.status="confirmed";saveState(s);buildShopping(p);migrateLegacyData();
+render();
 }
 function buildShopping(p){
  const s=state(),need={};
@@ -211,14 +212,14 @@ function prepMarkup(){
 function training(){
  const logs=state().trainingLog;return `<div class="card hero"><span class="eyebrow">ENTRENO</span><h2>Plan de entrenamiento</h2><p class="muted">Registro simple y estable.</p></div>${DEFAULT_TRAINING.map((d,i)=>`<div class="card"><span class="eyebrow">${d.day}</span><h3>${d.title}</h3>${d.ex.map(x=>`<div class="exercise-row"><div><b>${x}</b><small>Registra sensaciones y carga</small></div><button class="btn small" data-log-ex="${i}|${x}">Registrar</button></div>`).join("")}</div>`).join("")}`;
 }
-function evolution(){const s=state(),m=s.measurements[0];return `<div class="card"><span class="eyebrow">EVOLUCIÓN</span><h2>Control semanal</h2><div class="form-grid"><label>Peso<input id="ev_weight" type="number" step="0.1" value="${m?.weight||""}"></label><label>Cintura<input id="ev_waist" type="number" step="0.1" value="${m?.waist||""}"></label><label>Cadera<input id="ev_hip" type="number" step="0.1" value="${m?.hip||""}"></label><label>Pecho<input id="ev_chest" type="number" step="0.1" value="${m?.chest||""}"></label></div><button class="btn primary" data-save-measure>Guardar control</button></div>`}
-function more(){return `<div class="card"><span class="eyebrow">MÁS</span><h2>Proyecto85 Pro</h2><p>Base única y limpia, sin service worker.</p><button class="btn" data-export>Exportar datos</button></div>`}
-function home(){const p=state().plans.find(x=>x.weekStart===monday(0)&&x.status==="confirmed");return `<div class="card hero"><span class="eyebrow">PROYECTO85 PRO</span><h2>Inicio</h2><div class="grid"><div class="stat"><span>Semana</span><b>${p?"Planificada":"Pendiente"}</b></div><div class="stat"><span>Versión</span><b>2.0</b></div></div></div>`}
+function evolution(){const s=state(),m=s.measurements[0];return `${recoveredHistoryMarkup()}<div class="card"><span class="eyebrow">EVOLUCIÓN</span><h2>Control semanal</h2><div class="form-grid"><label>Peso<input id="ev_weight" type="number" step="0.1" value="${m?.weight||""}"></label><label>Cintura<input id="ev_waist" type="number" step="0.1" value="${m?.waist||""}"></label><label>Cadera<input id="ev_hip" type="number" step="0.1" value="${m?.hip||""}"></label><label>Pecho<input id="ev_chest" type="number" step="0.1" value="${m?.chest||""}"></label></div><button class="btn primary" data-save-measure>Guardar control</button></div>`}
+function more(){return `${recoveredHistoryMarkup()}<div class="card"><span class="eyebrow">MÁS</span><h2>Proyecto85 Pro</h2><p>Base única y limpia, sin service worker.</p><button class="btn" data-export>Exportar datos</button></div>`}
+function home(){const p=state().plans.find(x=>x.weekStart===monday(0)&&x.status==="confirmed");return `<div class="card hero"><span class="eyebrow">PROYECTO85 PRO</span><h2>Inicio</h2><div class="grid"><div class="stat"><span>Semana</span><b>${p?"Planificada":"Pendiente"}</b></div><div class="stat"><span>Versión</span><b>2.0.1.1</b></div></div></div>`}
 function nutrition(){return `<div class="card hero"><span class="eyebrow">NUTRICIÓN</span><h2>Planifica → prepara → compra → sigue</h2><p class="muted">Plan semanal estable, recetas, compra, despensa y preparación.</p></div><div class="tabs" id="nutritionTabs">${[["today","Hoy"],["plan","Plan semanal"],["recipes","Biblioteca"],["shopping","Compra"],["pantry","Despensa"],["prep","Preparación"]].map(([id,l],i)=>`<button class="tab-btn ${i===0?"active":""}" data-ntab="${id}">${l}</button>`).join("")}</div><section id="n_today">${Object.keys(MEALS).map(mealCard).join("")}</section><section id="n_plan" class="hidden">${planner()}</section><section id="n_recipes" class="hidden">${library()}</section><section id="n_shopping" class="hidden">${shopping()}</section><section id="n_pantry" class="hidden">${pantry()}</section><section id="n_prep" class="hidden">${prepMarkup()}</section>`}
 
 let PAGE="home";
 function nav(){const it=[["home","⌂","Inicio"],["training","🏋️","Entreno"],["nutrition","🍽️","Nutrición"],["evolution","↗","Evolución"],["more","•••","Más"]];return `<nav class="bottom"><div class="bottom-inner">${it.map(([p,i,l])=>`<button class="nav-btn ${PAGE===p?"active":""}" data-page="${p}"><b>${i}</b>${l}</button>`).join("")}</div></nav>`}
-function render(){const host=$("#app");if(!host)return;const content=PAGE==="home"?home():PAGE==="training"?training():PAGE==="nutrition"?nutrition():PAGE==="evolution"?evolution():more();host.innerHTML=`<div class="shell"><header><div class="brand"><small>ENTRENADOR PERSONAL</small><h1>Proyecto85 Pro <span class="version">2.0</span></h1></div></header>${content}</div>${nav()}`}
+function render(){const host=$("#app");if(!host)return;const content=PAGE==="home"?home():PAGE==="training"?training():PAGE==="nutrition"?nutrition():PAGE==="evolution"?evolution():more();host.innerHTML=`<div class="shell"><header><div class="brand"><small>ENTRENADOR PERSONAL</small><h1>Proyecto85 Pro <span class="version">2.0.1</span></h1></div></header>${content}</div>${nav()}`}
 
 document.addEventListener("click",e=>{
  const page=e.target.closest("[data-page]");if(page){PAGE=page.dataset.page;render();window.scrollTo(0,0);return}
@@ -244,4 +245,140 @@ document.addEventListener("change",e=>{
  if(e.target.matches("[data-meal-done]"))toggleMealDone(e.target.dataset.mealDone,e.target.checked);
  if(e.target.matches("[data-shop]")){const s=state();s.shopping[Number(e.target.dataset.shop)].bought=e.target.checked;saveState(s)}
 });
+
+/* ===== 2.0.1 · RECUPERACIÓN DE HISTORIAL LEGACY ===== */
+function legacyJSON(key,fallback=null){
+ try{
+   const raw=localStorage.getItem(key);
+   return raw===null?fallback:JSON.parse(raw);
+ }catch{return fallback}
+}
+function legacyKeys(){
+ const keys=[];
+ for(let i=0;i<localStorage.length;i++){
+   const k=localStorage.key(i);
+   if(k && (k.startsWith("p85_")||k.startsWith("p85proclean_"))) keys.push(k);
+ }
+ return keys;
+}
+function backupLegacyOnce(){
+ if(localStorage.getItem(PREFIX+"legacyBackup"))return;
+ const snap={createdAt:new Date().toISOString(),items:{}};
+ legacyKeys().forEach(k=>snap.items[k]=localStorage.getItem(k));
+ localStorage.setItem(PREFIX+"legacyBackup",JSON.stringify(snap));
+}
+function normalizeMeasure(m){
+ if(!m||typeof m!=="object")return null;
+ return {
+  date:m.date||m.createdAt?.slice?.(0,10)||todayISO(),
+  weight:Number(m.weight??m.peso)||null,
+  waist:Number(m.waist??m.cintura)||null,
+  hip:Number(m.hip??m.cadera)||null,
+  chest:Number(m.chest??m.pecho)||null,
+  arm:Number(m.arm??m.brazo)||null,
+  thigh:Number(m.thigh??m.muslo)||null,
+  calf:Number(m.calf??m.gemelo)||null,
+  bodyFat:Number(m.bodyFat??m.fat)||null,
+  visceral:Number(m.visceral??m.visceralFat)||null,
+  water:Number(m.water)||null,
+  skeletalMuscle:Number(m.skeletalMuscle)||null,
+  muscleMass:Number(m.muscleMass)||null,
+  protein:Number(m.protein)||null,
+  bmr:Number(m.bmr)||null
+ };
+}
+function migrateLegacyData(){
+ backupLegacyOnce();
+ if(localStorage.getItem(PREFIX+"legacyMigrated"))return;
+
+ const s=state();
+
+ // Measurements / body history
+ const oldMeasures=legacyJSON("p85_measures",[])||[];
+ if(Array.isArray(oldMeasures)){
+   const converted=oldMeasures.map(normalizeMeasure).filter(Boolean);
+   const seen=new Set(s.measurements.map(x=>`${x.date}|${x.weight}|${x.waist}`));
+   converted.forEach(x=>{const k=`${x.date}|${x.weight}|${x.waist}`;if(!seen.has(k)){s.measurements.push(x);seen.add(k)}});
+   s.measurements.sort((a,b)=>(b.date||"").localeCompare(a.date||""));
+ }
+
+ // Training sessions: preserve full legacy object, do not flatten away detail
+ const oldSessions=legacyJSON("p85_sessions",[])||[];
+ if(Array.isArray(oldSessions)){
+   const existing=new Set(s.trainingLog.map(x=>x.legacyId||x.id||JSON.stringify(x).slice(0,80)));
+   oldSessions.forEach(x=>{
+     const id=x.id||x.uid||`${x.date||""}-${x.day||x.title||""}`;
+     if(!existing.has(id)){
+       s.trainingLog.push({legacyId:id,imported:true,...x});
+       existing.add(id);
+     }
+   });
+ }
+
+ // Pantry and shopping
+ const oldPantry=legacyJSON("p85_pantry",[])||[];
+ if(Array.isArray(oldPantry)&&!s.pantry.length) s.pantry=oldPantry;
+ const oldShopping=legacyJSON("p85_shopping",[])||[];
+ if(Array.isArray(oldShopping)&&!s.shopping.length) s.shopping=oldShopping;
+
+ // Nutrition plans: preserve weekly menus in history field and import compatible ones
+ const weekly=legacyJSON("p85_weeklyMenus",[])||[];
+ s.legacyWeeklyMenus=s.legacyWeeklyMenus||[];
+ if(Array.isArray(weekly)){
+   s.legacyWeeklyMenus=[...weekly,...s.legacyWeeklyMenus].slice(0,100);
+   weekly.forEach(w=>{
+     if(!w||!w.days)return;
+     const weekStart=w.weekStart||w.start||w.createdAt?.slice?.(0,10);
+     if(!weekStart||s.plans.some(p=>p.weekStart===weekStart))return;
+     s.plans.push({
+       weekStart,
+       weekEnd:w.weekEnd||plus(weekStart,6),
+       status:w.locked||w.status==="confirmed"?"confirmed":"history",
+       days:w.days,
+       imported:true
+     });
+   });
+ }
+
+ // Ratings from old mealRatings array
+ const oldRatings=legacyJSON("p85_mealRatings",[])||[];
+ if(Array.isArray(oldRatings)){
+   oldRatings.forEach(x=>{
+     const id=x.mealId||x.recipeId||x.id;
+     const v=Number(x.score??x.rating);
+     if(id&&v)s.ratings[id]=v;
+   });
+ }
+
+ saveState(s);
+
+ // Custom recipes from both generations
+ const oldCustom=legacyJSON("p85_customRecipes",[])||[];
+ const cleanCustom=legacyJSON("p85proclean_customRecipes",[])||[];
+ const all=[...(Array.isArray(oldCustom)?oldCustom:[]),...(Array.isArray(cleanCustom)?cleanCustom:[])];
+ if(all.length){
+   const current=customRecipes(),ids=new Set(current.map(x=>x.id));
+   all.forEach(r=>{if(r?.id&&!ids.has(r.id)){current.push(r);ids.add(r.id)}});
+   saveCustomRecipes(current);
+ }
+
+ localStorage.setItem(PREFIX+"legacyMigrated",new Date().toISOString());
+}
+
+function recoveredHistoryMarkup(){
+ const s=state();
+ const importedSessions=s.trainingLog.filter(x=>x.imported).length;
+ const importedMeasures=s.measurements.length;
+ const legacyMenus=(s.legacyWeeklyMenus||[]).length;
+ const backup=!!localStorage.getItem(PREFIX+"legacyBackup");
+ return `<div class="card"><span class="eyebrow">RECUPERACIÓN</span><h2>Historial anterior</h2>
+ <div class="grid">
+  <div class="stat"><span>Mediciones disponibles</span><b>${importedMeasures}</b></div>
+  <div class="stat"><span>Sesiones importadas</span><b>${importedSessions}</b></div>
+  <div class="stat"><span>Menús antiguos</span><b>${legacyMenus}</b></div>
+  <div class="stat"><span>Copia legacy</span><b>${backup?"Sí":"No"}</b></div>
+ </div>
+ <p class="muted">La aplicación conserva una copia de los datos antiguos antes de migrarlos.</p></div>`;
+}
+
 render();

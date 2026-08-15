@@ -1,23 +1,18 @@
-# Proyecto85 Pro 2.0
+# Proyecto85 Pro 2.0.1 — Recuperación de historial
 
-Reconstrucción completa desde cero.
+Esta versión busca datos de versiones anteriores guardados con:
+- p85_*
+- p85proclean_*
 
-Módulos:
-- Inicio
-- Entreno
-- Nutrición
-- Evolución
-- Más
+Antes de importar realiza una copia de seguridad local completa.
 
-Nutrición incluye:
-- Hoy
-- Plan semanal actual/siguiente/historial
-- Biblioteca principal
-- Recetas propias
-- Compra
-- Despensa
-- Preparación semanal ligada al menú real
-- Marcado de comidas
-- Puntuación
-- Cambio automático equilibrado de comida
-- Preparaciones paso a paso
+Recupera cuando existen:
+- mediciones corporales
+- sesiones de entrenamiento
+- recetas propias
+- despensa
+- compra
+- puntuaciones
+- menús semanales antiguos
+
+Los datos originales no se eliminan.
