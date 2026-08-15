@@ -24,3 +24,5 @@ input,select,textarea{width:100%;background:#071912;color:var(--text);border:1px
 .form-grid .wide{grid-column:1/-1}
 
 .meal-check{display:flex;align-items:center;gap:8px;margin:12px 0;font-weight:800}.meal-check input{width:22px;height:22px}.meal-complete{border-color:#48d489}.rating-label{width:100%;color:var(--muted);font-size:.78rem;margin-bottom:4px}
+
+button{touch-action:manipulation}.nav-btn,.tab-btn,.btn{pointer-events:auto}

@@ -1,5 +1,4 @@
-
-const VERSION="1.7.0",PREFIX="p85proclean_";
+const VERSION="1.8.0",PREFIX="p85proclean_";
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const uid=()=>crypto.randomUUID?crypto.randomUUID():String(Date.now()+Math.random());
 const get=(k,d)=>{try{return JSON.parse(localStorage.getItem(PREFIX+k))??d}catch{return d}};
@@ -159,7 +158,7 @@ function confirmPlan(start){const d=db(),p=d.plans.find(x=>x.weekStart===start);
 function buildShopping(p){const d=db(),need={};Object.values(p.days).forEach(ms=>Object.values(ms).forEach(id=>recipe(id).items.forEach(([n,q,u])=>{if(!need[n])need[n]={name:n,qty:0,unit:u,bought:false};need[n].qty+=(typeof q==="number"?q:1)})));const pan=Object.fromEntries(d.pantry.map(x=>[x.name.toLowerCase(),x.qty||0]));d.shopping=Object.values(need).map(x=>({...x,buy:Math.max(0,x.qty-(pan[x.name.toLowerCase()]||0))})).filter(x=>x.buy>0);saveDB(d)}
 function currentMeal(t){const p=db().plans.find(x=>x.weekStart===monday(0)&&x.status==="confirmed");return recipe(p?.days?.[dayName()]?.[t])||recipesBy(t)[0]}
 let page="home";
-function render(){const c=page==="home"?home():page==="nutrition"?nutrition():page==="evolution"?evolution():page==="training"?training():more();$("#app").innerHTML=`<div class="shell"><header><div class="brand"><small>ENTRENADOR PERSONAL</small><h1>Proyecto85 Pro <span class="version">Clean 1.7</span></h1></div></header>${c}</div>${nav()}`}
+function render(){const c=page==="home"?home():page==="nutrition"?nutrition():page==="evolution"?evolution():page==="training"?training():more();$("#app").innerHTML=`<div class="shell"><header><div class="brand"><small>ENTRENADOR PERSONAL</small><h1>Proyecto85 Pro <span class="version">Clean 1.8</span></h1></div></header>${c}</div>${nav()}`}
 function nav(){return `<nav class="bottom"><div class="bottom-inner">${[["home","⌂","Inicio"],["training","🏋️","Entreno"],["nutrition","🍽️","Nutrición"],["evolution","↗","Evolución"],["more","•••","Más"]].map(([p,i,l])=>`<button class="nav-btn ${page===p?"active":""}" onclick="page='${p}';render()"><b>${i}</b>${l}</button>`).join("")}</div></nav>`}
 function home(){const d=db(),x=d.measurements[0],p=d.plans.find(x=>x.weekStart===monday(0)&&x.status==="confirmed");return `<div class="card hero"><span class="eyebrow">PROYECTO85 PRO</span><h2>Hoy</h2><div class="grid"><div class="stat"><span>Peso</span><b>${x.weight} kg</b></div><div class="stat"><span>Objetivo</span><b>90 kg</b></div><div class="stat"><span>Semana</span><b>${p?"Confirmada":"Pendiente"}</b></div><div class="stat"><span>Base</span><b>Clean</b></div></div></div>`}
 function training(){return `<div class="card"><span class="eyebrow">ENTRENO</span><h2>Módulo de entrenamiento</h2><p class="muted">Se desarrollará sobre esta base limpia sin tocar Nutrición.</p></div>`}
@@ -297,4 +296,47 @@ function prepMarkup(){
  <div class="card"><span class="eyebrow">ENSALADAS</span><h3>Opciones para variar</h3>${salads.map(x=>`<p><b>${x[0]}</b><br>${x[1]}<br><small>Aliño: ${x[2]}</small></p>`).join("")}</div>`;
 }
 
-render();
+
+
+let P85_PAGE="home";
+function nav(){
+ const items=[["home","⌂","Inicio"],["training","🏋️","Entreno"],["nutrition","🍽️","Nutrición"],["evolution","↗","Evolución"],["more","•••","Más"]];
+ return `<nav class="bottom"><div class="bottom-inner">${items.map(([p,i,l])=>`<button type="button" class="nav-btn ${P85_PAGE===p?"active":""}" data-page="${p}"><b>${i}</b>${l}</button>`).join("")}</div></nav>`;
+}
+function render(){
+ const host=document.getElementById("app"); if(!host)return;
+ let content="";
+ try{
+  content=P85_PAGE==="home"?home():P85_PAGE==="training"?training():P85_PAGE==="nutrition"?nutrition():P85_PAGE==="evolution"?evolution():more();
+ }catch(e){content=`<div class="card"><h3>Error</h3><p>${String(e.message||e)}</p></div>`;}
+ host.innerHTML=`<div class="shell"><header><div class="brand"><small>ENTRENADOR PERSONAL</small><h1>Proyecto85 Pro <span class="version">Clean 1.8</span></h1></div></header>${content}</div>${nav()}`;
+}
+document.addEventListener("click",e=>{
+ const b=e.target.closest(".nav-btn[data-page]");
+ if(b){e.preventDefault();P85_PAGE=b.dataset.page;render();window.scrollTo(0,0);return;}
+ const n=e.target.closest("[data-ntab]");
+ if(n){
+  const id=n.dataset.ntab;
+  ["today","plan","recipes","shopping","pantry","prep"].forEach(x=>document.getElementById("n_"+x)?.classList.toggle("hidden",x!==id));
+  document.querySelectorAll("#nutritionTabs .tab-btn").forEach(x=>x.classList.toggle("active",x===n));
+ }
+});
+function nutrition(){
+ return `<div class="card hero"><span class="eyebrow">NUTRICIÓN</span><h2>Planifica → prepara → compra → sigue</h2><p class="muted">Café + tostada como base del desayuno. Comidas preparables. Cenas ligeras.</p></div>
+ <div class="tabs" id="nutritionTabs">
+ <button type="button" class="tab-btn active" data-ntab="today">Hoy</button>
+ <button type="button" class="tab-btn" data-ntab="plan">Plan semanal</button>
+ <button type="button" class="tab-btn" data-ntab="recipes">Biblioteca</button>
+ <button type="button" class="tab-btn" data-ntab="shopping">Compra</button>
+ <button type="button" class="tab-btn" data-ntab="pantry">Despensa</button>
+ <button type="button" class="tab-btn" data-ntab="prep">Preparación</button></div>
+ <section id="n_today">${Object.keys(MEALS).map(t=>mealCard(t)).join("")}</section>
+ <section id="n_plan" class="hidden">${planner()}</section>
+ <section id="n_recipes" class="hidden">${library()}</section>
+ <section id="n_shopping" class="hidden">${shopping()}</section>
+ <section id="n_pantry" class="hidden">${pantry()}</section>
+ <section id="n_prep" class="hidden">${prepMarkup()}</section>`;
+}
+function p85Boot(){render();}
+if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",p85Boot,{once:true});else p85Boot();
+

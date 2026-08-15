@@ -18,7 +18,7 @@ button{width:100%;padding:15px;border:0;border-radius:14px;background:#48d489;co
 <div class="box">
 <h1>Proyecto85 Pro · Reinicio limpio</h1>
 <p>Esta página elimina el service worker y las cachés antiguas de Proyecto85. No borra tus datos guardados en localStorage.</p>
-<button id="go">Limpiar y abrir Clean 1.7</button>
+<button id="go">Limpiar y abrir Clean 1.8</button>
 <div id="status"></div>
 </div>
 <script>
@@ -34,12 +34,12 @@ async function clean(){
      const keys=await caches.keys();
      await Promise.all(keys.map(k=>caches.delete(k)));
    }
-   s.textContent='Limpieza terminada. Abriendo Clean 1.7…';
+   s.textContent='Limpieza terminada. Abriendo Clean 1.8…';
    const base=location.href.replace(/reset\.html.*$/,'');
-   location.replace(base+'index.html?clean=170&ts='+Date.now());
+   location.replace(base+'index.html?clean=180&ts='+Date.now());
  }catch(e){
    s.textContent='Abriendo versión nueva…';
-   location.href='./index.html?clean=170&ts='+Date.now();
+   location.href='./index.html?clean=180&ts='+Date.now();
  }
 }
 document.getElementById('go').addEventListener('click',clean);
