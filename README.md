@@ -1,18 +1,10 @@
-# Proyecto85 Pro 4.1
+# Proyecto85 Pro 4.1.1 — Nutrición Fix
 
-Actualización completa sobre la versión 4.0.2.
+Hotfix sobre 4.1.
 
-Incluye:
-- Nutrición con más variedad y rotación de recetas.
-- Semana siguiente independiente y editable.
-- Cambios de comidas persistentes.
-- Biblioteca de ejercicios ampliada.
-- Full Body 5 días con mayor cobertura muscular.
-- Core diario con varios ejercicios.
-- Cardio de 25–30 minutos.
-- Evolución con interpretación automática.
-- Semana 24–30 agosto 2026 marcada como nutrición no evaluable por fallo de la aplicación.
-- Conservación del historial mediante las claves p85pro2_.
+- Nutrición abre sin construir todas las pestañas simultáneamente.
+- Cada pestaña se carga de forma independiente.
+- Normaliza planes antiguos/incompletos sin borrar historial.
+- Reintento controlado si un apartado concreto falla.
+- Mantiene `p85pro2_` y recetas propias.
 - Sin service worker.
-
-Consulta también `CHECKLIST_4_1.md` para ver los 13 puntos incluidos.

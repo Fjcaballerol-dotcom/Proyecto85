@@ -103,3 +103,6 @@ textarea{resize:vertical}
 
 /* 4.1 */
 .week-row .pill{white-space:nowrap}.coach .week-row{grid-template-columns:110px 1fr auto}@media(max-width:640px){.coach .week-row{grid-template-columns:80px 1fr}.coach .week-row>div:last-child{grid-column:2}}
+
+/* 4.1.1 nutrition hotfix */
+#nutrition_active{min-height:240px}.error-card{overflow-wrap:anywhere}
