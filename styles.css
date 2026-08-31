@@ -100,3 +100,6 @@ textarea{resize:vertical}
  .exercise-card .set-row{grid-template-columns:38px 1fr 1fr 50px}
  .brand h1{font-size:1.72rem}
 }
+
+/* 4.1 */
+.week-row .pill{white-space:nowrap}.coach .week-row{grid-template-columns:110px 1fr auto}@media(max-width:640px){.coach .week-row{grid-template-columns:80px 1fr}.coach .week-row>div:last-child{grid-column:2}}

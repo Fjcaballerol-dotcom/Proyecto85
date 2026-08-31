@@ -1,4 +1,12 @@
 
+const __store={};
+globalThis.localStorage={getItem:k=>Object.prototype.hasOwnProperty.call(__store,k)?__store[k]:null,setItem:(k,v)=>{__store[k]=String(v)},removeItem:k=>delete __store[k],key:i=>Object.keys(__store)[i]??null,get length(){return Object.keys(__store).length}};
+globalThis.crypto={randomUUID:()=>"id_"+Math.random()};
+const __app={innerHTML:""};
+globalThis.document={readyState:"loading",querySelector:s=>s==="#app"?__app:null,querySelectorAll:s=>[],addEventListener:(t,f)=>{if(t==="DOMContentLoaded")globalThis.__boot=f},body:{insertAdjacentHTML:()=>{},appendChild:()=>{}},createElement:()=>({remove:()=>{},click:()=>{}})};
+globalThis.window={scrollTo:()=>{}};globalThis.location={reload:()=>{}};globalThis.confirm=()=>true;globalThis.Blob=function(){};globalThis.URL={createObjectURL:()=>"",revokeObjectURL:()=>{}};
+
+
 "use strict";
 
 const APP_VERSION="4.1.0";
@@ -740,3 +748,17 @@ document.addEventListener("change",async e=>{
 });
 
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",boot,{once:true});else boot();
+
+if(globalThis.__boot)globalThis.__boot();
+
+;(()=>{
+ const p1=getPlan("2026-08-31"),p2=getPlan("2026-09-07");
+ const a=Object.values(p1.days).map(x=>x.lunch),b=Object.values(p2.days).map(x=>x.lunch);
+ if(JSON.stringify(a)===JSON.stringify(b))throw new Error("Semanas idénticas");
+ const before=p2.days.Lunes.lunch;NUTRITION_TAB="plan";PLANNER_TAB="next";changePlanMeal("2026-09-07","Lunes","lunch");
+ const saved=state().plans.find(x=>x.weekStart==="2026-09-07"),after=saved.days.Lunes.lunch;
+ if(before===after)throw new Error("No cambió comida");
+ if(NUTRITION_TAB!=="plan"||PLANNER_TAB!=="next")throw new Error("No mantiene pestaña");
+ if(state().plans.find(x=>x.weekStart==="2026-09-07").days.Lunes.lunch!==after)throw new Error("No persistió");
+ console.log("SMOKE_OK",a.join(","),"|",b.join(","),"|",before,"->",after);
+})();
