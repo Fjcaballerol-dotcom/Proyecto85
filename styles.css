@@ -112,3 +112,11 @@ textarea{resize:vertical}
 .coach-mini{display:grid;grid-template-columns:auto auto;gap:4px 10px;background:#10291f;border:1px solid #387653;border-radius:14px;padding:12px;margin:12px 0}.coach-mini b{color:var(--green)}.coach-mini small{grid-column:1/-1;color:var(--muted)}
 .exercise-note{background:#17271f;border-left:3px solid var(--amber);padding:10px;border-radius:10px}.rest-timer{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px;padding:10px;border:1px solid var(--line);border-radius:14px;background:var(--panel3)}.rest-timer b{font-size:1.3rem;color:var(--green)}.chart.mini{height:120px}.warning-lite{color:#e8c78f;font-size:.78rem}.fresh-report{outline:2px solid var(--green)}
 @media(max-width:640px){.balance-grid{grid-template-columns:1fr 1fr}.bodymap svg{height:210px}}
+
+/* 4.2.1 corrective spacing */
+@supports (padding: max(0px)) {
+  .shell{padding-top:max(calc(28px + env(safe-area-inset-top)),44px)}
+}
+.legend{display:flex;flex-wrap:wrap;gap:8px 14px;line-height:1.45}
+.chart{overflow:hidden}
+.balance-grid small{font-size:.65em;font-weight:500;color:var(--muted)}

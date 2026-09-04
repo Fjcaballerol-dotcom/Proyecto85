@@ -1,7 +1,7 @@
 
 "use strict";
 
-const APP_VERSION="4.1.0";
+const APP_VERSION="4.2.1";
 const SCHEMA_VERSION=4;
 const PREFIX="p85pro2_";
 const STATE_KEY=PREFIX+"state";
@@ -10,9 +10,10 @@ const CUSTOM_RECIPE_KEY=PREFIX+"customRecipes";
 const $=s=>document.querySelector(s);
 const $$=s=>[...document.querySelectorAll(s)];
 const uid=()=>globalThis.crypto?.randomUUID?.()||("id_"+Date.now()+"_"+Math.random().toString(36).slice(2));
-const todayISO=()=>new Date().toISOString().slice(0,10);
-const monday=(offset=0)=>{const d=new Date(),day=d.getDay(),diff=(day===0?-6:1-day)+offset*7;d.setDate(d.getDate()+diff);d.setHours(0,0,0,0);return d.toISOString().slice(0,10)};
-const plusDays=(iso,n)=>{const d=new Date(iso+"T00:00:00");d.setDate(d.getDate()+n);return d.toISOString().slice(0,10)};
+const localISO=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+const todayISO=()=>localISO(new Date());
+const monday=(offset=0)=>{const d=new Date(),day=d.getDay(),diff=(day===0?-6:1-day)+offset*7;d.setDate(d.getDate()+diff);d.setHours(12,0,0,0);return localISO(d)};
+const plusDays=(iso,n)=>{const [y,m,day]=iso.split("-").map(Number),d=new Date(y,m-1,day,12);d.setDate(d.getDate()+n);return localISO(d)};
 const dayName=()=>["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"][new Date().getDay()];
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 const finite=(x,d=0)=>Number.isFinite(Number(x))?Number(x):d;

@@ -1,11 +1,11 @@
 
-/* Proyecto85 Pro 4.2 — grouped upgrade, additive over 4.1 */
+/* Proyecto85 Pro 4.2.1 — corrective update over 4.2 */
 let EVOLUTION_NOTICE42=false,REST_END42=0,REST_HANDLE42=null;
 
 /* Repair missing/old planner functions without changing storage keys */
 function normalizePlan42(p,start){
  if(!p||typeof p!=="object")p={id:uid(),weekStart:start,days:{}};
- p.weekStart=p.weekStart||start;p.weekEnd=p.weekEnd||plusDays(p.weekStart,6);p.status=p.status||"draft";p.flexMealDay=p.flexMealDay||state().settings.flexMealDay;p.days=p.days||{};
+ p.weekStart=start;p.weekEnd=plusDays(start,6);p.status=p.status||"draft";p.flexMealDay=p.flexMealDay||state().settings.flexMealDay;p.days=p.days||{};
  const used=[];
  DAYS.forEach((d,di)=>{p.days[d]=p.days[d]||{};Object.keys(MEALS).forEach((t,si)=>{
   let r=recipe(p.days[d][t]);if(!r||r.type!==t){r=chooseRecipeForWeek(t,used,null,di,start,si);if(r)p.days[d][t]=r.id}
@@ -42,11 +42,15 @@ function mealCard(type){
  return `<div class="meal-card ${done?"meal-complete":""}" data-meal-card="${type}"><div class="meal-visual">${icon}</div><div class="meal-head"><div><span class="eyebrow">${MEALS[type]}</span><h3>${esc(r.name)}</h3><div class="meta"><span>${esc(r.prep)}</span><span>${r.time} min</span><span>${esc(r.cat)}</span></div></div><button class="btn small" data-action="open-recipe" data-id="${r.id}">Ficha</button></div>${profile42(r)}<label class="meal-check"><input type="checkbox" data-action="meal-done" data-type="${type}" ${done?"checked":""}> Realizado</label><div class="btn-row"><button class="btn small primary" data-action="smart-meal" data-type="${type}">Cambiar opción</button></div><div class="rating compact">${[1,2,3,4,5].map(v=>`<button class="${rating===v*2?"active":""}" data-action="rate-recipe" data-id="${r.id}" data-value="${v*2}">${v}</button>`).join("")}</div></div>`;
 }
 function balance42(start=monday(1)){
- const p=getPlan(start),c={};DAYS.forEach(d=>["lunch","dinner"].forEach(t=>groups42(recipe(p.days[d][t])).forEach(g=>c[g]=(c[g]||0)+1)));
- let tip="Buena base de variedad. Ajusta platos según disponibilidad y preferencias.";
- if((c["Legumbres"]||0)<2)tip="La propuesta puede ganar variedad incorporando otra comida con legumbres.";
- else if((c["Pescado/marisco"]||0)<2)tip="Puedes alternar alguna proteína con pescado o marisco.";
- return `<div class="card"><span class="eyebrow">EQUILIBRIO SEMANAL</span><h3>Variedad de la planificación</h3><div class="balance-grid">${Object.entries(c).map(([g,n])=>`<div><span>${esc(g)}</span><b>${n}</b></div>`).join("")}</div><p class="muted">${esc(tip)}</p></div>`;
+ const p=getPlan(start),groups=["Legumbres","Carne/aves","Verduras","Pescado/marisco","Cereales/tubérculos","Huevos"],c=Object.fromEntries(groups.map(g=>[g,0]));
+ DAYS.forEach(d=>["lunch","dinner"].forEach(t=>{
+   const r=recipe(p.days[d][t]);
+   [...new Set(groups42(r))].forEach(g=>{if(g in c)c[g]++});
+ }));
+ let tip="Buena base de variedad. Los números indican cuántas comidas o cenas de la semana incluyen cada grupo; un mismo plato puede aparecer en más de un grupo.";
+ if(c["Legumbres"]<2)tip="Los números cuentan platos, no ingredientes repetidos. La propuesta puede ganar variedad incorporando otra comida con legumbres.";
+ else if(c["Pescado/marisco"]<2)tip="Los números cuentan platos, no ingredientes repetidos. Puedes alternar alguna proteína con pescado o marisco.";
+ return `<div class="card"><span class="eyebrow">EQUILIBRIO SEMANAL</span><h3>Variedad de comidas y cenas</h3><p class="muted">N.º de platos de las 14 comidas/cenas que incluyen cada grupo. Un plato puede contar en varios grupos.</p><div class="balance-grid">${groups.map(g=>`<div><span>${esc(g)}</span><b>${c[g]}</b></div>`).join("")}</div><p class="muted">${esc(tip)}</p></div>`;
 }
 function nutritionToday42(){
  const done=Object.keys(MEALS).filter(t=>state().mealDone[`${todayISO()}_${t}`]).length,n=Object.keys(MEALS).length;
@@ -73,7 +77,7 @@ function progression42(ex){
  const h=latestExerciseEntries(ex.id,3).filter(x=>x.sets.some(s=>s.done)),last=lastSetSummary(ex.id),target=parseInt(ex.reps)||10;
  if(!h.length)return {label:"INICIO",weight:ex.seed,why:"Primera referencia; ajusta a una ejecución cómoda y controlada."};
  const solid=h.filter(x=>x.sets.filter(s=>s.done).length>=2&&x.sets.filter(s=>s.done).every(s=>finite(s.reps)>=target)&&finite(x.effort,7)<=8).length;
- if(solid>=2)return {label:"PROGRESAR",weight:Math.round((last.weight+ex.inc)*10)/10,why:"Varias sesiones recientes consolidan las repeticiones con margen."};
+ if(solid>=2)return {label:"PROGRESIÓN POSIBLE",weight:last?.weight||ex.seed,why:"Varias sesiones recientes están consolidadas. Si la técnica sigue cómoda, puedes añadir una repetición o mantener; no es obligatorio subir carga."};
  if(finite(last?.effort,7)>=9)return {label:"REVISAR",weight:last?.weight||ex.seed,why:"La última sesión fue exigente; prioriza técnica y control."};
  return {label:"MANTENER",weight:last?.weight||ex.seed,why:"Consolida el rango previsto antes de progresar."};
 }
@@ -87,7 +91,7 @@ function muscleMap42(){
  const c={Pecho:0,Espalda:0,Hombros:0,Brazos:0,Piernas:0,Core:0};
  TRAINING_DAYS.forEach(d=>d.ex.map(exercise).filter(Boolean).forEach(ex=>{let g=ex.group.toLowerCase(),k=/pecho/.test(g)?"Pecho":/dorsal|espalda|trapecio/.test(g)?"Espalda":/hombro/.test(g)?"Hombros":/bíceps|tríceps|antebrazo/.test(g)?"Brazos":/core/.test(g)?"Core":/pierna|cuádriceps|isquio|glúteo|aductor|gemelo/.test(g)?"Piernas":null;if(k)c[k]++}));
  const on=k=>c[k]?"muscle-on":"";
- return `<div class="card"><span class="eyebrow">MAPA MUSCULAR</span><h2>Distribución semanal</h2><div class="bodymaps"><div class="bodymap"><b>Frontal</b><svg viewBox="0 0 180 330"><circle cx="90" cy="28" r="20"/><rect x="62" y="50" width="56" height="92" rx="24"/><rect class="${on("Pecho")}" x="69" y="61" width="42" height="34" rx="12"/><rect class="${on("Core")}" x="76" y="99" width="28" height="38" rx="10"/><rect class="${on("Brazos")}" x="35" y="60" width="20" height="105" rx="10"/><rect class="${on("Brazos")}" x="125" y="60" width="20" height="105" rx="10"/><rect class="${on("Piernas")}" x="62" y="145" width="25" height="150" rx="12"/><rect class="${on("Piernas")}" x="93" y="145" width="25" height="150" rx="12"/></svg></div><div class="bodymap"><b>Posterior</b><svg viewBox="0 0 180 330"><circle cx="90" cy="28" r="20"/><rect x="62" y="50" width="56" height="92" rx="24"/><rect class="${on("Espalda")}" x="69" y="58" width="42" height="58" rx="12"/><rect class="${on("Hombros")}" x="58" y="54" width="64" height="20" rx="10"/><rect class="${on("Brazos")}" x="35" y="60" width="20" height="105" rx="10"/><rect class="${on("Brazos")}" x="125" y="60" width="20" height="105" rx="10"/><rect class="${on("Piernas")}" x="62" y="145" width="25" height="150" rx="12"/><rect class="${on("Piernas")}" x="93" y="145" width="25" height="150" rx="12"/></svg></div></div><div class="balance-grid">${Object.entries(c).map(([k,n])=>`<div><span>${k}</span><b>${n}</b></div>`).join("")}</div></div>`;
+ return `<div class="card"><span class="eyebrow">MAPA MUSCULAR</span><h2>Distribución del plan de 5 días</h2><p class="muted">Las cifras indican apariciones de ejercicios por grupo muscular dentro del plan semanal. No son series, calorías ni una puntuación corporal.</p><div class="bodymaps"><div class="bodymap"><b>Frontal</b><svg viewBox="0 0 180 330"><circle cx="90" cy="28" r="20"/><rect x="62" y="50" width="56" height="92" rx="24"/><rect class="${on("Pecho")}" x="69" y="61" width="42" height="34" rx="12"/><rect class="${on("Core")}" x="76" y="99" width="28" height="38" rx="10"/><rect class="${on("Brazos")}" x="35" y="60" width="20" height="105" rx="10"/><rect class="${on("Brazos")}" x="125" y="60" width="20" height="105" rx="10"/><rect class="${on("Piernas")}" x="62" y="145" width="25" height="150" rx="12"/><rect class="${on("Piernas")}" x="93" y="145" width="25" height="150" rx="12"/></svg></div><div class="bodymap"><b>Posterior</b><svg viewBox="0 0 180 330"><circle cx="90" cy="28" r="20"/><rect x="62" y="50" width="56" height="92" rx="24"/><rect class="${on("Espalda")}" x="69" y="58" width="42" height="58" rx="12"/><rect class="${on("Hombros")}" x="58" y="54" width="64" height="20" rx="10"/><rect class="${on("Brazos")}" x="35" y="60" width="20" height="105" rx="10"/><rect class="${on("Brazos")}" x="125" y="60" width="20" height="105" rx="10"/><rect class="${on("Piernas")}" x="62" y="145" width="25" height="150" rx="12"/><rect class="${on("Piernas")}" x="93" y="145" width="25" height="150" rx="12"/></svg></div></div><div class="balance-grid">${Object.entries(c).map(([k,n])=>`<div><span>${k}</span><b>${n} <small>ej.</small></b></div>`).join("")}</div></div>`;
 }
 function timer42(){
  const l=Math.max(0,Math.ceil((REST_END42-Date.now())/1000));
@@ -122,18 +126,33 @@ function trend42(k,d){
 function evolutionCoachInterpretation(){
  const {first,last,prev}=firstAndLastMeasurements();if(!last)return `<div class="card coach"><h3>Entrenador85 interpreta tus resultados</h3><p>Guarda un control para empezar.</p></div>`;
  const ks=[["weight","Peso","kg"],["waist","Cintura","cm"],["bodyFat","Grasa corporal","p.p."],["visceral","Grasa visceral",""],["muscleMass","Masa muscular","kg"],["skeletalMuscle","Músculo esquelético","p.p."]];
- const rows=ks.map(([k,n,u])=>{const w=prev&&last[k]!=null&&prev[k]!=null?Math.round((last[k]-prev[k])*10)/10:null,t=first&&last[k]!=null&&first[k]!=null?Math.round((last[k]-first[k])*10)/10:null,[lab,cl]=trend42(k,w);return `<div class="week-row"><span>${n}</span><div><b>${last[k]??"—"} ${last[k]!=null?u:""}</b><small>Semana: ${w==null?"—":(w>0?"+":"")+w} · Inicio: ${t==null?"—":(t>0?"+":"")+t}</small></div><span class="pill ${cl}">${lab}</span></div>`}).join("");
- const f=anomalyFlags(last,prev);return `<div class="card coach ${EVOLUTION_NOTICE42?"fresh-report":""}"><span class="eyebrow">INFORME AUTOMÁTICO</span><h2>Semana · inicio · tendencia</h2>${rows}<p>Los datos de composición corporal se interpretan como tendencia de varias semanas y pueden variar con la hidratación.</p>${f.length?`<div class="warning"><b>Repetir medición</b><ul>${f.map(x=>`<li>${x}</li>`).join("")}</ul></div>`:""}</div>`;
+ const rows=ks.map(([k,n,u])=>{const w=prev&&last[k]!=null&&prev[k]!=null?Math.round((last[k]-prev[k])*10)/10:null,t=first&&last[k]!=null&&first[k]!=null?Math.round((last[k]-first[k])*10)/10:null,[lab,cl]=trend42(k,w);return `<div class="week-row"><span>${n}</span><div><b>${last[k]??"—"} ${last[k]!=null?u:""}</b><small>Vs. control anterior: ${w==null?"—":(w>0?"+":"")+w} · Vs. primer registro: ${t==null?"—":(t>0?"+":"")+t}</small></div><span class="pill ${cl}">${lab}</span></div>`}).join("");
+ const f=anomalyFlags(last,prev);
+ const count=[...state().measurements].filter(x=>x.date).length;
+ return `<div class="card coach ${EVOLUTION_NOTICE42?"fresh-report":""}"><span class="eyebrow">INFORME AUTOMÁTICO</span><h2>Control anterior · primer registro · tendencia</h2>${rows}<p><b>Tendencia:</b> ${count>=3?"ya hay varios controles para observar la dirección general; prioriza consistencia de medición, sensaciones y rendimiento sobre un único dato.":"todavía hay pocos controles; evita conclusiones a partir de una sola variación."}</p><p>La composición corporal estimada puede cambiar con hidratación y condiciones de medición; interprétala a lo largo de varias semanas.</p>${f.length?`<div class="warning"><b>Confirmar medición</b><ul>${f.map(x=>`<li>${x}</li>`).join("")}</ul></div>`:""}</div>`;
 }
 function weeklyCoachMarkup(){const a=adherenceThisWeek();return `<div class="card coach"><span class="eyebrow">SEMANA ACTUAL</span><h2>Entrenador85</h2><div class="grid"><div class="stat"><span>Entrenamiento</span><b>${a.training}%</b></div><div class="stat"><span>Nutrición</span><b>${a.nutrition==null?"No evaluable":a.nutrition+"%"}</b></div></div><p class="muted">El informe se actualiza al guardar el control.</p></div>`}
 
+
+function evolutionSummary(){
+ const {first,last}=firstAndLastMeasurements(),adh=adherenceThisWeek();
+ if(!last)return `<div class="card hero"><h2>Empieza tu evolución</h2><p class="muted">Introduce las medidas para crear comparativas y gráficas.</p></div>`;
+ const cards=[["Peso",last.weight,"kg",metricDelta(first,last,"weight")],["Cintura",last.waist,"cm",metricDelta(first,last,"waist")],["Cadera",last.hip,"cm",metricDelta(first,last,"hip")],["Pecho",last.chest,"cm",metricDelta(first,last,"chest")]];
+ return `<div class="card hero"><span class="eyebrow">EVOLUCIÓN DESDE EL PRIMER REGISTRO DISPONIBLE</span><h2>${first?.date||"Inicio"} → ${last.date}</h2><div class="grid">${cards.map(([n,v,u,d])=>`<div class="stat"><span>${n}</span><b>${v??"—"} ${v!=null?u:""}</b><small class="delta neutral">${d==null?"Sin comparación":(d>0?"+":"")+d+" "+u}</small></div>`).join("")}</div><div class="grid" style="margin-top:10px"><div class="stat"><span>Entrenamiento semanal</span><b>${adh.training}%</b></div><div class="stat"><span>Plan nutricional marcado</span><b>${adh.nutrition==null?"No evaluable":adh.nutrition+"%"}</b></div></div></div>`;
+}
+function measurementForm(){
+ const last=firstAndLastMeasurements().last||{};
+ const fields=[["weight","Peso (kg)"],["waist","Cintura (cm)"],["hip","Cadera (cm)"],["chest","Pecho (cm)"],["arm","Brazo (cm)"],["thigh","Muslo (cm)"],["calf","Gemelo (cm)"],["bodyFat","Grasa corporal (%)"],["visceral","Grasa visceral"],["water","Agua (%)"],["skeletalMuscle","Músculo esquelético (%)"],["muscleMass","Masa muscular (kg)"],["protein","Proteína (%)"],["bmr","BMR"]];
+ return `<div class="card"><div class="section-title"><div><span class="eyebrow">CONTROL DE EVOLUCIÓN</span><h2>Medidas</h2></div><span class="pill green">Semanal</span></div><p class="muted">Regístralo en condiciones parecidas cuando corresponda; no está ligado a un día fijo.</p><div class="form-grid"><label>Fecha<input id="measure_date" type="date" value="${todayISO()}"></label>${fields.map(([k,l])=>`<label>${l}<input id="measure_${k}" type="number" step="0.1" value="${last[k]??""}"></label>`).join("")}</div><button class="btn primary" data-action="save-measurement">Guardar control</button></div>`;
+}
+
 /* Version + safer render */
-function moreMarkup(){return `<div class="card"><span class="eyebrow">DATOS Y SEGURIDAD</span><h2>Proyecto85 Pro 4.2</h2><p class="muted">Actualización agrupada · mismas claves p85pro2_ · sin service worker.</p><div class="btn-row"><button class="btn primary" data-action="export-data">Exportar copia</button><button class="btn" data-action="import-data">Importar copia</button><input id="import_file" type="file" accept="application/json" class="hidden"></div></div><div class="card learning"><span class="eyebrow">FLUJO</span><h3>Planificar → Entrenar → Organizar → Registrar → Analizar → Aprender</h3></div>`}
+function moreMarkup(){return `<div class="card"><span class="eyebrow">DATOS Y SEGURIDAD</span><h2>Proyecto85 Pro 4.2.1</h2><p class="muted">Actualización agrupada · mismas claves p85pro2_ · sin service worker.</p><div class="btn-row"><button class="btn primary" data-action="export-data">Exportar copia</button><button class="btn" data-action="import-data">Importar copia</button><input id="import_file" type="file" accept="application/json" class="hidden"></div></div><div class="card learning"><span class="eyebrow">FLUJO</span><h3>Planificar → Entrenar → Organizar → Registrar → Analizar → Aprender</h3></div>`}
 function render(){
  const host=$("#app");if(!host)return;let content;
  try{content=PAGE==="home"?todayDashboard():PAGE==="training"?renderTraining():PAGE==="nutrition"?renderNutrition():PAGE==="evolution"?renderEvolution():moreMarkup()}
  catch(e){console.error(e);content=`<div class="error-card"><h2>${esc(PAGE)}</h2><p>Este módulo encontró un error. Tus datos siguen guardados.</p></div>`}
- host.innerHTML=`<div class="shell"><header><div class="brand"><small>ENTRENADOR PERSONAL</small><h1>Proyecto85 Pro <span class="version">4.2</span></h1></div><span class="header-badge">Entrenador85</span></header>${content}</div>${nav()}`;
+ host.innerHTML=`<div class="shell"><header><div class="brand"><small>ENTRENADOR PERSONAL</small><h1>Proyecto85 Pro <span class="version">4.2.1</span></h1></div><span class="header-badge">Entrenador85</span></header>${content}</div>${nav()}`;
 }
 
 /* Additional 4.2 actions. Existing 4.1 actions remain active. */

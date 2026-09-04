@@ -1,7 +1,7 @@
 {
-  "name": "Proyecto85 Pro 4.2",
+  "name": "Proyecto85 Pro 4.2.1",
   "short_name": "Proyecto85",
-  "start_url": "./index.html?v=420",
+  "start_url": "./index.html?v=421",
   "display": "standalone",
   "background_color": "#06130e",
   "theme_color": "#06130e"

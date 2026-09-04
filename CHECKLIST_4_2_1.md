@@ -1,0 +1,13 @@
+# Checklist 4.2.1
+- [x] Mantiene `p85pro2_`
+- [x] Sin service worker
+- [x] Sin reset automático
+- [x] Semana local lunes–domingo
+- [x] Fin de semana = inicio + 6 días
+- [x] Contadores nutricionales explicados
+- [x] Mapa muscular con unidad “ej.”
+- [x] Evolución desde primer registro disponible
+- [x] Control semanal sin día fijo
+- [x] Espaciado superior iPhone
+- [x] Progresión no obligatoria
+- [x] JavaScript validado
