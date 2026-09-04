@@ -1,7 +1,7 @@
 
 "use strict";
 
-const APP_VERSION="4.1.1";
+const APP_VERSION="4.1.0";
 const SCHEMA_VERSION=4;
 const PREFIX="p85pro2_";
 const STATE_KEY=PREFIX+"state";
@@ -32,48 +32,48 @@ const LEARNING_CARDS=[
 ];
 
 const EXERCISES=[
-{id:"leg_press",name:"Prensa de piernas",group:"Piernas",equipment:"Máquina",sets:3,reps:"10-12",seed:52,inc:5,tech:"Espalda apoyada, pies estables y rodillas alineadas. Baja con control dentro de un rango cómodo.",alts:["hack_squat","leg_extension"]},
-{id:"hack_squat",name:"Hack squat en máquina",group:"Piernas",equipment:"Máquina",sets:3,reps:"8-12",seed:30,inc:5,tech:"Espalda apoyada y rodillas alineadas. Usa un recorrido cómodo y controlado.",alts:["leg_press"]},
-{id:"leg_extension",name:"Extensión de cuádriceps",group:"Cuádriceps",equipment:"Máquina",sets:3,reps:"10-12",seed:39,inc:3,tech:"Alinea la rodilla con el eje. Extiende sin bloquear bruscamente y vuelve despacio.",alts:["leg_press"]},
-{id:"leg_curl",name:"Curl femoral",group:"Isquiotibiales",equipment:"Máquina",sets:3,reps:"10-12",seed:39,inc:3,tech:"Ajusta el rodillo y flexiona sin despegar la cadera.",alts:["rdl_machine"]},
-{id:"rdl_machine",name:"Bisagra de cadera en máquina",group:"Isquiotibiales",equipment:"Máquina",sets:3,reps:"10-12",seed:25,inc:5,tech:"Cadera atrás con espalda neutra y vuelta controlada.",alts:["leg_curl"]},
-{id:"glute_machine",name:"Extensión de glúteo en máquina",group:"Glúteos",equipment:"Máquina",sets:3,reps:"12-15",seed:25,inc:3,tech:"Pelvis estable y extensión de cadera sin arquear la zona lumbar.",alts:["abduction"]},
-{id:"abduction",name:"Abducción de cadera",group:"Glúteos",equipment:"Máquina",sets:3,reps:"12-15",seed:39,inc:3,tech:"Abre sin impulso y vuelve con control.",alts:["glute_machine"]},
-{id:"adduction",name:"Aducción de cadera",group:"Aductores",equipment:"Máquina",sets:3,reps:"12-15",seed:32,inc:3,tech:"Cierra las piernas de forma controlada, sin rebotes.",alts:["leg_press"]},
-{id:"calf",name:"Gemelos en máquina",group:"Gemelos",equipment:"Máquina",sets:3,reps:"12-15",seed:20,inc:5,tech:"Rango cómodo y sin rebotes.",alts:["leg_press"]},
-{id:"lat_pulldown",name:"Jalón al pecho",group:"Dorsal",equipment:"Polea/Máquina",sets:3,reps:"8-12",seed:45,inc:3,tech:"Pecho alto, hombros lejos de las orejas y vuelta controlada.",alts:["chest_row","pullover"]},
-{id:"neutral_pulldown",name:"Jalón agarre neutro",group:"Dorsal",equipment:"Polea",sets:3,reps:"10-12",seed:40,inc:3,tech:"Torso estable y codos hacia abajo.",alts:["lat_pulldown"]},
-{id:"chest_row",name:"Remo con apoyo al pecho",group:"Espalda media",equipment:"Máquina",sets:3,reps:"8-12",seed:32,inc:3,tech:"Pecho apoyado y codos atrás sin encoger hombros.",alts:["low_row"]},
-{id:"low_row",name:"Remo en polea baja",group:"Espalda media",equipment:"Polea",sets:3,reps:"10-12",seed:30,inc:3,tech:"Tira hacia el abdomen sin balanceo.",alts:["chest_row"]},
-{id:"pullover",name:"Pullover en polea/máquina",group:"Dorsal",equipment:"Polea/Máquina",sets:3,reps:"10-12",seed:15.9,inc:2.3,tech:"Brazos casi extendidos y movimiento desde la espalda.",alts:["lat_pulldown"]},
-{id:"face_pull",name:"Face Pull",group:"Espalda alta",equipment:"Polea",sets:3,reps:"12-15",seed:15.9,inc:2.3,tech:"Tira hacia la cara separando las manos.",alts:["rear_delt"]},
-{id:"shrug_machine",name:"Encogimientos de trapecio en máquina",group:"Trapecio",equipment:"Máquina",sets:3,reps:"10-15",seed:30,inc:5,tech:"Eleva los hombros de forma controlada y sin círculos.",alts:["face_pull"]},
-{id:"chest_press",name:"Press de pecho en máquina",group:"Pecho",equipment:"Máquina",sets:3,reps:"8-12",seed:32,inc:3,tech:"Espalda apoyada y empuje controlado.",alts:["incline_press","pec_deck"]},
-{id:"incline_press",name:"Press inclinado en máquina",group:"Pecho superior",equipment:"Máquina",sets:3,reps:"8-12",seed:20,inc:2.5,tech:"Escápulas apoyadas y movimiento controlado.",alts:["chest_press"]},
-{id:"pec_deck",name:"Pec Deck / Mariposa",group:"Pecho",equipment:"Máquina",sets:3,reps:"10-12",seed:45,inc:3,tech:"Junta los brazos sin golpearlos y vuelve lentamente.",alts:["chest_press"]},
-{id:"shoulder_press",name:"Press de hombros en máquina",group:"Hombro",equipment:"Máquina",sets:3,reps:"8-12",seed:13,inc:2,tech:"Espalda apoyada sin arquear la zona lumbar.",alts:["lateral_raise"]},
-{id:"lateral_raise",name:"Elevaciones laterales",group:"Hombro lateral",equipment:"Mancuernas/Máquina",sets:3,reps:"12-15",seed:7,inc:1,tech:"Eleva sin impulso.",alts:["shoulder_press"]},
-{id:"rear_delt",name:"Deltoide posterior en máquina",group:"Hombro posterior",equipment:"Máquina",sets:3,reps:"12-15",seed:25,inc:3,tech:"Pecho apoyado y cuello relajado.",alts:["face_pull"]},
-{id:"biceps",name:"Curl de bíceps",group:"Bíceps",equipment:"Mancuernas/Polea",sets:3,reps:"10-12",seed:10,inc:1,tech:"Codos estables y sin balanceo.",alts:["biceps_machine","hammer_curl"]},
-{id:"biceps_machine",name:"Curl de bíceps en máquina",group:"Bíceps",equipment:"Máquina",sets:3,reps:"10-12",seed:20,inc:2.5,tech:"Brazos apoyados y codos estables.",alts:["biceps"]},
-{id:"hammer_curl",name:"Curl martillo",group:"Bíceps/Antebrazo",equipment:"Mancuernas",sets:3,reps:"10-12",seed:8,inc:1,tech:"Muñecas neutras y sin balanceo.",alts:["biceps"]},
-{id:"triceps",name:"Tríceps en polea",group:"Tríceps",equipment:"Polea",sets:3,reps:"10-12",seed:15.9,inc:2.3,tech:"Codos pegados al cuerpo.",alts:["triceps_machine"]},
-{id:"triceps_machine",name:"Tríceps en máquina",group:"Tríceps",equipment:"Máquina",sets:3,reps:"10-12",seed:20,inc:2.5,tech:"Tronco estable y extensión controlada.",alts:["triceps"]},
-{id:"wrist_curl",name:"Flexión de muñeca",group:"Antebrazo",equipment:"Mancuernas/Polea",sets:2,reps:"12-15",seed:5,inc:1,tech:"Antebrazo apoyado y carga ligera.",alts:["reverse_wrist"]},
-{id:"reverse_wrist",name:"Extensión de muñeca",group:"Antebrazo",equipment:"Mancuernas/Polea",sets:2,reps:"12-15",seed:4,inc:1,tech:"Movimiento corto y carga ligera.",alts:["wrist_curl"]},
-{id:"core_crunch",name:"Crunch abdominal en máquina",group:"Core",equipment:"Máquina",sets:3,reps:"12-15",seed:20,inc:2.5,tech:"Flexión cómoda y vuelta controlada.",alts:["core_rotation"]},
-{id:"core_rotation",name:"Rotación de torso en máquina",group:"Core",equipment:"Máquina",sets:3,reps:"10-12/lado",seed:20,inc:2.5,tech:"Pelvis estable y rango cómodo.",alts:["core_crunch"]},
-{id:"back_extension",name:"Extensión lumbar en máquina",group:"Core posterior",equipment:"Máquina",sets:2,reps:"12-15",seed:20,inc:2.5,tech:"Recorrido controlado sin hiperextender.",alts:["core_crunch"]},
-{id:"ab_machine_alt",name:"Abdominal vertical en máquina",group:"Core",equipment:"Máquina",sets:3,reps:"12-15",seed:20,inc:2.5,tech:"Controla la flexión y la vuelta.",alts:["core_crunch"]},
-{id:"neck_mobility",name:"Movilidad cervical suave",group:"Cuello",equipment:"Sin carga",sets:2,reps:"5/lado",seed:0,inc:0,tech:"Movimientos suaves y sin carga dentro de un rango cómodo. Detén el ejercicio si aparece dolor.",alts:[]}
+ {id:"leg_press",name:"Prensa de piernas",group:"Piernas",equipment:"Máquina",sets:3,reps:"10-12",seed:52,inc:5,tech:"Espalda apoyada, pies estables y rodillas alineadas. Baja con control dentro de un rango cómodo.",alts:["hack_squat","leg_extension"]},
+ {id:"hack_squat",name:"Hack squat en máquina",group:"Piernas",equipment:"Máquina",sets:3,reps:"8-12",seed:30,inc:5,tech:"Mantén la espalda apoyada y las rodillas alineadas con los pies. Usa un recorrido cómodo y controlado.",alts:["leg_press"]},
+ {id:"leg_extension",name:"Extensión de cuádriceps",group:"Cuádriceps",equipment:"Máquina",sets:3,reps:"10-12",seed:39,inc:3,tech:"Alinea la rodilla con el eje de la máquina. Extiende sin bloquear bruscamente y vuelve despacio.",alts:["leg_press"]},
+ {id:"leg_curl",name:"Curl femoral",group:"Isquiotibiales",equipment:"Máquina",sets:3,reps:"10-12",seed:39,inc:3,tech:"Ajusta el rodillo y flexiona sin despegar la cadera. Controla especialmente la vuelta.",alts:["rdl_machine"]},
+ {id:"rdl_machine",name:"Bisagra de cadera en máquina",group:"Isquiotibiales",equipment:"Máquina",sets:3,reps:"10-12",seed:25,inc:5,tech:"Lleva la cadera atrás con espalda neutra y vuelve apretando glúteos, sin forzar el rango.",alts:["leg_curl"]},
+ {id:"glute_machine",name:"Extensión de glúteo en máquina",group:"Glúteos",equipment:"Máquina",sets:3,reps:"12-15",seed:25,inc:3,tech:"Mantén la pelvis estable y extiende la cadera sin arquear la zona lumbar.",alts:["abduction"]},
+ {id:"abduction",name:"Abducción de cadera",group:"Glúteos",equipment:"Máquina",sets:3,reps:"12-15",seed:39,inc:3,tech:"Tronco estable. Abre las piernas sin impulso y vuelve con control.",alts:["glute_machine"]},
+ {id:"adduction",name:"Aducción de cadera",group:"Aductores",equipment:"Máquina",sets:3,reps:"12-15",seed:32,inc:3,tech:"Cierra las piernas de forma controlada, sin rebotes ni movimientos bruscos.",alts:["leg_press"]},
+ {id:"calf",name:"Gemelos en máquina",group:"Gemelos",equipment:"Máquina",sets:3,reps:"12-15",seed:20,inc:5,tech:"Recorre un rango cómodo sin rebotes: baja el talón con control y sube de forma estable.",alts:["leg_press"]},
+ {id:"lat_pulldown",name:"Jalón al pecho",group:"Dorsal",equipment:"Polea/Máquina",sets:3,reps:"8-12",seed:45,inc:3,tech:"Pecho alto y hombros lejos de las orejas. Lleva el agarre hacia la parte alta del pecho y vuelve despacio.",alts:["chest_row","pullover"]},
+ {id:"neutral_pulldown",name:"Jalón agarre neutro",group:"Dorsal",equipment:"Polea",sets:3,reps:"10-12",seed:40,inc:3,tech:"Mantén el torso estable y lleva los codos hacia abajo sin balancearte.",alts:["lat_pulldown"]},
+ {id:"chest_row",name:"Remo con apoyo al pecho",group:"Espalda media",equipment:"Máquina",sets:3,reps:"8-12",seed:32,inc:3,tech:"Pecho apoyado. Lleva los codos atrás sin encoger los hombros.",alts:["low_row","lat_pulldown"]},
+ {id:"low_row",name:"Remo en polea baja",group:"Espalda media",equipment:"Polea",sets:3,reps:"10-12",seed:30,inc:3,tech:"Tronco estable. Tira hacia el abdomen sin balanceo.",alts:["chest_row"]},
+ {id:"pullover",name:"Pullover en polea/máquina",group:"Dorsal",equipment:"Polea/Máquina",sets:3,reps:"10-12",seed:15.9,inc:2.3,tech:"Mantén los brazos casi extendidos y lleva el agarre hacia los muslos usando la espalda.",alts:["lat_pulldown"]},
+ {id:"face_pull",name:"Face Pull",group:"Espalda alta",equipment:"Polea",sets:3,reps:"12-15",seed:15.9,inc:2.3,tech:"Tira hacia la cara separando las manos y sin elevar los hombros.",alts:["rear_delt"]},
+ {id:"shrug_machine",name:"Encogimientos de trapecio en máquina",group:"Trapecio",equipment:"Máquina",sets:3,reps:"10-15",seed:30,inc:5,tech:"Eleva los hombros hacia arriba de forma controlada, sin realizar círculos con ellos.",alts:["face_pull"]},
+ {id:"chest_press",name:"Press de pecho en máquina",group:"Pecho",equipment:"Máquina",sets:3,reps:"8-12",seed:32,inc:3,tech:"Ajusta el asiento para que las asas queden a la altura media del pecho. Empuja sin despegar la espalda.",alts:["incline_press","pec_deck"]},
+ {id:"incline_press",name:"Press inclinado en máquina",group:"Pecho superior",equipment:"Máquina",sets:3,reps:"8-12",seed:20,inc:2.5,tech:"Escápulas apoyadas. Empuja arriba y delante de forma controlada.",alts:["chest_press"]},
+ {id:"pec_deck",name:"Pec Deck / Mariposa",group:"Pecho",equipment:"Máquina",sets:3,reps:"10-12",seed:45,inc:3,tech:"Pecho apoyado. Junta los brazos sin golpearlos y vuelve lentamente.",alts:["chest_press"]},
+ {id:"shoulder_press",name:"Press de hombros en máquina",group:"Hombro",equipment:"Máquina",sets:3,reps:"8-12",seed:13,inc:2,tech:"Espalda apoyada y movimiento controlado, sin arquear la zona lumbar.",alts:["lateral_raise"]},
+ {id:"lateral_raise",name:"Elevaciones laterales",group:"Hombro lateral",equipment:"Mancuernas/Máquina",sets:3,reps:"12-15",seed:7,inc:1,tech:"Eleva con codos suaves hasta una altura cómoda, sin impulso.",alts:["shoulder_press"]},
+ {id:"rear_delt",name:"Deltoide posterior en máquina",group:"Hombro posterior",equipment:"Máquina",sets:3,reps:"12-15",seed:25,inc:3,tech:"Pecho apoyado. Abre los brazos sin encoger el cuello.",alts:["face_pull"]},
+ {id:"biceps",name:"Curl de bíceps",group:"Bíceps",equipment:"Mancuernas/Polea",sets:3,reps:"10-12",seed:10,inc:1,tech:"Codos estables. Flexiona sin balanceo y baja lentamente.",alts:["biceps_machine","hammer_curl"]},
+ {id:"biceps_machine",name:"Curl de bíceps en máquina",group:"Bíceps",equipment:"Máquina",sets:3,reps:"10-12",seed:20,inc:2.5,tech:"Apoya bien los brazos y evita despegar los codos.",alts:["biceps"]},
+ {id:"hammer_curl",name:"Curl martillo",group:"Bíceps/Antebrazo",equipment:"Mancuernas",sets:3,reps:"10-12",seed:8,inc:1,tech:"Mantén las muñecas neutras y evita balancear el tronco.",alts:["biceps"]},
+ {id:"triceps",name:"Tríceps en polea",group:"Tríceps",equipment:"Polea",sets:3,reps:"10-12",seed:15.9,inc:2.3,tech:"Codos pegados al cuerpo. Extiende sin mover el tronco.",alts:["triceps_machine"]},
+ {id:"triceps_machine",name:"Tríceps en máquina",group:"Tríceps",equipment:"Máquina",sets:3,reps:"10-12",seed:20,inc:2.5,tech:"Mantén el tronco estable y extiende con control.",alts:["triceps"]},
+ {id:"wrist_curl",name:"Flexión de muñeca",group:"Antebrazo",equipment:"Mancuernas/Polea",sets:2,reps:"12-15",seed:5,inc:1,tech:"Apoya el antebrazo y mueve únicamente la muñeca con una carga ligera y controlada.",alts:["reverse_wrist"]},
+ {id:"reverse_wrist",name:"Extensión de muñeca",group:"Antebrazo",equipment:"Mancuernas/Polea",sets:2,reps:"12-15",seed:4,inc:1,tech:"Carga ligera, antebrazo apoyado y movimiento corto y controlado de la muñeca.",alts:["wrist_curl"]},
+ {id:"core_crunch",name:"Crunch abdominal en máquina",group:"Core",equipment:"Máquina",sets:3,reps:"12-15",seed:20,inc:2.5,tech:"Flexiona el tronco de forma cómoda. Exhala al cerrar y vuelve con control.",alts:["core_rotation"]},
+ {id:"core_rotation",name:"Rotación de torso en máquina",group:"Core",equipment:"Máquina",sets:3,reps:"10-12/lado",seed:20,inc:2.5,tech:"Pelvis estable. Gira dentro de un rango cómodo y controlado.",alts:["core_crunch"]},
+ {id:"back_extension",name:"Extensión lumbar en máquina",group:"Core posterior",equipment:"Máquina",sets:2,reps:"12-15",seed:20,inc:2.5,tech:"Recorrido cómodo y controlado. Evita hiperextender al final.",alts:["core_crunch"]},
+ {id:"ab_machine_alt",name:"Abdominal vertical en máquina",group:"Core",equipment:"Máquina",sets:3,reps:"12-15",seed:20,inc:2.5,tech:"Mantén la pelvis estable y controla tanto la flexión como la vuelta.",alts:["core_crunch"]},
+ {id:"neck_mobility",name:"Movilidad cervical suave",group:"Cuello",equipment:"Sin carga",sets:2,reps:"5/lado",seed:0,inc:0,tech:"Movimientos suaves y sin carga. Gira e inclina la cabeza solo dentro de un rango cómodo y detente si aparece dolor.",alts:[]}
 ];
 
 const TRAINING_DAYS=[
-{key:"POWER",title:"Full Body POWER",subtitle:"Fuerza general y técnica",ex:["leg_press","leg_curl","lat_pulldown","chest_press","chest_row","shoulder_press","shrug_machine","biceps","triceps","wrist_curl","core_crunch","core_rotation","neck_mobility"],cardio:{mode:"Progresivo",minutes:25}},
-{key:"PULL",title:"Full Body PULL",subtitle:"Espalda, cadena posterior y control",ex:["rdl_machine","glute_machine","chest_row","neutral_pulldown","incline_press","face_pull","rear_delt","hammer_curl","triceps_machine","reverse_wrist","core_rotation","back_extension","neck_mobility"],cardio:{mode:"Moderado",minutes:30}},
-{key:"ENGINE",title:"Full Body ENGINE",subtitle:"Trabajo global y capacidad cardiovascular",ex:["hack_squat","leg_extension","abduction","lat_pulldown","pec_deck","low_row","lateral_raise","biceps_machine","triceps","wrist_curl","core_crunch","ab_machine_alt","neck_mobility"],cardio:{mode:"Intervalos sin impacto",minutes:30}},
-{key:"PUSH",title:"Full Body PUSH",subtitle:"Pecho, hombro, piernas y estabilidad",ex:["leg_press","adduction","leg_curl","incline_press","shoulder_press","pec_deck","chest_row","lateral_raise","triceps_machine","hammer_curl","core_rotation","core_crunch","neck_mobility"],cardio:{mode:"Progresivo",minutes:25}},
-{key:"COMPLETE",title:"Full Body COMPLETE",subtitle:"Cobertura completa y control de marcas",ex:["hack_squat","calf","glute_machine","lat_pulldown","chest_press","low_row","face_pull","shrug_machine","biceps","triceps","reverse_wrist","core_crunch","core_rotation","back_extension","neck_mobility"],cardio:{mode:"Moderado",minutes:30}}
+ {key:"POWER",title:"Full Body POWER",subtitle:"Fuerza general y técnica",ex:["leg_press","leg_curl","lat_pulldown","chest_press","chest_row","shoulder_press","shrug_machine","biceps","triceps","wrist_curl","core_crunch","core_rotation","neck_mobility"],cardio:{mode:"Progresivo",minutes:25}},
+ {key:"PULL",title:"Full Body PULL",subtitle:"Espalda, cadena posterior y control",ex:["rdl_machine","glute_machine","chest_row","neutral_pulldown","incline_press","face_pull","rear_delt","hammer_curl","triceps_machine","reverse_wrist","core_rotation","back_extension","neck_mobility"],cardio:{mode:"Moderado",minutes:30}},
+ {key:"ENGINE",title:"Full Body ENGINE",subtitle:"Trabajo global y capacidad cardiovascular",ex:["hack_squat","leg_extension","abduction","lat_pulldown","pec_deck","low_row","lateral_raise","biceps_machine","triceps","wrist_curl","core_crunch","ab_machine_alt","neck_mobility"],cardio:{mode:"Intervalos sin impacto",minutes:30}},
+ {key:"PUSH",title:"Full Body PUSH",subtitle:"Pecho, hombro, piernas y estabilidad",ex:["leg_press","adduction","leg_curl","incline_press","shoulder_press","pec_deck","chest_row","lateral_raise","triceps_machine","hammer_curl","core_rotation","core_crunch","neck_mobility"],cardio:{mode:"Progresivo",minutes:25}},
+ {key:"COMPLETE",title:"Full Body COMPLETE",subtitle:"Cobertura completa y control de marcas",ex:["hack_squat","calf","glute_machine","lat_pulldown","chest_press","low_row","face_pull","shrug_machine","biceps","triceps","reverse_wrist","core_crunch","core_rotation","back_extension","neck_mobility"],cardio:{mode:"Moderado",minutes:30}}
 ];
 
 const SALADS=[
@@ -126,28 +126,28 @@ const RECIPES=[
  {id:"d8",type:"dinner",name:"Salteado de espárragos con huevo y pavo",cat:"huevo",protein:"huevo",carb:"verdura",time:12,prep:"Rápida",items:[["Espárragos",250,"g","cocinados"],["Huevo",1,"unidad","cocinado"],["Pavo",80,"g","listo"]],steps:["Trocea y saltea los espárragos.","Añade el pavo para calentarlo.","Incorpora el huevo y cocina hasta que quede completamente cuajado."],storage:"Mejor al momento.",reheat:"No."},
  {id:"d9",type:"dinner",name:"Ensalada completa con queso fresco y pavo",cat:"ensalada",protein:"queso",carb:"verdura",time:8,prep:"Montar",items:[["Ensalada variada",300,"g","cruda"],["Queso fresco",70,"g","listo"],["Pavo",80,"g","listo"]],steps:["Lava y seca bien las hojas.","Añade queso fresco y pavo.","Aliña justo antes de servir."],storage:"Componentes separados hasta el consumo.",reheat:"No."},
  {id:"d10",type:"dinner",name:"Salpicón de marisco equilibrado",cat:"marisco",protein:"marisco",carb:"verdura",time:12,prep:"Fría",items:[["Marisco cocido",180,"g","cocinado"],["Tomate",150,"g","crudo"],["Pimiento",120,"g","crudo"],["Cebolla",40,"g","cruda"]],steps:["Corta tomate, pimiento y cebolla en dados pequeños.","Añade el marisco ya cocido y frío.","Mezcla, aliña y refrigera unos minutos antes de servir."],storage:"1 día en frío.",reheat:"No."},
-{id:"l15",type:"lunch",name:"Bacalao con patata, pimientos y tomate",cat:"pescado",protein:"bacalao",carb:"patata",time:25,prep:"Guarnición adelantable",items:[["Bacalao",180,"g","crudo"],["Patata",220,"g","cocida"],["Pimientos",180,"g","asados"],["Tomate",120,"g","cocinado"]],steps:["Prepara la patata y los pimientos.","Cocina el bacalao hasta que esté hecho sin resecarlo.","Monta con tomate."],storage:"Guarnición 2 días; pescado próximo al consumo.",reheat:"Calienta guarnición y añade pescado."},
-{id:"l16",type:"lunch",name:"Pollo al limón con arroz y judías verdes",cat:"pollo",protein:"pollo",carb:"arroz",time:22,prep:"Preparar antes",items:[["Pollo",180,"g","crudo"],["Arroz",65,"g","crudo"],["Judías verdes",250,"g","cocinadas"]],steps:["Cuece arroz y judías.","Cocina el pollo y termina con limón.","Reparte en raciones."],storage:"2-3 días.",reheat:"Suave."},
-{id:"l17",type:"lunch",name:"Ternera salteada con verduras y arroz",cat:"carne",protein:"ternera",carb:"arroz",time:20,prep:"Preparar antes",items:[["Ternera magra",170,"g","cruda"],["Arroz",60,"g","crudo"],["Verduras",280,"g","cocinadas"]],steps:["Cuece arroz.","Saltea verduras.","Añade ternera y cocina completamente."],storage:"2 días.",reheat:"Sin resecar."},
-{id:"l18",type:"lunch",name:"Pavo con couscous integral y verduras",cat:"cereal",protein:"pavo",carb:"couscous",time:18,prep:"Muy práctico",items:[["Pavo",180,"g","crudo"],["Couscous integral",65,"g","seco"],["Verduras",260,"g","cocinadas"]],steps:["Hidrata couscous.","Cocina verduras y pavo.","Mezcla."],storage:"2-3 días.",reheat:"Suave."},
-{id:"l19",type:"lunch",name:"Ensalada templada de garbanzos, atún y pimientos",cat:"legumbre",protein:"atún",carb:"legumbre",time:12,prep:"Muy rápida",items:[["Garbanzos",200,"g","cocidos"],["Atún",140,"g","escurrido"],["Pimientos",180,"g","asados"],["Tomate",120,"g","crudo"]],steps:["Templa garbanzos y pimientos.","Añade atún y tomate.","Aliña al comer."],storage:"1-2 días.",reheat:"Solo base."},
-{id:"l20",type:"lunch",name:"Arroz mediterráneo con pollo, alcachofa y pimiento",cat:"arroz",protein:"pollo",carb:"arroz",time:28,prep:"Batch cooking",items:[["Arroz",65,"g","crudo"],["Pollo",160,"g","crudo"],["Alcachofa",120,"g","cocinada"],["Pimiento",130,"g","cocinado"]],steps:["Cocina pollo y verduras.","Añade arroz y líquido.","Cocina hasta terminar."],storage:"Enfriar pronto.",reheat:"Una vez."},
-{id:"l21",type:"lunch",name:"Pasta con atún, tomate y espinacas",cat:"pasta",protein:"atún",carb:"pasta",time:18,prep:"Preparar antes",items:[["Pasta integral",70,"g","cruda"],["Atún",140,"g","escurrido"],["Tomate",140,"g","cocinado"],["Espinacas",180,"g","cocinadas"]],steps:["Cuece pasta.","Saltea espinacas y tomate.","Añade atún y mezcla."],storage:"2 días.",reheat:"Suave."},
-{id:"l22",type:"lunch",name:"Merluza con arroz y pisto",cat:"pescado",protein:"merluza",carb:"arroz",time:22,prep:"Base adelantable",items:[["Merluza",190,"g","cruda"],["Arroz",60,"g","crudo"],["Pisto",280,"g","cocinado"]],steps:["Prepara arroz y pisto.","Cocina merluza cerca del consumo.","Sirve junto."],storage:"Base 2 días.",reheat:"Base separada."},
-{id:"l23",type:"lunch",name:"Tortilla de verduras con patata y ensalada",cat:"huevo",protein:"huevo",carb:"patata",time:20,prep:"Puede dejarse hecha",items:[["Huevos",2,"unidades","cocinados"],["Verduras",180,"g","cocinadas"],["Patata",180,"g","cocida"],["Ensalada",220,"g","cruda"]],steps:["Cocina verduras.","Cuaja tortilla.","Acompaña con patata y ensalada."],storage:"1-2 días.",reheat:"Opcional."},
-{id:"l24",type:"lunch",name:"Lomo magro con ensalada de arroz y tomate",cat:"carne",protein:"cerdo",carb:"arroz",time:20,prep:"Muy práctico",items:[["Lomo",180,"g","crudo"],["Arroz",60,"g","crudo"],["Tomate",180,"g","crudo"],["Pepino",100,"g","crudo"]],steps:["Cuece arroz.","Cocina lomo.","Monta ensalada."],storage:"2 días.",reheat:"Solo lomo."},
-{id:"l25",type:"lunch",name:"Alubias con verduras y pollo",cat:"legumbre",protein:"pollo",carb:"legumbre",time:18,prep:"Preparar antes",items:[["Alubias",200,"g","cocidas"],["Pollo",130,"g","crudo"],["Verduras",260,"g","cocinadas"]],steps:["Cocina verduras y pollo.","Añade alubias.","Mezcla."],storage:"2-3 días.",reheat:"Completo."},
-{id:"l26",type:"lunch",name:"Fajita integral de pollo y verduras",cat:"wrap",protein:"pollo",carb:"tortilla",time:18,prep:"Relleno adelantable",items:[["Tortilla integral",1,"unidad","lista"],["Pollo",170,"g","crudo"],["Pimientos",160,"g","cocinados"],["Cebolla",60,"g","cocinada"],["Tomate",100,"g","crudo"]],steps:["Cocina relleno.","Guárdalo separado.","Calienta tortilla y monta al comer."],storage:"Relleno 2 días.",reheat:"Relleno."},
-{id:"l27",type:"lunch",name:"Salmón con patata y judías verdes",cat:"pescado",protein:"salmón",carb:"patata",time:22,prep:"Guarnición adelantable",items:[["Salmón",180,"g","crudo"],["Patata",220,"g","cocida"],["Judías verdes",250,"g","cocinadas"]],steps:["Prepara guarnición.","Cocina salmón cerca del consumo."],storage:"Guarnición 2 días.",reheat:"Guarnición separada."},
-{id:"l28",type:"lunch",name:"Arroz con sepia, guisantes y pimiento",cat:"arroz",protein:"sepia",carb:"arroz",time:25,prep:"Noche anterior",items:[["Arroz",65,"g","crudo"],["Sepia",170,"g","cocinada"],["Guisantes",60,"g","cocinados"],["Pimiento",120,"g","cocinado"]],steps:["Cuece arroz.","Saltea verduras.","Cocina sepia y mezcla."],storage:"1-2 días.",reheat:"Una vez."},
-{id:"d11",type:"dinner",name:"Tortilla de calabacín con tomate",cat:"huevo",protein:"huevo",carb:"verdura",time:12,prep:"Ligera",items:[["Huevos",2,"unidades","cocinados"],["Calabacín",180,"g","cocinado"],["Tomate",200,"g","crudo"]],steps:["Saltea calabacín.","Cuaja tortilla.","Sirve con tomate."],storage:"Al momento.",reheat:"No."},
-{id:"d12",type:"dinner",name:"Ensalada de pollo, aguacate y tomate",cat:"ensalada",protein:"pollo",carb:"verdura",time:10,prep:"Pollo adelantable",items:[["Pollo",160,"g","cocinado"],["Aguacate",40,"g","listo"],["Tomate",180,"g","crudo"],["Hojas verdes",120,"g","crudas"]],steps:["Deja pollo listo.","Monta al servir."],storage:"Separado.",reheat:"No."},
-{id:"d13",type:"dinner",name:"Bacalao con pimientos asados y ensalada",cat:"pescado",protein:"bacalao",carb:"verdura",time:15,prep:"Ligera",items:[["Bacalao",190,"g","crudo"],["Pimientos",180,"g","asados"],["Ensalada",220,"g","cruda"]],steps:["Calienta pimientos.","Cocina bacalao.","Sirve con ensalada."],storage:"Al momento.",reheat:"Evitar."},
-{id:"d14",type:"dinner",name:"Revuelto de huevo, espinacas y langostinos",cat:"huevo",protein:"huevo",carb:"verdura",time:12,prep:"Rápida",items:[["Huevos",2,"unidades","cocinados"],["Espinacas",220,"g","cocinadas"],["Langostinos",100,"g","cocinados"]],steps:["Saltea espinacas.","Añade langostinos.","Cuaja huevos."],storage:"Al momento.",reheat:"No."},
-{id:"d15",type:"dinner",name:"Queso fresco, pavo, tomate y pimientos asados",cat:"fría",protein:"pavo",carb:"verdura",time:7,prep:"Montar",items:[["Queso fresco",80,"g","listo"],["Pavo",100,"g","listo"],["Tomate",180,"g","crudo"],["Pimientos",150,"g","asados"]],steps:["Corta y monta.","Aliña al servir."],storage:"1 día.",reheat:"No."},
-{id:"d16",type:"dinner",name:"Merluza con verduras salteadas",cat:"pescado",protein:"merluza",carb:"verdura",time:15,prep:"Ligera",items:[["Merluza",200,"g","cruda"],["Verduras",300,"g","cocinadas"]],steps:["Saltea verduras.","Cocina merluza.","Sirve."],storage:"Al momento.",reheat:"Evitar."},
-{id:"d17",type:"dinner",name:"Ensalada de garbanzos, tomate y queso fresco",cat:"ensalada",protein:"queso",carb:"legumbre",time:10,prep:"Montar",items:[["Garbanzos",120,"g","cocidos"],["Queso fresco",70,"g","listo"],["Tomate",180,"g","crudo"],["Pepino",100,"g","crudo"]],steps:["Enjuaga garbanzos.","Corta y mezcla.","Aliña."],storage:"1 día.",reheat:"No."},
-{id:"d18",type:"dinner",name:"Pollo a la plancha con ensalada mediterránea",cat:"pollo",protein:"pollo",carb:"verdura",time:15,prep:"Pollo adelantable",items:[["Pollo",180,"g","crudo"],["Ensalada mediterránea",300,"g","cruda"]],steps:["Cocina pollo.","Monta ensalada."],storage:"Pollo 2 días.",reheat:"Solo pollo."}
+ {id:"l15",type:"lunch",name:"Bacalao con patata, pimientos y tomate",cat:"pescado",protein:"bacalao",carb:"patata",time:25,prep:"Guarnición adelantable",items:[["Bacalao",180,"g","crudo"],["Patata",220,"g","cocida"],["Pimientos",180,"g","asados"],["Tomate",120,"g","cocinado"]],steps:["Cuece o asa la patata.","Deja pimientos y tomate preparados.","Cocina el bacalao hasta que esté completamente hecho sin resecarlo.","Monta con la guarnición."],storage:"Guarnición 2 días; pescado mejor próximo al consumo.",reheat:"Calienta la guarnición y añade el pescado al final."},
+ {id:"l16",type:"lunch",name:"Pollo al limón con arroz y judías verdes",cat:"pollo",protein:"pollo",carb:"arroz",time:22,prep:"Preparar con antelación",items:[["Pollo",180,"g","crudo"],["Arroz",65,"g","crudo"],["Judías verdes",250,"g","cocinadas"]],steps:["Cuece el arroz.","Cocina las judías.","Cocina el pollo y termina con limón y especias.","Reparte en raciones."],storage:"2-3 días en frío.",reheat:"Calentar suavemente."},
+ {id:"l17",type:"lunch",name:"Ternera salteada con verduras y arroz",cat:"carne",protein:"ternera",carb:"arroz",time:20,prep:"Rápida y preparable",items:[["Ternera magra",170,"g","cruda"],["Arroz",60,"g","crudo"],["Verduras variadas",280,"g","cocinadas"]],steps:["Cuece el arroz.","Saltea las verduras.","Añade la ternera y cocina completamente.","Sirve con el arroz."],storage:"2 días en frío.",reheat:"Calentar sin resecar."},
+ {id:"l18",type:"lunch",name:"Pavo con couscous integral y verduras",cat:"cereal",protein:"pavo",carb:"couscous",time:18,prep:"Muy práctico",items:[["Pavo",180,"g","crudo"],["Couscous integral",65,"g","seco"],["Verduras",260,"g","cocinadas"]],steps:["Hidrata el couscous.","Cocina las verduras.","Cocina el pavo completamente.","Mezcla y guarda por ración."],storage:"2-3 días en frío.",reheat:"Calentar suavemente."},
+ {id:"l19",type:"lunch",name:"Ensalada templada de garbanzos, atún y pimientos",cat:"legumbre",protein:"atún",carb:"legumbre",time:12,prep:"Muy rápida",items:[["Garbanzos",200,"g","cocidos"],["Atún",140,"g","escurrido"],["Pimientos asados",180,"g","cocinados"],["Tomate",120,"g","crudo"]],steps:["Enjuaga los garbanzos.","Templa con los pimientos.","Añade atún y tomate.","Aliña al comer."],storage:"1-2 días.",reheat:"Solo templar la base."},
+ {id:"l20",type:"lunch",name:"Arroz mediterráneo con pollo, alcachofa y pimiento",cat:"arroz",protein:"pollo",carb:"arroz",time:28,prep:"Batch cooking",items:[["Arroz",65,"g","crudo"],["Pollo",160,"g","crudo"],["Alcachofa",120,"g","cocinada"],["Pimiento",130,"g","cocinado"]],steps:["Cocina el pollo.","Añade verduras.","Incorpora arroz y líquido.","Cocina hasta que todo esté hecho."],storage:"Enfriar pronto.",reheat:"Una sola vez."},
+ {id:"l21",type:"lunch",name:"Pasta con atún, tomate y espinacas",cat:"pasta",protein:"atún",carb:"pasta",time:18,prep:"Preparar antes",items:[["Pasta integral",70,"g","cruda"],["Atún",140,"g","escurrido"],["Tomate",140,"g","cocinado"],["Espinacas",180,"g","cocinadas"]],steps:["Cuece la pasta.","Saltea espinacas y tomate.","Añade el atún.","Mezcla."],storage:"2 días.",reheat:"Suave."},
+ {id:"l22",type:"lunch",name:"Merluza con arroz y pisto",cat:"pescado",protein:"merluza",carb:"arroz",time:22,prep:"Pisto y arroz adelantables",items:[["Merluza",190,"g","cruda"],["Arroz",60,"g","crudo"],["Pisto",280,"g","cocinado"]],steps:["Cuece el arroz.","Prepara el pisto.","Cocina la merluza cerca del consumo.","Sirve junto."],storage:"Base 2 días.",reheat:"Calienta base y añade pescado."},
+ {id:"l23",type:"lunch",name:"Tortilla de verduras con patata cocida y ensalada",cat:"huevo",protein:"huevo",carb:"patata",time:20,prep:"Puede dejarse hecha",items:[["Huevos",2,"unidades","cocinados"],["Verduras",180,"g","cocinadas"],["Patata",180,"g","cocida"],["Ensalada",220,"g","cruda"]],steps:["Cocina verduras.","Cuaja la tortilla completamente.","Acompaña con patata y ensalada."],storage:"1-2 días.",reheat:"Opcional."},
+ {id:"l24",type:"lunch",name:"Lomo magro con ensalada de arroz y tomate",cat:"carne",protein:"cerdo",carb:"arroz",time:20,prep:"Muy práctico",items:[["Lomo magro",180,"g","crudo"],["Arroz",60,"g","crudo"],["Tomate",180,"g","crudo"],["Pepino",100,"g","crudo"]],steps:["Cuece y enfría el arroz.","Corta tomate y pepino.","Cocina el lomo.","Monta la ensalada."],storage:"2 días.",reheat:"Solo lomo."},
+ {id:"l25",type:"lunch",name:"Alubias con verduras y pollo",cat:"legumbre",protein:"pollo",carb:"legumbre",time:18,prep:"Preparar antes",items:[["Alubias",200,"g","cocidas"],["Pollo",130,"g","crudo"],["Verduras",260,"g","cocinadas"]],steps:["Cocina verduras.","Cocina pollo.","Añade alubias.","Mezcla y reparte."],storage:"2-3 días.",reheat:"Completo."},
+ {id:"l26",type:"lunch",name:"Fajita integral de pollo y verduras",cat:"wrap",protein:"pollo",carb:"tortilla",time:18,prep:"Relleno adelantable",items:[["Tortilla integral",1,"unidad","lista"],["Pollo",170,"g","crudo"],["Pimientos",160,"g","cocinados"],["Cebolla",60,"g","cocinada"],["Tomate",100,"g","crudo"]],steps:["Cocina pollo, pimientos y cebolla.","Guarda el relleno.","Calienta tortilla al comer.","Añade tomate y enrolla."],storage:"Relleno 2 días.",reheat:"Relleno y tortilla."},
+ {id:"l27",type:"lunch",name:"Salmón con patata y judías verdes",cat:"pescado",protein:"salmón",carb:"patata",time:22,prep:"Guarnición adelantable",items:[["Salmón",180,"g","crudo"],["Patata",220,"g","cocida"],["Judías verdes",250,"g","cocinadas"]],steps:["Prepara patata y judías.","Cocina salmón cerca del consumo.","Sirve junto."],storage:"Guarnición 2 días.",reheat:"Guarnición separada."},
+ {id:"l28",type:"lunch",name:"Arroz con sepia, guisantes y pimiento",cat:"arroz",protein:"sepia",carb:"arroz",time:25,prep:"Preparar la noche anterior",items:[["Arroz",65,"g","crudo"],["Sepia",170,"g","cocinada"],["Guisantes",60,"g","cocinados"],["Pimiento",120,"g","cocinado"]],steps:["Cuece arroz.","Saltea verduras.","Cocina sepia.","Mezcla."],storage:"1-2 días.",reheat:"Una sola vez."},
+ {id:"d11",type:"dinner",name:"Tortilla de calabacín con tomate",cat:"huevo",protein:"huevo",carb:"verdura",time:12,prep:"Ligera",items:[["Huevos",2,"unidades","cocinados"],["Calabacín",180,"g","cocinado"],["Tomate",200,"g","crudo"]],steps:["Saltea calabacín.","Añade huevos y cuaja.","Sirve con tomate."],storage:"Al momento.",reheat:"No."},
+ {id:"d12",type:"dinner",name:"Ensalada de pollo, aguacate y tomate",cat:"ensalada",protein:"pollo",carb:"verdura",time:10,prep:"Pollo adelantable",items:[["Pollo",160,"g","cocinado"],["Aguacate",40,"g","listo"],["Tomate",180,"g","crudo"],["Hojas verdes",120,"g","crudas"]],steps:["Deja pollo listo.","Lava hojas.","Corta tomate y aguacate.","Monta y aliña."],storage:"Separado.",reheat:"No."},
+ {id:"d13",type:"dinner",name:"Bacalao con pimientos asados y ensalada",cat:"pescado",protein:"bacalao",carb:"verdura",time:15,prep:"Ligera",items:[["Bacalao",190,"g","crudo"],["Pimientos asados",180,"g","cocinados"],["Ensalada",220,"g","cruda"]],steps:["Calienta pimientos.","Cocina bacalao.","Sirve con ensalada."],storage:"Al momento.",reheat:"Evitar resecar."},
+ {id:"d14",type:"dinner",name:"Revuelto de huevo, espinacas y langostinos",cat:"huevo",protein:"huevo",carb:"verdura",time:12,prep:"Rápida",items:[["Huevos",2,"unidades","cocinados"],["Espinacas",220,"g","cocinadas"],["Langostinos",100,"g","cocinados"]],steps:["Saltea espinacas.","Añade langostinos.","Cuaja huevos completamente."],storage:"Al momento.",reheat:"No."},
+ {id:"d15",type:"dinner",name:"Queso fresco, pavo, tomate y pimientos asados",cat:"fría",protein:"pavo",carb:"verdura",time:7,prep:"Montar",items:[["Queso fresco",80,"g","listo"],["Pavo",100,"g","listo"],["Tomate",180,"g","crudo"],["Pimientos asados",150,"g","cocinados"]],steps:["Escurre pimientos.","Corta tomate y queso.","Monta y aliña."],storage:"1 día.",reheat:"No."},
+ {id:"d16",type:"dinner",name:"Merluza con verduras salteadas",cat:"pescado",protein:"merluza",carb:"verdura",time:15,prep:"Ligera",items:[["Merluza",200,"g","cruda"],["Verduras",300,"g","cocinadas"]],steps:["Saltea verduras.","Cocina merluza.","Sirve."],storage:"Al momento.",reheat:"Evitar."},
+ {id:"d17",type:"dinner",name:"Ensalada de garbanzos, tomate y queso fresco",cat:"ensalada",protein:"queso",carb:"legumbre",time:10,prep:"Montar",items:[["Garbanzos",120,"g","cocidos"],["Queso fresco",70,"g","listo"],["Tomate",180,"g","crudo"],["Pepino",100,"g","crudo"]],steps:["Enjuaga garbanzos.","Corta verduras y queso.","Mezcla y aliña."],storage:"1 día.",reheat:"No."},
+ {id:"d18",type:"dinner",name:"Pollo a la plancha con ensalada mediterránea",cat:"pollo",protein:"pollo",carb:"verdura",time:15,prep:"Pollo adelantable",items:[["Pollo",180,"g","crudo"],["Ensalada mediterránea",300,"g","cruda"]],steps:["Cocina pollo.","Prepara ensalada.","Aliña al servir."],storage:"Pollo 2 días.",reheat:"Solo pollo."}
 ];
 
 function baseState(){
@@ -261,51 +261,6 @@ function generatePlan(start){
  DAYS.forEach((day,di)=>{plan.days[day]={};types.forEach((type,si)=>{const r=chooseRecipeForWeek(type,used,null,di,start,si);plan.days[day][type]=r.id;used.push(r.id)})});
  s.plans=s.plans.filter(p=>p.weekStart!==start);s.plans.unshift(plan);saveState(s);return plan;
 }
-
-function normalizePlan(plan,start){
- if(!plan||typeof plan!=="object")return null;
- const p={...plan};
- p.weekStart=p.weekStart||start;
- p.weekEnd=p.weekEnd||plusDays(p.weekStart,6);
- p.status=p.status||"draft";
- p.days=(p.days&&typeof p.days==="object")?p.days:{};
- p.flexMealDay=p.flexMealDay||state().settings.flexMealDay;
- const used=[];
- DAYS.forEach((day,di)=>{
-   p.days[day]=(p.days[day]&&typeof p.days[day]==="object")?p.days[day]:{};
-   Object.keys(MEALS).forEach((type,si)=>{
-     const id=p.days[day][type];
-     const valid=id&&recipe(id)&&recipe(id).type===type;
-     if(valid){used.push(id);return}
-     const r=chooseRecipeForWeek(type,used,null,di,p.weekStart,si);
-     if(r){p.days[day][type]=r.id;used.push(r.id)}
-   });
- });
- return p;
-}
-
-function getPlan(start){
- const s=state();
- let p=s.plans.find(x=>x.weekStart===start);
- if(!p)return generatePlan(start);
- const fixed=normalizePlan(p,start);
- const i=s.plans.findIndex(x=>x.weekStart===start);
- if(i>=0){s.plans[i]=fixed;saveState(s)}
- return fixed;
-}
-function buildShopping(plan){
- const s=state(),need={};
- Object.values(plan.days).forEach(meals=>Object.values(meals).forEach(id=>{const r=recipe(id);if(!r)return;r.items.forEach(([name,qty,unit])=>{if(!need[name])need[name]={name,qty:0,unit,bought:false};need[name].qty+=typeof qty==="number"?qty:1})}));
- const pantry=Object.fromEntries(s.pantry.map(x=>[String(x.name).toLowerCase(),finite(x.qty,0)]));
- s.shopping=Object.values(need).map(x=>({...x,buy:Math.max(0,x.qty-(pantry[x.name.toLowerCase()]||0))})).filter(x=>x.buy>0);saveState(s);
-}
-function confirmPlan(start){
- const s=state(),p=s.plans.find(x=>x.weekStart===start);if(!p)return;
- p.status="confirmed";p.confirmedAt=new Date().toISOString();saveState(s);buildShopping(p);NUTRITION_TAB="plan";PLANNER_TAB=start===monday(1)?"next":"current";toast("Semana confirmada");render();
-}
-function regeneratePlan(start){
- const s=state();s.plans=s.plans.filter(p=>p.weekStart!==start);saveState(s);generatePlan(start);NUTRITION_TAB="plan";PLANNER_TAB=start===monday(1)?"next":"current";render();
-}
 function changePlanMeal(start,day,type){
  const s=state(),p=s.plans.find(x=>x.weekStart===start);if(!p)return;
  const current=recipe(p.days[day][type]),used=Object.values(p.days).flatMap(x=>Object.values(x)),next=chooseRecipeForWeek(type,used,current,DAYS.indexOf(day),start,Object.keys(MEALS).indexOf(type));
@@ -320,7 +275,7 @@ function smartTodayMeal(type){
  const s=state(),p=s.plans.find(x=>x.weekStart===monday(0)&&x.status==="confirmed");
  if(!p)return toast("Confirma primero la semana");
  const current=recipe(p.days[dayName()][type]),used=Object.values(p.days).flatMap(x=>Object.values(x));
- const next=chooseRecipeForWeek(type,used,current,DAYS.indexOf(dayName()),monday(0),Object.keys(MEALS).indexOf(type));if(!next)return;
+ const next=chooseRecipe(type,used,current,DAYS.indexOf(dayName()));if(!next)return;
  p.days[dayName()][type]=next.id;saveState(s);
  const card=document.querySelector(`[data-meal-card="${type}"]`);
  if(card){const tmp=document.createElement("div");tmp.innerHTML=mealCard(type);card.replaceWith(tmp.firstElementChild)}else render();
@@ -558,25 +513,15 @@ function preparationMarkup(){
  <div class="card"><span class="eyebrow">ENSALADAS</span><h2>Opciones para variar</h2>${SALADS.map(x=>`<p><b>${x[0]}</b><br>${x[1]}<br><small>Aliño: ${x[2]}</small></p>`).join("")}</div>`;
 }
 
-function nutritionSection(tab){
- try{
-  if(tab==="today")return Object.keys(MEALS).map(mealCard).join("");
-  if(tab==="plan")return nutritionPlanner();
-  if(tab==="recipes")return nutritionLibrary();
-  if(tab==="shopping")return shoppingMarkup();
-  if(tab==="pantry")return pantryMarkup();
-  if(tab==="prep")return preparationMarkup();
-  return Object.keys(MEALS).map(mealCard).join("");
- }catch(err){
-  console.error("Nutrition section error",tab,err);
-  return `<div class="card error-card"><h3>No se pudo cargar este apartado</h3><p class="muted">Tus datos siguen guardados. Pulsa «Reintentar».</p><button class="btn primary" data-action="nutrition-retry" data-tab="${esc(tab)}">Reintentar</button></div>`;
- }
-}
 function renderNutrition(){
- const tabs=[["today","Hoy"],["plan","Plan semanal"],["recipes","Biblioteca"],["shopping","Compra"],["pantry","Despensa"],["prep","Preparación"]];
- return `<div class="card hero"><span class="eyebrow">NUTRICIÓN</span><h2>Planifica → prepara → compra → sigue → aprende</h2><p class="muted">Cada apartado se carga de forma independiente para evitar bloqueos.</p></div>
- <div class="tabs" id="nutrition_tabs">${tabs.map(([id,l])=>`<button class="tab-btn ${NUTRITION_TAB===id?"active":""}" data-action="nutrition-tab" data-tab="${id}">${l}</button>`).join("")}</div>
- <section id="nutrition_active">${nutritionSection(NUTRITION_TAB)}</section>`;
+ return `<div class="card hero"><span class="eyebrow">NUTRICIÓN</span><h2>Planifica → prepara → compra → sigue → aprende</h2><p class="muted">Más variedad, semana siguiente independiente y cambios persistentes.</p></div>
+ <div class="tabs" id="nutrition_tabs">${[["today","Hoy"],["plan","Plan semanal"],["recipes","Biblioteca"],["shopping","Compra"],["pantry","Despensa"],["prep","Preparación"]].map(([id,l])=>`<button class="tab-btn ${NUTRITION_TAB===id?"active":""}" data-action="nutrition-tab" data-tab="${id}">${l}</button>`).join("")}</div>
+ <section id="nutrition_today" class="${NUTRITION_TAB==="today"?"":"hidden"}">${Object.keys(MEALS).map(mealCard).join("")}</section>
+ <section id="nutrition_plan" class="${NUTRITION_TAB==="plan"?"":"hidden"}">${nutritionPlanner()}</section>
+ <section id="nutrition_recipes" class="${NUTRITION_TAB==="recipes"?"":"hidden"}">${nutritionLibrary()}</section>
+ <section id="nutrition_shopping" class="${NUTRITION_TAB==="shopping"?"":"hidden"}">${shoppingMarkup()}</section>
+ <section id="nutrition_pantry" class="${NUTRITION_TAB==="pantry"?"":"hidden"}">${pantryMarkup()}</section>
+ <section id="nutrition_prep" class="${NUTRITION_TAB==="prep"?"":"hidden"}">${preparationMarkup()}</section>`;
 }
 
 function trainingTodayCard(){
@@ -623,19 +568,22 @@ function renderTraining(){
 }
 
 function classifyMetric(key,delta){
- if(delta==null)return ["Sin datos","neutral"];const lower=["weight","waist","hip","bodyFat","visceral"],stable=["muscleMass","skeletalMuscle","protein"];
+ if(delta==null)return ["Sin datos","neutral"];
+ const lower=["weight","waist","hip","bodyFat","visceral"],stable=["muscleMass","skeletalMuscle","protein"];
  if(lower.includes(key))return delta<0?["Mejora","good"]:delta===0?["Estable","neutral"]:["Vigilar","attn"];
  if(stable.includes(key))return delta>0?["Mejora","good"]:Math.abs(delta)<=0.2?["Estable","neutral"]:["Vigilar tendencia","attn"];
  return [Math.abs(delta)<0.5?"Estable":"Cambio","neutral"];
 }
 function anomalyFlags(last,prev){
- if(!last||!prev)return [];const out=[];[["hip","Cadera",2],["thigh","Muslo",2],["calf","Gemelo",1.5],["chest","Pecho",2]].forEach(([k,n,t])=>{if(last[k]!=null&&prev[k]!=null&&Math.abs(last[k]-prev[k])>=t)out.push(`${n}: cambio de ${Math.round((last[k]-prev[k])*10)/10} cm; repite la medición con el mismo punto y tensión de cinta.`)});return out;
+ if(!last||!prev)return [];const out=[];
+ [["hip","Cadera",2],["thigh","Muslo",2],["calf","Gemelo",1.5],["chest","Pecho",2]].forEach(([k,n,t])=>{if(last[k]!=null&&prev[k]!=null&&Math.abs(last[k]-prev[k])>=t)out.push(`${n}: cambio de ${Math.round((last[k]-prev[k])*10)/10} cm; repite la medición con el mismo punto y tensión de cinta.`)});
+ return out;
 }
 function evolutionCoachInterpretation(){
  const {first,last,prev}=firstAndLastMeasurements();if(!last)return `<div class="card coach"><h3>Entrenador85 interpreta tus resultados</h3><p class="muted">Guarda un control para empezar.</p></div>`;
  const keys=[["weight","Peso","kg"],["waist","Cintura","cm"],["bodyFat","Grasa corporal","p.p."],["visceral","Grasa visceral",""],["muscleMass","Masa muscular","kg"],["skeletalMuscle","Músculo esquelético","p.p."]];
  const rows=keys.map(([k,n,u])=>{const weekly=prev&&last[k]!=null&&prev[k]!=null?Math.round((last[k]-prev[k])*10)/10:null,total=first&&last[k]!=null&&first[k]!=null?Math.round((last[k]-first[k])*10)/10:null,[label,cls]=classifyMetric(k,weekly);return `<div class="week-row"><span>${n}</span><div><b>${last[k]??"—"} ${last[k]!=null?u:""}</b><small>Semana: ${weekly==null?"—":(weekly>0?"+":"")+weekly} · Desde inicio: ${total==null?"—":(total>0?"+":"")+total}</small></div><div><span class="pill ${cls==="good"?"green":cls==="attn"?"amber":""}">${label}</span></div></div>`}).join("");
- const flags=anomalyFlags(last,prev),combined=prev&&last.weight!=null&&prev.weight!=null&&last.waist!=null&&prev.waist!=null&&last.weight<=prev.weight&&last.waist<=prev.waist?"Peso y cintura mantienen una tendencia favorable. La composición corporal se interpreta como tendencia de varias semanas.":"Valora el conjunto: peso, cintura, rendimiento, constancia y composición corporal.";
+ const flags=anomalyFlags(last,prev),combined=prev&&last.weight!=null&&prev.weight!=null&&last.waist!=null&&prev.waist!=null&&last.weight<=prev.weight&&last.waist<=prev.waist?"Peso y cintura mantienen una tendencia favorable. Interpreta la composición corporal como tendencia de varias semanas.":"Valora el conjunto: peso, cintura, rendimiento, constancia y composición corporal.";
  return `<div class="card coach"><span class="eyebrow">ENTRENADOR85 INTERPRETA</span><h2>Lectura automática</h2>${rows}<p>${combined}</p>${flags.length?`<div class="warning"><b>Revisar medición</b><ul>${flags.map(x=>`<li>${x}</li>`).join("")}</ul></div>`:""}</div>`;
 }
 function evolutionSummary(){
@@ -681,7 +629,7 @@ function todayDashboard(){
 }
 function moreMarkup(){
  const backup=!!localStorage.getItem(PREFIX+"legacyBackup_v4");
- return `<div class="card"><span class="eyebrow">DATOS Y SEGURIDAD</span><h2>Proyecto85 Pro 4.1.1</h2><p class="muted">Sin service worker. Las futuras mejoras pueden sustituir los archivos manteniendo estas mismas claves de datos.</p>
+ return `<div class="card"><span class="eyebrow">DATOS Y SEGURIDAD</span><h2>Proyecto85 Pro 4.0</h2><p class="muted">Sin service worker. Las futuras mejoras pueden sustituir los archivos manteniendo estas mismas claves de datos.</p>
  <div class="grid"><div class="stat"><span>Esquema de datos</span><b>v${SCHEMA_VERSION}</b></div><div class="stat"><span>Copia legacy</span><b>${backup?"Sí":"No"}</b></div></div>
  <div class="btn-row" style="margin-top:12px"><button class="btn primary" data-action="export-data">Exportar copia</button><button class="btn" data-action="import-data">Importar copia</button><input id="import_file" type="file" accept="application/json" class="hidden"></div></div>
  <div class="card learning"><span class="eyebrow">FILOSOFÍA</span><h3>Planifica → Haz → Registra → Aprende → Analiza → Ajusta</h3><p>Proyecto85 prioriza constancia, técnica, alimentación variada y evolución de varias semanas por encima de decisiones basadas en un solo dato.</p></div>`;
@@ -702,7 +650,7 @@ function render(){
  else if(PAGE==="nutrition")content=renderNutrition();
  else if(PAGE==="evolution")content=renderEvolution();
  else content=moreMarkup();
- host.innerHTML=`<div class="shell"><header><div class="brand"><small>ENTRENADOR PERSONAL</small><h1>Proyecto85 Pro <span class="version">4.1.1</span></h1></div><span class="header-badge">Entrenador85</span></header>${content}</div>${nav()}`;
+ host.innerHTML=`<div class="shell"><header><div class="brand"><small>ENTRENADOR PERSONAL</small><h1>Proyecto85 Pro <span class="version">4.1</span></h1></div><span class="header-badge">Entrenador85</span></header>${content}</div>${nav()}`;
 }
 function boot(){
  try{
@@ -717,19 +665,7 @@ function boot(){
 document.addEventListener("click",async e=>{
  const b=e.target.closest("[data-action]");if(!b)return;
  const a=b.dataset.action;
- if(a==="go-page"){
-  const target=b.dataset.page;
-  try{PAGE=target;render();window.scrollTo(0,0)}
-  catch(err){
-    console.error("Navigation error",target,err);
-    if(target==="nutrition"){
-      PAGE="nutrition";NUTRITION_TAB="today";
-      const host=$("#app");
-      if(host)host.innerHTML=`<div class="shell"><header><div class="brand"><small>ENTRENADOR PERSONAL</small><h1>Proyecto85 Pro <span class="version">4.1.1</span></h1></div></header><div class="card error-card"><h2>Nutrición</h2><p>Tus datos no se han borrado. Se ha aislado un error de carga.</p><button class="btn primary" data-action="nutrition-retry" data-tab="today">Reintentar Nutrición</button></div></div>${nav()}`;
-    }else{throw err}
-  }
-  return
-}
+ if(a==="go-page"){PAGE=b.dataset.page;render();window.scrollTo(0,0);return}
  if(a==="training-tab"){TRAINING_TAB=b.dataset.tab;render();return}
  if(a==="start-workout"){startWorkout(Number(b.dataset.day));return}
  if(a==="finish-workout"){finishWorkout();return}
@@ -738,10 +674,8 @@ document.addEventListener("click",async e=>{
  if(a==="close-modal"){closeModal();return}
  if(a==="modal-backdrop"&&e.target===b){closeModal();return}
  if(a==="nutrition-tab"){
-  NUTRITION_TAB=b.dataset.tab||"today";render();return
- }
- if(a==="nutrition-retry"){
-  NUTRITION_TAB=b.dataset.tab||NUTRITION_TAB;render();return
+  const tab=b.dataset.tab;NUTRITION_TAB=tab;["today","plan","recipes","shopping","pantry","prep"].forEach(x=>$("#nutrition_"+x)?.classList.toggle("hidden",x!==tab));
+  $("#nutrition_tabs")?.querySelectorAll(".tab-btn").forEach(x=>x.classList.toggle("active",x===b));return
  }
  if(a==="planner-tab"){
   const tab=b.dataset.tab;PLANNER_TAB=tab;["current","next","history"].forEach(x=>$("#planner_"+x)?.classList.toggle("hidden",x!==tab));
