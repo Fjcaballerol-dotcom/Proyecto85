@@ -1,0 +1,12 @@
+# Checklist 4.2.2
+- [x] Mantiene `p85pro2_`
+- [x] Sin service worker
+- [x] Sin reset automático
+- [x] Assets con nombres nuevos para evitar caché
+- [x] Calendario local lunes-domingo
+- [x] Nutrición: contadores explicados
+- [x] Mapa muscular: unidad explicada
+- [x] Evolución: primer registro/control anterior/tendencia
+- [x] Control sin día fijo
+- [x] Espaciado iPhone
+- [x] JS validado
