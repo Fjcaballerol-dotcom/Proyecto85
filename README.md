@@ -1,35 +1,39 @@
-# Proyecto85 5.0
+# Proyecto85 Coach 6.0
 
-Reconstrucción completa de Proyecto85 con una base nueva y sin capas de parches sobre versiones 4.x.
+Reconstrucción limpia de Proyecto85. No depende de `app.js` antiguo ni de scripts `enhancements-*`.
 
-## Principios
-- Interfaz clara y luminosa.
-- Entrenamientos con continuidad + rotación semanal.
-- Menús con variedad real y memoria de repeticiones.
-- Perfil “Mi gimnasio” para limitar propuestas al equipamiento disponible.
-- Registro de molestias/dolor por ejercicio e interrupción sin penalización.
+## Qué recupera y mejora
+
+- Full Body 5 días: cada día incluye piernas, espalda, pecho, hombros, bíceps, tríceps y core.
+- Rotación semanal real usando el equipamiento confirmado del Basic-Fit.
+- Sugerencia de carga basada en el último registro disponible y rango de repeticiones visible.
 - Check-in de energía, cansancio, sueño, hinchazón y molestias.
-- Modo recuperación cuando las sensaciones no son buenas.
-- Evolución basada en tendencias y bienestar, no en una sola medición.
-- Copia de seguridad e importación.
-- Migración legacy de solo lectura: no borra claves antiguas.
-- Sin service worker.
-- Assets físicos nuevos (`app-v5.js`, `styles-v5.css`) para evitar que Safari/GitHub reutilicen la versión 4.x desde caché.
+- Registro de dolor por ejercicio y exclusión temporal sin penalización.
+- Nutrición con desayuno, media mañana, comida, merienda y cena.
+- Biblioteca de 56 recetas heredadas de la versión funcional anterior, más recetas propias.
+- Sustitución de comidas con 3 alternativas menos repetidas dentro de la semana.
+- Compra, despensa y preparación semanal.
+- Evolución con medidas y sensaciones.
+- Diseño claro y más cálido; no usa el tema negro/verde como base.
+- Importación no destructiva desde `p85v5_state` y `p85pro2_state`.
 
-## Instalación en GitHub Pages
-Sube todos los archivos de este ZIP a la raíz del repositorio y sustituye los anteriores. No añadas sw.js.
+## Archivos de publicación
 
-## Almacenamiento
-La nueva clave principal es `p85v5_state`. La app detecta de forma segura algunas claves históricas (`p85pro2_state`, `p85proclean_state`, `p85_state`) y copia datos reconocibles sin borrar los originales.
+Subir todos estos archivos a la raíz de GitHub Pages:
 
-## Pruebas realizadas
-- Sintaxis JavaScript.
-- Carga real en Chromium headless.
-- Navegación principal.
-- Generación de 5 días de entrenamiento.
-- Generación de 7 días de comidas con variedad mínima.
-- Check-in y modo recuperación.
-- Registro de molestias y alternativas.
-- Persistencia con localStorage.
-- Exportación/importación disponible.
-- Ausencia de service worker.
+- `index.html`
+- `data-v6.js`
+- `engine-v6.js`
+- `app-v6.js`
+- `styles-v6.css`
+- `manifest-v6.json`
+- `icon-v6-192.png`
+- `icon-v6-512.png`
+
+No necesita `sw.js`.
+
+## Datos
+
+La versión nueva usa la clave `p85coach6_state`. Lee las claves antiguas para migrar datos, pero no las elimina.
+
+Antes de actualizar, conservar siempre una copia de seguridad JSON exportada desde la app actual.
