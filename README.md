@@ -1,13 +1,13 @@
-# Proyecto85 Coach 6.1
+# Proyecto85 Coach 6.2
 
-Reconstrucción funcional sobre la base limpia 6.x. No usa scripts de parches/overrides.
+Actualización de entrenamiento centrada en estabilidad y experiencia real en gimnasio.
 
-## Cambios principales
-- Full Body 5 días con 8 ejercicios por sesión: 2 tren inferior + espalda + pecho + hombro + bíceps + tríceps + core.
-- Historial real como referencia de carga/repeticiones.
-- Sesión activa persistente: editar kg/repeticiones no abandona el entrenamiento.
-- Añadir/quitar series dentro de límites moderados.
-- Check-in cambia volumen y cardio del día (normal/suave/recuperación).
-- Molestias se guardan y vuelven a la sesión activa.
-- Conserva el estado `p85coach6_state` y todo el historial existente.
-- Nutrición 5 ingestas y biblioteca se mantienen.
+## Cambios clave
+- Corrige el cierre/bloqueo del entrenamiento al marcar una serie, editar kg o repeticiones.
+- El modal solo se cierra con la X o tocando fuera del panel.
+- Full Body inteligente de 5 días con 9 ejercicios: 2 piernas, 2 espalda, pecho, hombros, bíceps, tríceps y core.
+- Mantiene el check-in adaptativo y las referencias del historial.
+- Nombres de máquinas traducidos al español y alineados con el equipamiento visto en Basic-Fit.
+- Conserva la misma clave de datos `p85coach6_state` para no perder historial de 6.0/6.1.
+
+No incluye service worker y no requiere limpiar Safari/localStorage.
