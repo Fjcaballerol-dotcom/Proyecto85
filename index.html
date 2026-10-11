@@ -1,1 +1,23 @@
-<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#f7f6f2"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><title>Proyecto85 Coach 7.0</title><link rel="manifest" href="manifest-v7.json"><link rel="stylesheet" href="styles-v7.css?v=700"></head><body><main id="app" class="app"></main><script src="data-v7.js?v=700"></script><script src="engine-v7.js?v=700"></script><script src="app-v7.js?v=700"></script></body></html>
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f7f6f2">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>Proyecto85 Coach 7.0.1</title>
+<link rel="manifest" href="manifest-v7-0-1.json?v=701">
+<link rel="stylesheet" href="styles-v7-0-1.css?v=701">
+<style>#boot{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;padding:max(72px,calc(34px + env(safe-area-inset-top))) 24px;color:#1d2633}#boot b{font-size:24px}#boot p{color:#687386;line-height:1.45}</style>
+</head>
+<body>
+<main id="app" class="app"><div id="boot"><b>Proyecto85 Coach</b><p>Iniciando Entrenador85…</p></div></main>
+<script>
+window.addEventListener('error',function(e){var a=document.getElementById('app');if(a&&(!a.innerText||a.innerText.includes('Iniciando Entrenador85'))){a.innerHTML='<div id="boot"><b>No se ha podido iniciar Proyecto85</b><p>Tus datos no se han borrado. Cierra y vuelve a abrir la aplicación. Si continúa, envía una captura de esta pantalla.</p><p style="font-size:12px">'+String(e.message||'Error de inicio').replace(/[<>&]/g,'')+'</p></div>'}});
+</script>
+<script src="data-v7-0-1.js?v=701"></script>
+<script src="engine-v7-0-1.js?v=701"></script>
+<script src="app-v7-0-1.js?v=701"></script>
+</body>
+</html>
